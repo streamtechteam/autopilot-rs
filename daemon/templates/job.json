@@ -1,0 +1,24 @@
+{
+  "id": "1",
+  "name": "Name",
+  "description": "Description",
+  "conditions": [
+    {
+      "type": "output",
+      "condition": {
+        "command": "",
+        "target": ""
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "command": ""
+    }
+  ],
+  // "until": "",
+  "when": "",
+  "check_interval": "",
+  "last_run_date": "",
+  "last_run_status": ""
+}
