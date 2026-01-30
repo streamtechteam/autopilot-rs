@@ -1,0 +1,14 @@
+{
+    "files.exclude": {
+        "**/.git": false,
+        "**/.svn": false,
+        "**/.hg": false,
+        "**/.DS_Store": false,
+        "**/Thumbs.db": false,
+        "**/flutter/ephemeral": false,
+        "**/Flutter/ephemeral": false,
+        "**/.symlinks": false,
+        "**/.plugin_symlinks": false
+    },
+    "explorerExclude.backup": {}
+}
