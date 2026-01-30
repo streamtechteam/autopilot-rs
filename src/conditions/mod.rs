@@ -18,6 +18,16 @@ pub mod wifi_condition;
 pub trait Condition: Send + Sync {
     fn check(&self) -> bool;
     // fn new(&self) -> Self;
+    
+    // Method to support cloning through trait objects
+    fn clone_box(&self) -> Box<dyn Condition>;
+}
+
+// Implement Clone for Box<dyn Condition>
+impl Clone for Box<dyn Condition> {
+    fn clone(&self) -> Box<dyn Condition> {
+        self.clone_box()
+    }
 }
 
 // pub trait Time_Condition: Send + Sync {

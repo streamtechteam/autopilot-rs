@@ -1,16 +1,17 @@
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use tokio;
 use tokio_cron_scheduler::JobScheduler;
 
 use crate::{
     conditions::{Condition, ConditionScheme},
-    tasks::{self, Task, TaskScheme},
-    time::{DateTimeScheme, init::add_job, to_datatime},
+    cron::{DateTimeScheme, add::add_job, to_datatime},
+    tasks::{self, TaskScheme},
 };
 
 pub mod get;
 // #[derive(Clone)]
+#[derive(Clone)]
 pub struct Job {
     pub id: u32,
     pub name: String,
@@ -51,11 +52,15 @@ impl Job {
             .into_iter()
             .map(|task_scheme| tasks::Task::new(task_scheme.command))
             .collect();
-        let when: Option<DateTime<Local>> = to_datatime(scheme.when);
+
+        let when = match scheme.when {
+            Some(value) => to_datatime(value),
+            None => None,
+        };
         Job {
             id: scheme.id.parse().unwrap_or(0), // Convert string ID to u32
-            name: scheme.name,
-            description: scheme.description,
+            name: scheme.name.unwrap_or(format!("job_{}", scheme.id)),
+            description: scheme.description.unwrap_or(" ".to_string()),
             when,
             conditions,
             tasks,
@@ -73,7 +78,7 @@ impl Job {
 
     pub fn run(&self, scheduler: &JobScheduler) {
         let mut result = true;
-        if (self.when.is_none()) {
+        if self.when.is_none() {
             for condition in &self.conditions {
                 let condition_result = condition.check();
                 // condition.run();
@@ -87,23 +92,16 @@ impl Job {
                 }
             }
         } else if self.when.is_some() {
-            add_job(self, scheduler, run_job);
+            // Since add_job is async, we need to spawn it as a task
+            let scheduler_clone = scheduler.clone();
+            let run_job_fn = run_job.clone();
+            let job_clone = self.clone();
+            tokio::spawn(async move {
+                let _result = add_job(&job_clone, &scheduler_clone, run_job_fn).await;
+            });
         };
     }
 }
-
-// impl Clone for Job {
-//     fn clone(&self) -> Self {
-//         Job {
-//             id: self.id,
-//             name: self.name.clone(),
-//             description: self.description.clone(),
-//             when: self.when.clone(),
-//             conditions: self.conditions,
-//             tasks: self.tasks.clone(),
-//         }
-//     }
-// }
 
 pub fn run_job(job: &Job) {
     let mut result = true;
@@ -124,27 +122,9 @@ pub fn run_job(job: &Job) {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JobScheme {
     id: String,
-    name: String,
-    description: String,
-    when: DateTimeScheme,
+    name: Option<String>,
+    description: Option<String>,
+    when: Option<DateTimeScheme>,
     conditions: Vec<ConditionScheme>,
     tasks: Vec<TaskScheme>,
 }
-
-// struct Condition {
-//     id: u32,
-//     name: String,
-//     description: String,
-//     job_id: u32,
-// }
-
-// impl Condition {
-//     pub fn new(id: u32, name: String, description: String, job_id: u32) -> Self {
-//         Condition {
-//             id,
-//             name,
-//             description,
-//             job_id,
-//         }
-//     }
-// }

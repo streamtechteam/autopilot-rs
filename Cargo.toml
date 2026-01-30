@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 chrono = { version = "0.4.42", features = ["serde"] }
+clap = { version = "4.5.56", features = ["derive"] }
 colored = "3.0.0"
 duct = "1.1.1"
 flexi_logger = "0.31.7"

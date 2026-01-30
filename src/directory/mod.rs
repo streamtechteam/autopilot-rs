@@ -2,13 +2,15 @@ use std::{env, fs};
 
 use log::info;
 
-pub fn get_directory() -> String {
+pub fn get_directory(config_path: Option<String>) -> String {
     let home_path = env::home_dir().expect("Couldnt get home dir");
-    let auto_pilot_path: String = home_path.to_str().unwrap().to_string() + "/.config/auto-pilot/";
-    let jobs_path: String = home_path.to_str().unwrap().to_string() + "/.config/auto-pilot/jobs/";
-    let logs_path: String = home_path.to_str().unwrap().to_string() + "/.config/auto-pilot/logs/";
-    let conf_path: String =
-        home_path.to_str().unwrap().to_string() + "/.config/auto-pilot/auto_pilot.json";
+    let auto_pilot_path: String = home_path.to_str().unwrap().to_string()
+        + config_path
+            .unwrap_or("/.config/auto_pilot/".to_string())
+            .as_str();
+    let jobs_path: String = auto_pilot_path.clone() + "/jobs";
+    let logs_path: String = auto_pilot_path.clone() + "/logs";
+    let conf_path: String = auto_pilot_path.clone() + "/auto_pilot.json";
 
     fs::create_dir_all(&auto_pilot_path).expect("Failed to create auto_pilot directory");
     fs::create_dir_all(&jobs_path).expect("Failed to create jobs directory");
@@ -23,19 +25,19 @@ pub fn get_directory() -> String {
 }
 
 pub fn get_logs_directory() -> String {
-    let logs_path = get_directory() + "/logs";
+    let logs_path = get_directory(None) + "/logs";
 
     logs_path
 }
 
-pub fn get_config_directory() -> String {
-    let config_path = get_directory() + "/config";
+pub fn get_config_path() -> String {
+    let config_path = get_directory(None) + "/auto_pilot.json";
 
     config_path
 }
 
 pub fn get_jobs_directory() -> String {
-    let jobs_path = get_directory() + "/jobs";
+    let jobs_path = get_directory(None) + "/jobs";
 
     jobs_path
 }

@@ -22,6 +22,10 @@ impl Condition for VariableCondition {
     fn check(&self) -> bool {
         sync_condition(&self.variable, &self.target)
     }
+
+    fn clone_box(&self) -> Box<dyn Condition> {
+        Box::new(self.clone())
+    }
 }
 
 pub fn sync_condition(var: &str, target: &str) -> bool {

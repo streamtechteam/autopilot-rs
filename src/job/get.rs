@@ -1,6 +1,7 @@
 use std::{fs, path::PathBuf};
 
 use colored::*;
+use log::info;
 use serde_json::Value;
 use tokio_cron_scheduler::JobScheduler;
 
@@ -30,7 +31,7 @@ pub fn get_jobs(scheduler: &JobScheduler) -> Vec<Job> {
                     .and_then(|p| p.to_str())
                     .unwrap_or("unknown");
 
-                println!(
+                info!(
                     "Failed to parse job: \n Job path: {} \n Error: {}",
                     job_path.green(),
                     e.to_string().red()
@@ -41,7 +42,7 @@ pub fn get_jobs(scheduler: &JobScheduler) -> Vec<Job> {
 
     // logger();
     for job in &job_objects {
-        println!("Loaded job: {}", job.name);
+        info!("Loaded job: {}", job.name);
     }
     job_objects
 }
