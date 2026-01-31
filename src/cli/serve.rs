@@ -6,7 +6,7 @@ use colored::*;
 use log::{error, info, warn};
 use std::panic::{self, AssertUnwindSafe};
 use tokio::{self, signal};
-use tokio_cron_scheduler::JobScheduler;
+// use tokio_cron_scheduler::JobScheduler;
 
 pub async fn serve(config_path: Option<String>) {
     let mut auto_pilot = AutoPilot::new().await;
@@ -40,8 +40,4 @@ pub async fn serve(config_path: Option<String>) {
             }
         });
     }
-    // Keep the daemon running until Ctrl+C is pressed
-    signal::ctrl_c().await.expect("Failed to listen for Ctrl+C");
-
-    warn!("Shutting down daemon...")
 }

@@ -1,7 +1,8 @@
-daemon:
-    cd daemon && cargo build --release --package auto_pilot_rs-daemon && cp target/release/auto_pilot_rs-daemon ../build
-cli:
-    cd cli && cargo build --release --package auto_pilot_rs-cli && cp target/release/auto_pilot_rs-cli ../build
-
-
-all: daemon cli
+build args="":
+    cargo build --release {{args}} && mkdir build && cp target/release/auto_pilot_rs ./build/auto_pilot_rs
+run_release args="":
+    cargo run --release {{args}}
+run_debug args="":
+    cargo run {{args}}
+clean:
+    rm -rf build

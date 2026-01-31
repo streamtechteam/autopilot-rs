@@ -1,5 +1,5 @@
 [package]
-name = "auto_pilot_rs-daemon"
+name = "auto_pilot_rs"
 version = "0.1.0"
 edition = "2024"
 

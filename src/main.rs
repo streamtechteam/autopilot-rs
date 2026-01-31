@@ -1,12 +1,8 @@
 use crate::{
-    cli::handle_cli, cron::init::init_time_check, directory::get_directory, job::get::get_jobs,
-    logging::init_logging,
+    cli::handle_cli,
 };
-use colored::*;
-use log::{error, info, warn};
-use std::panic::{self, AssertUnwindSafe};
+use log::warn;
 use tokio::{self, signal};
-use tokio_cron_scheduler::JobScheduler;
 
 mod autopilot;
 mod cli;
@@ -22,4 +18,9 @@ mod utilities;
 #[tokio::main]
 async fn main() {
     handle_cli().await;
+
+        // Keep the daemon running until Ctrl+C is pressed
+    signal::ctrl_c().await.expect("Failed to listen for Ctrl+C");
+
+    warn!("Shutting down daemon...");
 }
