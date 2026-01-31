@@ -25,19 +25,13 @@ pub fn get_directory(config_path: Option<String>) -> String {
 }
 
 pub fn get_logs_directory() -> String {
-    let logs_path = get_directory(None) + "/logs";
-
-    logs_path
+    get_directory(None) + "/logs"
 }
 
 pub fn get_config_path() -> String {
-    let config_path = get_directory(None) + "/auto_pilot.json";
-
-    config_path
+    get_directory(None) + "/auto_pilot.json"
 }
 
 pub fn get_jobs_directory() -> String {
-    let jobs_path = get_directory(None) + "/jobs";
-
-    jobs_path
+    get_directory(None) + "/jobs"
 }

@@ -94,10 +94,9 @@ impl Job {
         } else if self.when.is_some() {
             // Since add_job is async, we need to spawn it as a task
             let scheduler_clone = scheduler.clone();
-            let run_job_fn = run_job.clone();
             let job_clone = self.clone();
             tokio::spawn(async move {
-                let _result = add_job(&job_clone, &scheduler_clone, run_job_fn).await;
+                let _result = add_job(&job_clone, &scheduler_clone, run_job).await;
             });
         };
     }

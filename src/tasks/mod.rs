@@ -11,7 +11,7 @@ impl Task {
         Task { command }
     }
     pub fn run(&self) {
-        runner::sync_run(&self);
+        runner::sync_run(self);
     }
 }
 

@@ -2,7 +2,6 @@ use std::{fs, path::PathBuf};
 
 use colored::*;
 use log::info;
-use serde_json::Value;
 use tokio_cron_scheduler::JobScheduler;
 
 use crate::{

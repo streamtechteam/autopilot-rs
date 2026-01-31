@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use tokio_cron_scheduler::JobScheduler;
 
 use crate::conditions::Condition;
 #[derive(Clone)]

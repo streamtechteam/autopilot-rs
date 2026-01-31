@@ -19,7 +19,7 @@ mod utilities;
 async fn main() {
     handle_cli().await;
 
-        // Keep the daemon running until Ctrl+C is pressed
+    // Keep the daemon running until Ctrl+C is pressed
     signal::ctrl_c().await.expect("Failed to listen for Ctrl+C");
 
     warn!("Shutting down daemon...");

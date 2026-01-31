@@ -75,7 +75,7 @@ pub fn jsonc_parse(jsonc: &str) -> String {
                             '/' => {
                                 // Skip comments in lookahead
                                 if lookahead.peek() == Some(&'/') {
-                                    while let Some(c) = lookahead.next() {
+                                    for c in lookahead.by_ref(){
                                         if c == '\n' { break; }
                                     }
                                     continue;

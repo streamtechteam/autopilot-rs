@@ -1,11 +1,11 @@
 use crate::{
-    autopilot::AutoPilot, cli::handle_cli, cron::init::init_time_check, directory::get_directory,
-    job::get::get_jobs, language, logging::init_logging,
+    autopilot::AutoPilot, directory::get_directory,
+    job::get::get_jobs, language,
 };
 use colored::*;
-use log::{error, info, warn};
+use log::{error, info};
 use std::panic::{self, AssertUnwindSafe};
-use tokio::{self, signal};
+use tokio::{self};
 // use tokio_cron_scheduler::JobScheduler;
 
 pub async fn serve(config_path: Option<String>) {
@@ -15,9 +15,7 @@ pub async fn serve(config_path: Option<String>) {
     get_directory(config_path);
 
     // Get jobs from JSON files and run them
-    let mut jobs = vec![];
-
-    jobs = get_jobs(scheduler);
+    let jobs = get_jobs(scheduler);
 
     for job in jobs {
         let scheduler = scheduler.clone();

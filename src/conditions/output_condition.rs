@@ -37,7 +37,7 @@ pub struct OutputConditionScheme {
 pub fn sync_condition(command: &str, target: &str) -> bool {
     let args: Vec<&str>;
     let shell: &str;
-    let output;
+    
     #[cfg(target_os = "windows")]
     {
         shell = "powershell";
@@ -57,7 +57,7 @@ pub fn sync_condition(command: &str, target: &str) -> bool {
         args = vec!["-Command", &command];
     }
 
-    output = cmd(shell, args)
+    let output = cmd(shell, args)
         .read()
         .expect("Error while testing condition");
 
@@ -67,7 +67,6 @@ pub fn sync_condition(command: &str, target: &str) -> bool {
 pub async fn async_condition(command: &str, target: &str) -> bool {
     let args: Vec<&str>;
     let shell: &str;
-    let output;
     #[cfg(target_os = "windows")]
     {
         shell = "powershell";
@@ -84,7 +83,7 @@ pub async fn async_condition(command: &str, target: &str) -> bool {
         args = vec!["-Command", &command];
     }
 
-    output = cmd(shell, args)
+    let output = cmd(shell, args)
         .read()
         .expect("Error while testing condition");
 
