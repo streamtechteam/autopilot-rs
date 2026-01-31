@@ -1,4 +1,5 @@
 {
+  "$schema": "../json_schema/schema.json",
   "id": "1",
   "name": "Name",
   "description": "Description",

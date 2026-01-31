@@ -6,11 +6,11 @@ pub fn get_directory(config_path: Option<String>) -> String {
     let home_path = env::home_dir().expect("Couldnt get home dir");
     let auto_pilot_path: String = home_path.to_str().unwrap().to_string()
         + config_path
-            .unwrap_or("/.config/auto_pilot/".to_string())
+            .unwrap_or("/.config/auto-pilot/".to_string())
             .as_str();
     let jobs_path: String = auto_pilot_path.clone() + "/jobs";
     let logs_path: String = auto_pilot_path.clone() + "/logs";
-    let conf_path: String = auto_pilot_path.clone() + "/auto_pilot.json";
+    let conf_path: String = auto_pilot_path.clone() + "/autopilot.jsonc";
 
     fs::create_dir_all(&auto_pilot_path).expect("Failed to create auto_pilot directory");
     fs::create_dir_all(&jobs_path).expect("Failed to create jobs directory");

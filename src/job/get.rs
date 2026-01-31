@@ -7,7 +7,7 @@ use tokio_cron_scheduler::JobScheduler;
 
 use crate::{
     directory::get_jobs_directory,
-    job::{Job, JobScheme},
+    job::{Job, JobScheme}, utilities::jsonc_parser::jsonc_parse,
 };
 
 pub fn get_jobs(scheduler: &JobScheduler) -> Vec<Job> {
@@ -19,7 +19,7 @@ pub fn get_jobs(scheduler: &JobScheduler) -> Vec<Job> {
     }
 
     for (i, job_str) in jobs_string.iter().enumerate() {
-        match serde_json::from_str::<JobScheme>(job_str) {
+        match serde_json::from_str::<JobScheme>(jsonc_parse(job_str).as_str()) {
             Ok(job_scheme) => {
                 let job_object = Job::from_scheme(job_scheme, scheduler);
                 job_objects.push(job_object);

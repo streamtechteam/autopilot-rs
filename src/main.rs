@@ -17,6 +17,7 @@ mod job;
 mod language;
 mod logging;
 mod tasks;
+mod utilities;
 
 #[tokio::main]
 async fn main() {
