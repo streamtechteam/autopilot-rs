@@ -1,4 +1,5 @@
 use chrono::{DateTime, Local};
+use colored::Colorize;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 use tokio;
@@ -7,7 +8,7 @@ use tokio_cron_scheduler::JobScheduler;
 use crate::{
     conditions::{Condition, ConditionScheme},
     cron::{DateTimeScheme, add::add_job, to_datatime},
-    state::{Status, get::get_status_log, set::set_state_item},
+    status::{Status, get::get_status_log, set::set_state_item},
     tasks::{self, TaskScheme},
 };
 
@@ -81,8 +82,11 @@ impl Job {
         self.conditions.push(condition);
     }
 
-    pub async fn run(&self, scheduler: &JobScheduler) {
-        println!("Running job: {}", self.name);
+    pub async fn run(&self, scheduler: &JobScheduler, quiet: bool) {
+        if !quiet {
+            info!("{} : {}", "Running job".yellow(), self.name);
+        }
+
         set_state_item(self.id.clone(), Status::Running).expect("failed to set state item");
 
         let mut result = true;
@@ -115,7 +119,9 @@ impl Job {
             }
             // });
         };
-        println!("Job completed: {}", self.name);
+        if !quiet {
+            info!("{} : {}", "Job completed".green(), self.name);
+        }
         set_state_item(self.id.clone(), Status::Completed).expect("failed to set state item");
     }
 }

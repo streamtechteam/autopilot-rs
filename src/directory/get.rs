@@ -20,8 +20,8 @@ pub fn get_config_path() -> String {
     get_autopilot_path(None) + "/autopilot.jsonc"
 }
 
-pub fn get_state_path() -> String {
-    get_autopilot_path(None) + "/state.jsonc"
+pub fn get_status_path() -> String {
+    get_autopilot_path(None) + "/status.jsonc"
 }
 
 pub fn get_jobs_path() -> String {

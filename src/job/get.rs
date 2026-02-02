@@ -10,7 +10,7 @@ use crate::{
     utilities::jsonc_parser::jsonc_parse,
 };
 
-pub fn get_jobs() -> Vec<Job> {
+pub fn get_jobs(quiet: bool) -> Vec<Job> {
     let mut jobs_string: Vec<String> = vec![];
     let mut job_objects: Vec<Job> = vec![];
     let jobs_path = get_jobs_paths();
@@ -22,6 +22,9 @@ pub fn get_jobs() -> Vec<Job> {
         match serde_json::from_str::<JobScheme>(jsonc_parse(job_str).as_str()) {
             Ok(job_scheme) => {
                 let job_object = Job::from_scheme(job_scheme);
+                if !quiet {
+                    info!("Loaded job: {}", job_object.name);
+                }
                 job_objects.push(job_object);
             }
             Err(e) => {
@@ -30,19 +33,15 @@ pub fn get_jobs() -> Vec<Job> {
                     .get(i)
                     .and_then(|p| p.to_str())
                     .unwrap_or("unknown");
-
-                info!(
-                    "Failed to parse job: \n Job path: {} \n Error: {}",
-                    job_path.green(),
-                    e.to_string().red()
-                );
+                if !quiet {
+                    info!(
+                        "Failed to parse job: \n Job path: {} \n Error: {}",
+                        job_path.green(),
+                        e.to_string().red()
+                    );
+                }
             }
         }
-    }
-
-    // logger();
-    for job in &job_objects {
-        info!("Loaded job: {}", job.name);
     }
     job_objects
 }

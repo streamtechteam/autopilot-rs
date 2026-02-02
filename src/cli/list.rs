@@ -3,19 +3,14 @@ use colored::*;
 
 use crate::{
     job::get::get_jobs,
-    state::get::{get_job_status, get_status_log},
+    status::get::{get_job_status, get_status_log},
 };
 
 pub fn list() {
-    let jobs = get_jobs();
+    let status_log = get_status_log();
 
-    for job in jobs {
-        println!(
-            "* id {} - {} - {:?}",
-            job.id,
-            job.name,
-            get_job_status(job.id.clone())
-        );
+    for log in status_log.statuses {
+        println!("* id {} - {} - {:?}", log.id, log.name, log.status);
     }
     // println!("{:?}", get_state_items())
 }

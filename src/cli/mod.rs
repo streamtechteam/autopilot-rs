@@ -3,14 +3,15 @@ use log::info;
 
 use crate::{
     autopilot::AutoPilot,
-    cli::{list::list, serve::serve, stop::stop},
-    state::set::set_state_initial,
+    cli::{create::create, list::list, remove::remove, serve::serve, status::status, stop::stop},
+    status::set::set_status_initial,
 };
 
 pub mod create;
 pub mod list;
 pub mod remove;
 pub mod serve;
+pub mod status;
 pub mod stop;
 
 #[derive(Parser)]
@@ -36,28 +37,38 @@ enum Commands {
     /// Stop AutoPilot-rs
     Stop,
     /// Create a new Job
-    New,
+    Create,
     /// Remove a Job
     Remove,
     /// List Jobs
     List,
+    /// Status of AutoPilot-rs
+    Status,
 }
 
 pub async fn handle_cli() {
     let cli = Cli::parse();
     // AutoPilot::prepare_logging();
     match &cli.command {
-        Some(Commands::New) => {}
-        Some(Commands::Remove) => {}
         Some(Commands::Serve) => {
-            set_state_initial().expect("Failed to initialize state");
+            set_status_initial().expect("Failed to initialize status");
             serve(cli.config_path).await;
         }
+        Some(Commands::Create) => {
+            create();
+        }
+        Some(Commands::Remove) => {
+            remove();
+        }
+
         Some(Commands::Stop) => {
-            stop();
+            stop(false);
         }
         Some(Commands::List) => {
             list();
+        }
+        Some(Commands::Status) => {
+            status();
         }
         None => {
             return;

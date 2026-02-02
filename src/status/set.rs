@@ -1,13 +1,13 @@
 use std::fs;
 
 use crate::{
-    directory::get_state_path,
+    directory::get_status_path,
     job::get::get_jobs,
-    state::{JobStatus, Status, StatusLog, get::get_status_log},
+    status::{JobStatus, Status, StatusLog, get::get_status_log},
 };
 
 pub fn set_state_item(id: String, status: Status) -> Result<(), String> {
-    let state_path = get_state_path();
+    let state_path = get_status_path();
     let mut status_log = get_status_log().clone();
     let mut statuses = status_log
         .statuses
@@ -31,14 +31,14 @@ pub fn set_state_item(id: String, status: Status) -> Result<(), String> {
     Ok(())
 }
 
-pub fn set_state_initial() -> Result<(), String> {
-    let state_path = get_state_path();
+pub fn set_status_initial() -> Result<(), String> {
+    let state_path = get_status_path();
     let mut status_log: StatusLog = StatusLog {
         time: chrono::Local::now().to_string(),
         statuses: Vec::new(),
     };
 
-    for job in get_jobs() {
+    for job in get_jobs(true) {
         status_log.statuses.push(JobStatus {
             id: job.id,
             name: job.name,

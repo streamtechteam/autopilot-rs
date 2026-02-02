@@ -4,20 +4,19 @@ A cross-platform automation tool that runs tasks when conditions are met. Write 
 
 ## What It Does
 
-Define a job, set conditions, set when to run, list tasks. AutoPilot does the rest.
+Define a job, set conditions, list tasks. AutoPilot does the rest.
 
 ```jsonc
 {
   "id": "morning-setup",
   "name": "Setup my workday",
   "when": {
-    "time": "09:00:00",
-    "date": "2026/02/03",
-    "tolerance_seconds": 30
+    "time": "08:00:00",
+    "date": "2026/02/02",
   },
   "conditions": [
     { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } },
-    { "type": "bluetooth", "condition": { "device": "My Headphones" } }
+    { "type": "bluetooth", "condition": { "device": "My Headphones" } },
   ],
   "tasks": [
     { "command": "open /Applications/Slack.app" },
@@ -27,7 +26,7 @@ Define a job, set conditions, set when to run, list tasks. AutoPilot does the re
 }
 ```
 
-AutoPilot checks: Is it 9 AM? Are you on office WiFi? Are your headphones connected? If all yes, run the tasks. Simple.
+AutoPilot checks: Are you on office WiFi? Are your headphones connected? If both yes, run the tasks. Simple.
 
 ## Installation
 
@@ -191,6 +190,10 @@ If any condition fails, the task doesn't run.
   "id": "unique-job-id",
   "name": "Human readable name",
   "description": "What this job does",
+  "when": {
+    "time": "08:00:00",
+    "date": "2026/02/02",
+  },
   "conditions": [
     // Zero or more conditions
   ],
@@ -205,6 +208,7 @@ If any condition fails, the task doesn't run.
 - **id:** Unique identifier (required)
 - **name:** Display name for humans (optional)
 - **description:** What this job does (optional)
+- **when:** When to run the job (optional, defaults to run at autopilot startup)
 - **conditions:** List of conditions to check (optional, defaults to always run)
 - **tasks:** List of commands to execute (required)
 
@@ -275,6 +279,10 @@ AutoPilot reads from `~/.autopilot-rs/`:
 {
   "id": "morning-routine",
   "name": "Morning setup",
+  "when": {
+    "time": "08:00:00",
+    "date": "2026/02/02",
+  },
   "conditions": [
     { "type": "bluetooth", "condition": { "device": "Headphones" } },
     { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
@@ -395,12 +403,10 @@ All conditions work on all platforms.
 ## Documentation
 
 - **[CONDITIONS.md](docs/CONDITIONS.md)** - Detailed condition reference
-- **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Debug guides
+- **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Debug guides (coming soon)
 - **[PLUGIN-SYSTEM.md](PLUGIN-SYSTEM.md)** - Extend AutoPilot with custom plugins (coming soon)
 
 ## Contributing
-
-Found a bug? Want a new condition type?
 
 1. Check existing issues
 2. Open an issue or PR on GitHub
@@ -418,6 +424,7 @@ MIT
 - [ ] Distributed execution (multiple machines)
 - [ ] Performance optimizations
 - [ ] Metrics and monitoring
+- [ ] Merging OutputCondition and CustomCondition
 
 ## FAQ
 
@@ -426,9 +433,6 @@ A: Yes. Define as many jobs as you need. All conditions are checked independentl
 
 **Q: What happens if a task fails?**  
 A: Currently, remaining tasks still run. Error is logged.
-
-**Q: Can I schedule jobs at specific intervals?**  
-A: Use a Custom condition to check system time/load.
 
 **Q: Can I use environment variables in commands?**  
 A: Yes. Shell expands them: `{ "command": "$HOME/backup.sh" }`
@@ -441,4 +445,4 @@ A: Yes, but AutoPilot is designed to replace constant cron tasks with condition-
 
 ---
 
-Built with Rust. Runs everywhere. Automates anything.
+Built with Rust.
