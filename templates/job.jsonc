@@ -8,18 +8,18 @@
       "type": "output",
       "condition": {
         "command": "",
-        "target": ""
-      }
-    }
+        "target": "",
+      },
+    },
   ],
   "tasks": [
     {
-      "command": ""
-    }
+      "command": "",
+    },
   ],
 
   "when": "",
-  "check_interval": "",
-  "last_run_date": "",
-  "last_run_status": ""
+  // "check_interval": "",
+  // "last_run_date": "",
+  // "last_run_status": ""
 }
