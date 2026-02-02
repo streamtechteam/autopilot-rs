@@ -1,0 +1,15 @@
+{
+  "id": "time-condition-example",
+  "name": "Run at specific time",
+  "description": "Executes a task at a specific date and time",
+  "when": {
+    "date": "2026/02/02",
+    "time": "14:30:00"
+  },
+  "conditions": [],
+  "tasks": [
+    {
+      "command": "echo 'Good afternoon!' && notify-send 'Time is up!'"
+    }
+  ]
+}

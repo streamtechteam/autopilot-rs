@@ -1,0 +1,23 @@
+{
+  "id": "custom-condition-output-example",
+  "name": "Execute based on custom command output",
+  "description": "Runs a task only if a custom command outputs a specific value",
+  "conditions": [
+    {
+      "type": "custom",
+      "condition": {
+        "command": "cat /sys/class/power_supply/BAT0/status",
+        "check_exit_code": false,
+        "target_output": "Discharging"
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "command": "notify-send 'Running on battery power'"
+    },
+    {
+      "command": "xfpm-power-manager --set-brightness 50"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "wifi-condition-example",
+  "name": "Execute when connected to WiFi network",
+  "description": "Runs a task only when connected to a specific WiFi SSID",
+  "conditions": [
+    {
+      "type": "wifi",
+      "condition": {
+        "ssid": "HomeNetwork"
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "command": "systemctl start vpn || echo 'VPN already running'"
+    },
+    {
+      "command": "notify-send 'Connected to home network'"
+    }
+  ]
+}

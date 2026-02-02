@@ -1,0 +1,22 @@
+{
+  "id": "bluetooth-condition-example",
+  "name": "Execute when Bluetooth device connects",
+  "description": "Runs a task only when a specific Bluetooth device is connected",
+  "conditions": [
+    {
+      "type": "bluetooth",
+      "condition": {
+        "device": "My Headphones",
+        "match_by_mac": false
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "command": "pactl set-sink-volume 0 100%"
+    },
+    {
+      "command": "notify-send 'Headphones connected'"
+    }
+  ]
+}

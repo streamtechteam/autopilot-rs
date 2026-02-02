@@ -1,0 +1,35 @@
+{
+  "id": "combined-conditions-example",
+  "name": "Execute with multiple conditions (all must be true)",
+  "description": "Runs a task only when ALL conditions are satisfied",
+  "conditions": [
+    {
+      "type": "wifi",
+      "condition": {
+        "ssid": "HomeNetwork"
+      }
+    },
+    {
+      "type": "bluetooth",
+      "condition": {
+        "device": "MyPhone",
+        "match_by_mac": false
+      }
+    },
+    {
+      "type": "custom",
+      "condition": {
+        "command": "test $(date +%H) -ge 18 && test $(date +%H) -lt 22",
+        "check_exit_code": true
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "command": "notify-send 'You are home, phone is nearby, and it\\'s evening!'"
+    },
+    {
+      "command": "mpv /path/to/music/playlist.m3u"
+    }
+  ]
+}

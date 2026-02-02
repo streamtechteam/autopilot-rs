@@ -1,0 +1,22 @@
+{
+  "id": "custom-condition-example",
+  "name": "Execute based on custom command exit code",
+  "description": "Runs a task only if a custom command succeeds (exit code 0)",
+  "conditions": [
+    {
+      "type": "custom",
+      "condition": {
+        "command": "test -f /tmp/trigger-file",
+        "check_exit_code": true
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "command": "echo 'Trigger file exists!'"
+    },
+    {
+      "command": "rm /tmp/trigger-file"
+    }
+  ]
+}

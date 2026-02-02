@@ -1,0 +1,16 @@
+{
+  "id": "time-condition-with-tolerance",
+  "name": "Run at specific time with tolerance",
+  "description": "Executes a task within a time window (±30 seconds of target time)",
+  "when": {
+    "date": "2026/02/02",
+    "time": "14:30:00",
+    "tolerance_seconds": 30
+  },
+  "conditions": [],
+  "tasks": [
+    {
+      "command": "echo 'Executing within 30-second window'"
+    }
+  ]
+}
