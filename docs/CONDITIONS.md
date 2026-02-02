@@ -8,55 +8,7 @@ Conditions are checks that must pass before a job's tasks are executed. A job wi
 
 ## Condition Types
 
-### 1. Time Condition
-
-**Purpose:** Execute a task at a specific date and time.
-
-**Schema:**
-```jsonc
-{
-  "type": "time",
-  "condition": {
-    "date": "YYYY/MM/DD",      // Required: Target date
-    "time": "HH:MM:SS",         // Required: Target time (24-hour format)
-    "tolerance_seconds": 30     // Optional: Fuzzy matching window (in seconds)
-  }
-}
-```
-
-**Examples:**
-
-*Exact time:*
-```jsonc
-{
-  "type": "time",
-  "condition": {
-    "date": "2026/02/02",
-    "time": "14:30:00"
-  }
-}
-```
-
-*With tolerance (runs within ±30 seconds of target time):*
-```jsonc
-{
-  "type": "time",
-  "condition": {
-    "date": "2026/02/02",
-    "time": "14:30:00",
-    "tolerance_seconds": 30
-  }
-}
-```
-
-**Notes:**
-- Timezone uses your system's local timezone
-- Useful for scheduled tasks (e.g., reminders, maintenance windows)
-- `tolerance_seconds` is useful for reducing precision requirements
-
----
-
-### 2. WiFi Condition
+### 1. WiFi Condition
 
 **Purpose:** Check if you're connected to a specific WiFi network.
 
@@ -92,7 +44,7 @@ Conditions are checks that must pass before a job's tasks are executed. A job wi
 
 ---
 
-### 3. Bluetooth Condition
+### 2. Bluetooth Condition
 
 **Purpose:** Check if a specific Bluetooth device is connected.
 
@@ -143,7 +95,7 @@ Conditions are checks that must pass before a job's tasks are executed. A job wi
 
 ---
 
-### 4. Custom Condition
+### 3. Custom Condition
 
 **Purpose:** Execute arbitrary shell commands and check the result.
 
@@ -198,7 +150,7 @@ Conditions are checks that must pass before a job's tasks are executed. A job wi
 
 ---
 
-### 5. Output Condition
+### 4. Output Condition
 
 **Purpose:** Execute a command and check if its output matches a target value.
 
@@ -231,7 +183,7 @@ Conditions are checks that must pass before a job's tasks are executed. A job wi
 
 ---
 
-### 6. Variable Condition
+### 5. Variable Condition
 
 **Purpose:** Check if an environment variable matches an expected value.
 
@@ -280,14 +232,6 @@ When a job has multiple conditions, **all conditions must be true** for the job 
     {
       "type": "bluetooth",
       "condition": { "device": "MyPhone" }
-    },
-    {
-      "type": "time",
-      "condition": {
-        "date": "2026/02/02",
-        "time": "18:00:00",
-        "tolerance_seconds": 300
-      }
     }
   ],
   "tasks": [
@@ -298,8 +242,7 @@ When a job has multiple conditions, **all conditions must be true** for the job 
 
 In this example, the job runs **only if**:
 - You're connected to "HomeNetwork" WiFi **AND**
-- Your phone is connected via Bluetooth **AND**
-- The current time is 6:00 PM (±5 minutes)
+- Your phone is connected via Bluetooth
 
 ---
 
@@ -331,18 +274,6 @@ In this example, the job runs **only if**:
 ---
 
 ## Common Patterns
-
-### Daily Task at Specific Time
-```jsonc
-{
-  "type": "time",
-  "condition": {
-    "date": "2026/02/02",
-    "time": "09:00:00",
-    "tolerance_seconds": 60
-  }
-}
-```
 
 ### Only When at Home
 ```jsonc
@@ -402,7 +333,7 @@ If a condition fails to parse or execute:
 
 Example logs:
 ```
-Error parsing time condition: Invalid date format. Expected YYYY/MM/DD
+Error parsing custom condition: Invalid command syntax
 Error executing custom condition command 'bad syntax': (error details)
 ```
 

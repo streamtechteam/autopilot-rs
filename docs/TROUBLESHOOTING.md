@@ -2,30 +2,6 @@
 
 ## Common Issues & Solutions
 
-### Time Condition Not Triggering
-
-**Issue:** Time condition checks pass but task doesn't run
-
-**Debug steps:**
-1. Verify date format: `YYYY/MM/DD` (e.g., `2026/02/02`)
-2. Verify time format: `HH:MM:SS` in 24-hour format
-3. Check system time: `date`
-4. Increase tolerance if system time drifts: `"tolerance_seconds": 60`
-
-**Example fix:**
-```jsonc
-{
-  "type": "time",
-  "condition": {
-    "date": "2026/02/02",
-    "time": "14:30:00",
-    "tolerance_seconds": 60  // Increase from 30 to 60
-  }
-}
-```
-
----
-
 ### WiFi Condition Not Detecting Network
 
 **Linux Issues:**
@@ -202,11 +178,10 @@ bluetoothctl devices
    - Validate with: `cat file.jsonc | jq .`
 
 2. **Type mismatch** - Wrong `type` value
-   - Valid: `"type": "time"` (lowercase)
-   - Invalid: `"type": "Time"` (uppercase)
+   - Valid: `"type": "wifi"` (lowercase)
+   - Invalid: `"type": "WiFi"` (uppercase)
 
 3. **Missing required fields**
-   - Time: needs `date` and `time`
    - WiFi: needs `ssid`
    - Bluetooth: needs `device`
    - Custom: needs `command`
@@ -229,10 +204,10 @@ bluetoothctl devices
 {
   "conditions": [
     { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },    // ✅ True
-    { "type": "time", "condition": { "date": "2026/02/02", "time": "18:00:00" } }  // ❌ False
+    { "type": "bluetooth", "condition": { "device": "MyPhone" } }  // ❌ False
   ]
 }
-// Job WON'T run because time condition is false
+// Job WON'T run because bluetooth condition is false
 ```
 
 **Solution:** Only include conditions that are actually relevant, or use Custom conditions for OR logic:
@@ -282,16 +257,6 @@ This will print:
 ---
 
 ## Testing Conditions Manually
-
-### Test a Time Condition
-
-```bash
-# Check system time
-date
-
-# Verify parsing
-# (Your code handles this, just check system time matches)
-```
 
 ### Test a WiFi Condition
 
@@ -431,19 +396,18 @@ If you're stuck:
 
 ```jsonc
 {
-  "type": "time",
+  "type": "wifi",
   "condition": {
-    "date": "2026/02/02",
-    "time": "14:30:00"
+    "ssid": "MyNetwork"
   }
 }
 ```
 
 ```jsonc
 {
-  "type": "wifi",
+  "type": "bluetooth",
   "condition": {
-    "ssid": "MyNetwork"
+    "device": "MyHeadphones"
   }
 }
 ```
@@ -462,13 +426,10 @@ If you're stuck:
 
 ```jsonc
 // ❌ Wrong: Missing required fields
-{ "type": "time" }
-
-// ❌ Wrong: Invalid date format
-{ "type": "time", "condition": { "date": "02/02/2026", "time": "14:30:00" } }
+{ "type": "wifi" }
 
 // ❌ Wrong: Uppercase type
-{ "type": "Time", "condition": {...} }
+{ "type": "WiFi", "condition": {...} }
 
 // ❌ Wrong: No command in custom
 { "type": "custom", "condition": { "check_exit_code": true } }
