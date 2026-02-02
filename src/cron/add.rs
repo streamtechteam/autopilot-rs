@@ -20,9 +20,6 @@ pub async fn add_job(
     let duration = (target_time - now)
         .to_std()
         .map_err(|e| format!("Failed to compute duration: {}", e))?;
-
-    println!("Instant: {:?}", now);
-    println!("Duration: {:?}", duration);
     // Duration::into();
 
     // Clone the job to pass to the async closure which requires 'static lifetime

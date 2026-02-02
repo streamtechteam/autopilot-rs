@@ -1,6 +1,4 @@
-use crate::{
-    cli::handle_cli,
-};
+use crate::{cli::handle_cli, directory::set_all_paths};
 use log::warn;
 use tokio::{self, signal};
 
@@ -12,15 +10,13 @@ mod directory;
 mod job;
 mod language;
 mod logging;
+mod state;
 mod tasks;
 mod utilities;
 
 #[tokio::main]
 async fn main() {
+    set_all_paths();
+
     handle_cli().await;
-
-    // Keep the daemon running until Ctrl+C is pressed
-    signal::ctrl_c().await.expect("Failed to listen for Ctrl+C");
-
-    warn!("Shutting down daemon...");
 }

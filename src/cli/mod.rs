@@ -1,7 +1,11 @@
 use clap::{Parser, Subcommand};
 use log::info;
 
-use crate::cli::{serve::serve, stop::stop};
+use crate::{
+    autopilot::AutoPilot,
+    cli::{list::list, serve::serve, stop::stop},
+    state::set::set_state_initial,
+};
 
 pub mod create;
 pub mod list;
@@ -41,17 +45,22 @@ enum Commands {
 
 pub async fn handle_cli() {
     let cli = Cli::parse();
-    info!("log");
+    // AutoPilot::prepare_logging();
     match &cli.command {
         Some(Commands::New) => {}
         Some(Commands::Remove) => {}
         Some(Commands::Serve) => {
+            set_state_initial().expect("Failed to initialize state");
             serve(cli.config_path).await;
         }
         Some(Commands::Stop) => {
             stop();
         }
-        Some(Commands::List) => {}
-        None => {}
-    }
+        Some(Commands::List) => {
+            list();
+        }
+        None => {
+            return;
+        }
+    };
 }

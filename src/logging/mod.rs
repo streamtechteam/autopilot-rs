@@ -1,11 +1,11 @@
 use flexi_logger::{Duplicate, FileSpec, Logger, WriteMode};
 
-use crate::directory::get_logs_directory;
+use crate::directory::get_logs_path;
 
 pub fn init_logging() {
     let _logger = Logger::try_with_str("info, my::critical::module=trace")
         .unwrap()
-        .log_to_file(FileSpec::default().directory(get_logs_directory()))
+        .log_to_file(FileSpec::default().directory(get_logs_path()))
         .duplicate_to_stdout(Duplicate::All)
         .write_mode(WriteMode::BufferAndFlush)
         .start()

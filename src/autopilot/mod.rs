@@ -11,7 +11,6 @@ impl AutoPilot {
         Self {
             scheduler: init_time_check().await,
         }
-        // self.scheduler =
     }
     pub fn start(&mut self) {
         Self::prepare_logging();

@@ -30,14 +30,14 @@ pub fn to_datatime(scheme: DateTimeScheme) -> Option<DateTime<Local>> {
                         .unwrap();
                 }
                 Err(e) => {
-                    local_dt = Local.with_ymd_and_hms(0000, 0, 0, 0, 0, 0).unwrap();
+                    local_dt = Local.with_ymd_and_hms(0001, 01, 01, 01, 01, 01).unwrap();
 
                     error!("Invalid date format. Expected YYYY/MM/DD: {}", e);
                 }
             }
         }
         Err(e) => {
-            local_dt = Local.with_ymd_and_hms(0000, 0, 0, 0, 0, 0).unwrap();
+            local_dt = Local.with_ymd_and_hms(0001, 01, 01, 01, 01, 01).unwrap();
             error!("Invalid time format. Expected HH:MM:SS: {}", e);
         }
     }

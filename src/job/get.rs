@@ -5,11 +5,12 @@ use log::info;
 use tokio_cron_scheduler::JobScheduler;
 
 use crate::{
-    directory::get_jobs_directory,
-    job::{Job, JobScheme}, utilities::jsonc_parser::jsonc_parse,
+    directory::get_jobs_path,
+    job::{Job, JobScheme},
+    utilities::jsonc_parser::jsonc_parse,
 };
 
-pub fn get_jobs(scheduler: &JobScheduler) -> Vec<Job> {
+pub fn get_jobs() -> Vec<Job> {
     let mut jobs_string: Vec<String> = vec![];
     let mut job_objects: Vec<Job> = vec![];
     let jobs_path = get_jobs_paths();
@@ -20,7 +21,7 @@ pub fn get_jobs(scheduler: &JobScheduler) -> Vec<Job> {
     for (i, job_str) in jobs_string.iter().enumerate() {
         match serde_json::from_str::<JobScheme>(jsonc_parse(job_str).as_str()) {
             Ok(job_scheme) => {
-                let job_object = Job::from_scheme(job_scheme, scheduler);
+                let job_object = Job::from_scheme(job_scheme);
                 job_objects.push(job_object);
             }
             Err(e) => {
@@ -47,7 +48,7 @@ pub fn get_jobs(scheduler: &JobScheduler) -> Vec<Job> {
 }
 
 pub fn get_jobs_paths() -> Vec<PathBuf> {
-    let path = get_jobs_directory();
+    let path = get_jobs_path();
     let mut jobs_path: Vec<PathBuf> = vec![];
 
     for job in fs::read_dir(path).unwrap() {

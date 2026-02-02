@@ -18,7 +18,7 @@ pub mod wifi_condition;
 pub trait Condition: Send + Sync {
     fn check(&self) -> bool;
     // fn new(&self) -> Self;
-    
+
     // Method to support cloning through trait objects
     fn clone_box(&self) -> Box<dyn Condition>;
 }
@@ -48,7 +48,7 @@ pub enum ConditionScheme {
 }
 
 impl ConditionScheme {
-    pub fn to_condition(&self, scheduler: &JobScheduler) -> Box<dyn Condition> {
+    pub fn to_condition(&self) -> Box<dyn Condition> {
         match self {
             ConditionScheme::Output(scheme) => Box::new(
                 output_condition::OutputCondition::from_scheme(scheme.clone()),
