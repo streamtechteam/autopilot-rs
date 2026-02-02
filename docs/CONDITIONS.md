@@ -6,6 +6,61 @@ This guide explains all available condition types and how to use them in your au
 
 Conditions are checks that must pass before a job's tasks are executed. A job with multiple conditions requires **ALL** conditions to be true before running.
 
+In addition to the condition types below, you can specify **when** a job should run using the "when" property in your job configuration.
+
+## When Property
+
+**Purpose:** Schedule when a job should run, optionally combined with conditions.
+
+**Schema:**
+```jsonc
+{
+  "when": {
+    "time": "HH:MM:SS",              // Required: Target time (24-hour format)
+    "date": "YYYY/MM/DD",            // Optional: Target date (if omitted, runs daily)
+    "tolerance_seconds": 30          // Optional: Fuzzy matching window (in seconds)
+  }
+}
+```
+
+**Examples:**
+
+*Daily at 9 AM:*
+```jsonc
+{
+  "when": {
+    "time": "09:00:00"
+  }
+}
+```
+
+*Specific date and time:*
+```jsonc
+{
+  "when": {
+    "time": "14:30:00",
+    "date": "2026/02/03"
+  }
+}
+```
+
+*With tolerance (runs within ±30 seconds of target time):*
+```jsonc
+{
+  "when": {
+    "time": "09:00:00",
+    "tolerance_seconds": 60
+  }
+}
+```
+
+**Notes:**
+- Timezone uses your system's local timezone
+- When combined with conditions, both the time requirement AND all conditions must be satisfied
+- `tolerance_seconds` is useful for reducing precision requirements
+
+---
+
 ## Condition Types
 
 ### 1. WiFi Condition
@@ -218,12 +273,16 @@ Conditions are checks that must pass before a job's tasks are executed. A job wi
 
 ## Multiple Conditions (AND Logic)
 
-When a job has multiple conditions, **all conditions must be true** for the job to execute:
+When a job has multiple conditions, **all conditions must be true** for the job to execute. Additionally, if a "when" property is specified, the time requirement must also be satisfied:
 
 ```jsonc
 {
   "id": "complex-automation",
   "name": "Home evening routine",
+  "when": {
+    "time": "18:00:00",
+    "tolerance_seconds": 300
+  },
   "conditions": [
     {
       "type": "wifi",
@@ -241,6 +300,7 @@ When a job has multiple conditions, **all conditions must be true** for the job 
 ```
 
 In this example, the job runs **only if**:
+- The current time is 6:00 PM (±5 minutes) **AND**
 - You're connected to "HomeNetwork" WiFi **AND**
 - Your phone is connected via Bluetooth
 
@@ -275,18 +335,38 @@ In this example, the job runs **only if**:
 
 ## Common Patterns
 
+### Daily at Specific Time
+```jsonc
+{
+  "when": {
+    "time": "09:00:00"
+  }
+}
+```
+
+### On Specific Date and Time
+```jsonc
+{
+  "when": {
+    "time": "14:30:00",
+    "date": "2026/02/03"
+  }
+}
+```
+
 ### Only When at Home
 ```jsonc
-[
-  {
-    "type": "wifi",
-    "condition": { "ssid": "HomeNetwork" }
+{
+  "when": {
+    "time": "08:00:00"
   },
-  {
-    "type": "bluetooth",
-    "condition": { "device": "HomeHub" }
-  }
-]
+  "conditions": [
+    {
+      "type": "wifi",
+      "condition": { "ssid": "HomeNetwork" }
+    }
+  ]
+}
 ```
 
 ### Only During Business Hours
@@ -300,13 +380,18 @@ In this example, the job runs **only if**:
 }
 ```
 
-### Only on Weekdays
+### Only on Weekdays at Specific Time
 ```jsonc
 {
-  "type": "custom",
-  "condition": {
-    "command": "test $(date +%u) -le 5",  // 1-5 = Mon-Fri
-    "check_exit_code": true
+  "when": {
+    "time": "09:00:00"
+  },
+  "conditions": {
+    "type": "custom",
+    "condition": {
+      "command": "test $(date +%u) -le 5",  // 1-5 = Mon-Fri
+      "check_exit_code": true
+    }
   }
 }
 ```
@@ -314,10 +399,12 @@ In this example, the job runs **only if**:
 ### Never on Holidays
 ```jsonc
 {
-  "type": "custom",
-  "condition": {
-    "command": "! grep -q \"$(date +%Y-%m-%d)\" ~/.holidays",
-    "check_exit_code": true
+  "conditions": {
+    "type": "custom",
+    "condition": {
+      "command": "! grep -q \"$(date +%Y-%m-%d)\" ~/.holidays",
+      "check_exit_code": true
+    }
   }
 }
 ```

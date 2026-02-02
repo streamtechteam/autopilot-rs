@@ -4,12 +4,17 @@ A cross-platform automation tool that runs tasks when conditions are met. Write 
 
 ## What It Does
 
-Define a job, set conditions, list tasks. AutoPilot does the rest.
+Define a job, set conditions, set when to run, list tasks. AutoPilot does the rest.
 
 ```jsonc
 {
   "id": "morning-setup",
   "name": "Setup my workday",
+  "when": {
+    "time": "09:00:00",
+    "date": "2026/02/03",
+    "tolerance_seconds": 30
+  },
   "conditions": [
     { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } },
     { "type": "bluetooth", "condition": { "device": "My Headphones" } }
@@ -22,7 +27,7 @@ Define a job, set conditions, list tasks. AutoPilot does the rest.
 }
 ```
 
-AutoPilot checks: Are you on office WiFi? Are your headphones connected? If both yes, run the tasks. Simple.
+AutoPilot checks: Is it 9 AM? Are you on office WiFi? Are your headphones connected? If all yes, run the tasks. Simple.
 
 ## Installation
 

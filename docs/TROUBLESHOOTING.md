@@ -2,6 +2,27 @@
 
 ## Common Issues & Solutions
 
+### When Property Not Triggering
+
+**Issue:** Scheduled time passes but job doesn't run
+
+**Debug steps:**
+1. Verify time format: `HH:MM:SS` in 24-hour format (e.g., `09:00:00`)
+2. Verify date format: `YYYY/MM/DD` (e.g., `2026/02/03`) if specified
+3. Check system time: `date`
+4. Increase tolerance if system time drifts: `"tolerance_seconds": 60`
+5. Remember that conditions AND time must both be satisfied
+
+**Example fix:**
+```jsonc
+{
+  "when": {
+    "time": "14:30:00",
+    "tolerance_seconds": 60  // Increase from 30 to 60
+  }
+}
+```
+
 ### WiFi Condition Not Detecting Network
 
 **Linux Issues:**
@@ -197,17 +218,20 @@ bluetoothctl devices
 
 **Issue:** Some conditions pass but job doesn't run
 
-**Remember:** ALL conditions must be true
+**Remember:** ALL conditions must be true, AND if a "when" property is specified, the time requirement must also be satisfied
 
 **Example that WON'T work (only 1 condition true):**
 ```jsonc
 {
+  "when": {
+    "time": "18:00:00"
+  },
   "conditions": [
     { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },    // ✅ True
     { "type": "bluetooth", "condition": { "device": "MyPhone" } }  // ❌ False
   ]
 }
-// Job WON'T run because bluetooth condition is false
+// Job WON'T run because bluetooth condition is false (even if time is correct)
 ```
 
 **Solution:** Only include conditions that are actually relevant, or use Custom conditions for OR logic:
@@ -217,7 +241,7 @@ bluetoothctl devices
     {
       "type": "custom",
       "condition": {
-        "command": "test $(date +%H) -eq 18 || test $(date +%H) -eq 19",  // 6 PM or 7 PM
+        "command": "test $(date +%H) -ge 09 && test $(date +%H) -lt 17",  // Between 9 AM and 5 PM
         "check_exit_code": true
       }
     }
