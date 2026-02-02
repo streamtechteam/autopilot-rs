@@ -11,18 +11,18 @@ Define a job, set conditions, list tasks. AutoPilot does the rest.
   "id": "morning-setup",
   "name": "Setup my workday",
   "conditions": [
-    { "type": "time", "condition": { "date": "2026/02/02", "time": "09:00:00" } },
-    { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } }
+    { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } },
+    { "type": "bluetooth", "condition": { "device": "My Headphones" } }
   ],
   "tasks": [
     { "command": "open /Applications/Slack.app" },
     { "command": "open /Applications/VSCode.app" },
-    { "command": "notify-send 'Good morning!'" }
-  ]
+    { "command": "notify-send 'Good morning!'" },
+  ],
 }
 ```
 
-AutoPilot checks: Is it 9 AM? Are you on office WiFi? If both yes, run the tasks. Simple.
+AutoPilot checks: Are you on office WiFi? Are your headphones connected? If both yes, run the tasks. Simple.
 
 ## Installation
 
@@ -83,21 +83,6 @@ autopilot-rs stop
 
 ## Condition Types
 
-### Time
-
-Run at a specific date and time:
-
-```jsonc
-{
-  "type": "time",
-  "condition": {
-    "date": "2026/02/02",
-    "time": "14:30:00",
-    "tolerance_seconds": 30
-  }
-}
-```
-
 ### WiFi
 
 Run when connected to a specific network:
@@ -105,7 +90,7 @@ Run when connected to a specific network:
 ```jsonc
 {
   "type": "wifi",
-  "condition": { "ssid": "HomeNetwork" }
+  "condition": { "ssid": "HomeNetwork" },
 }
 ```
 
@@ -118,8 +103,8 @@ Run when a device is connected:
   "type": "bluetooth",
   "condition": {
     "device": "My Headphones",
-    "match_by_mac": false
-  }
+    "match_by_mac": false,
+  },
 }
 ```
 
@@ -132,8 +117,8 @@ Run a shell command and check the result:
   "type": "custom",
   "condition": {
     "command": "test -f /tmp/trigger-file",
-    "check_exit_code": true
-  }
+    "check_exit_code": true,
+  },
 }
 ```
 
@@ -145,8 +130,8 @@ Or check command output:
   "condition": {
     "command": "date +%A",
     "target_output": "Monday",
-    "check_exit_code": false
-  }
+    "check_exit_code": false,
+  },
 }
 ```
 
@@ -159,8 +144,8 @@ Check if command output matches:
   "type": "output",
   "condition": {
     "command": "whoami",
-    "target": "alice"
-  }
+    "target": "alice",
+  },
 }
 ```
 
@@ -173,8 +158,8 @@ Check environment variables:
   "type": "variable",
   "condition": {
     "variable": "USER",
-    "target": "alice"
-  }
+    "target": "alice",
+  },
 }
 ```
 
@@ -186,9 +171,9 @@ All conditions must be true (AND logic):
 {
   "conditions": [
     { "type": "wifi", "condition": { "ssid": "Office" } },
-    { "type": "time", "condition": { "time": "09:00:00" } },
-    { "type": "custom", "condition": { "command": "test -f /etc/hosts" } }
-  ]
+    { "type": "bluetooth", "condition": { "device": "My Headphones" } },
+    { "type": "custom", "condition": { "command": "test -f /etc/hosts" } },
+  ],
 }
 ```
 
@@ -207,8 +192,8 @@ If any condition fails, the task doesn't run.
   "tasks": [
     // One or more tasks
     { "command": "echo 'Hello'" },
-    { "command": "touch /tmp/file" }
-  ]
+    { "command": "touch /tmp/file" },
+  ],
 }
 ```
 
@@ -224,7 +209,7 @@ Each task is a shell command:
 
 ```jsonc
 {
-  "command": "ls -la /home"
+  "command": "ls -la /home",
 }
 ```
 
@@ -232,7 +217,7 @@ Or multi-step with pipes:
 
 ```jsonc
 {
-  "command": "cat /var/log/system.log | grep ERROR | wc -l"
+  "command": "cat /var/log/system.log | grep ERROR | wc -l",
 }
 ```
 
@@ -260,35 +245,13 @@ AutoPilot reads from `~/.autopilot-rs/`:
 │   ├── morning.jsonc
 │   ├── evening.jsonc
 │   └── cleanup.jsonc
-├── state/
-│   └── (internal state files)
+├── status.jsonc
+│
 └── logs/
     └── autopilot.log
 ```
 
 ## Examples
-
-### Run backup at midnight
-
-```jsonc
-{
-  "id": "nightly-backup",
-  "name": "Run backup at midnight",
-  "conditions": [
-    {
-      "type": "time",
-      "condition": {
-        "date": "2026/02/03",
-        "time": "00:00:00",
-        "tolerance_seconds": 60
-      }
-    }
-  ],
-  "tasks": [
-    { "command": "/usr/local/bin/backup.sh" }
-  ]
-}
-```
 
 ### Sync files only on home WiFi
 
@@ -296,12 +259,8 @@ AutoPilot reads from `~/.autopilot-rs/`:
 {
   "id": "sync-home-wifi",
   "name": "Sync files when on home network",
-  "conditions": [
-    { "type": "wifi", "condition": { "ssid": "HomeNetwork" } }
-  ],
-  "tasks": [
-    { "command": "rsync -av ~/Documents /mnt/nas" }
-  ]
+  "conditions": [{ "type": "wifi", "condition": { "ssid": "HomeNetwork" } }],
+  "tasks": [{ "command": "rsync -av ~/Documents /mnt/nas" }],
 }
 ```
 
@@ -312,14 +271,14 @@ AutoPilot reads from `~/.autopilot-rs/`:
   "id": "morning-routine",
   "name": "Morning setup",
   "conditions": [
-    { "type": "time", "condition": { "time": "08:00:00", "tolerance_seconds": 300 } },
-    { "type": "wifi", "condition": { "ssid": "HomeNetwork" } }
+    { "type": "bluetooth", "condition": { "device": "Headphones" } },
+    { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
   ],
   "tasks": [
     { "command": "brew update" },
     { "command": "notify-send 'Good morning!'" },
-    { "command": "open /Applications/Mail.app" }
-  ]
+    { "command": "open /Applications/Mail.app" },
+  ],
 }
 ```
 
@@ -330,12 +289,12 @@ AutoPilot reads from `~/.autopilot-rs/`:
   "id": "headphones-connected",
   "name": "Play sound when headphones connect",
   "conditions": [
-    { "type": "bluetooth", "condition": { "device": "Sony Headphones" } }
+    { "type": "bluetooth", "condition": { "device": "Sony Headphones" } },
   ],
   "tasks": [
     { "command": "pactl set-default-sink 'Sony Headphones'" },
-    { "command": "speaker-test -t sine -f 1000 -l 1" }
-  ]
+    { "command": "speaker-test -t sine -f 1000 -l 1" },
+  ],
 }
 ```
 
@@ -350,14 +309,14 @@ AutoPilot reads from `~/.autopilot-rs/`:
       "type": "custom",
       "condition": {
         "command": "test -f /tmp/ready-to-process",
-        "check_exit_code": true
-      }
-    }
+        "check_exit_code": true,
+      },
+    },
   ],
   "tasks": [
     { "command": "process_data.sh" },
-    { "command": "rm /tmp/ready-to-process" }
-  ]
+    { "command": "rm /tmp/ready-to-process" },
+  ],
 }
 ```
 
@@ -366,11 +325,13 @@ AutoPilot reads from `~/.autopilot-rs/`:
 ### Jobs not running
 
 **Check if daemon is running:**
+
 ```bash
 autopilot-rs list
 ```
 
 If it hangs, daemon isn't running:
+
 ```bash
 autopilot-rs serve
 ```
@@ -378,10 +339,8 @@ autopilot-rs serve
 **Check condition logic:**
 
 Run conditions manually to debug:
-```bash
-# Test time condition
-date +"%Y/%m/%d %H:%M:%S"
 
+```bash
 # Test WiFi
 nmcli dev show | grep CONNECTION
 
@@ -390,11 +349,13 @@ test -f /tmp/file && echo "Exists" || echo "Missing"
 ```
 
 **Check logs:**
+
 ```bash
 tail -f ~/.autopilot-rs/logs/autopilot.log
 ```
 
 **Enable verbose mode:**
+
 ```bash
 autopilot-rs serve --verbose
 ```
@@ -416,14 +377,13 @@ autopilot-rs serve --verbose
 
 ## Platform Support
 
-| Feature | Linux | macOS | Windows |
-|---------|-------|-------|---------|
-| Time conditions | ✅ | ✅ | ✅ |
-| WiFi detection | ✅ | ✅ | ✅ |
-| Bluetooth detection | ✅ | ✅ | ✅ |
-| Custom commands | ✅ | ✅ | ✅ |
-| Output matching | ✅ | ✅ | ✅ |
-| Variables | ✅ | ✅ | ✅ |
+| Feature             | Linux | macOS | Windows |
+| ------------------- | ----- | ----- | ------- |
+| WiFi detection      | ✅    | ✅    | ✅      |
+| Bluetooth detection | ✅    | ✅    | ✅      |
+| Custom commands     | ✅    | ✅    | ✅      |
+| Output matching     | ✅    | ✅    | ✅      |
+| Variables           | ✅    | ✅    | ✅      |
 
 All conditions work on all platforms.
 
@@ -463,7 +423,7 @@ A: Yes. Define as many jobs as you need. All conditions are checked independentl
 A: Currently, remaining tasks still run. Error is logged.
 
 **Q: Can I schedule jobs at specific intervals?**  
-A: Use the Time condition with tolerance, or use a Custom condition to check system time/load.
+A: Use a Custom condition to check system time/load.
 
 **Q: Can I use environment variables in commands?**  
 A: Yes. Shell expands them: `{ "command": "$HOME/backup.sh" }`
