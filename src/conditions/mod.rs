@@ -3,7 +3,6 @@ use log::error;
 
 pub mod output_condition;
 pub mod variable_condition;
-pub mod time_condition;
 pub mod bluetooth_condition;
 pub mod custom_condition;
 pub mod wifi_condition;
@@ -32,8 +31,6 @@ pub enum ConditionScheme {
     Output(output_condition::OutputConditionScheme),
     /// Variable condition: checks if an environment variable matches a target value
     Variable(variable_condition::VariableConditionScheme),
-    /// Time condition: checks if the current time matches a target datetime
-    Time(time_condition::TimeConditionScheme),
     /// Bluetooth condition: checks if a Bluetooth device is connected
     Bluetooth(bluetooth_condition::BluetoothConditionScheme),
     /// Custom condition: executes a custom shell command and checks the result
@@ -52,14 +49,6 @@ impl ConditionScheme {
             ConditionScheme::Variable(scheme) => Box::new(
                 variable_condition::VariableCondition::from_scheme(scheme.clone()),
             ),
-            ConditionScheme::Time(scheme) => match time_condition::TimeCondition::from_scheme(scheme.clone()) {
-                Ok(condition) => Box::new(condition),
-                Err(e) => {
-                    error!("Error parsing time condition: {}", e);
-                    // Return a condition that always fails
-                    Box::new(FailCondition)
-                }
-            },
             ConditionScheme::Bluetooth(scheme) => Box::new(
                 bluetooth_condition::BluetoothCondition::from_scheme(scheme.clone()),
             ),
