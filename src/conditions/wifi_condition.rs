@@ -57,11 +57,27 @@ pub fn sync_condition(target_ssid: &str) -> bool {
 
     #[cfg(target_os = "macos")]
     {
-        // macOS: use airport command
+        // macOS: use networksetup or ipconfig
+        // networksetup is more reliable for SSID
+        let _ssid = if let Ok(output) = cmd("networksetup", vec!["-getairportnetwork", "en0"])
+            .read()
+        {
+            get_connected_wifi_macos(&output)
+        } else {
+            None
+        };
+
+        if let Some(ssid) = _ssid {
+            if ssid == target_ssid {
+                return true;
+            }
+        }
+        
+        // Fallback for other interfaces if en0 fails
         if let Ok(output) = cmd("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", vec!["-I"])
             .read()
         {
-            if let Some(ssid) = get_connected_wifi_macos(&output) {
+            if let Some(ssid) = get_connected_wifi_macos_airport(&output) {
                 return ssid == target_ssid;
             }
         }
@@ -77,6 +93,16 @@ pub fn sync_condition(target_ssid: &str) -> bool {
             if let Some(ssid) = get_connected_wifi_windows(&output) {
                 return ssid == target_ssid;
             }
+        }
+        
+        // Fallback for Windows: try parsing netsh show current profile
+        if let Ok(output) = cmd("netsh", vec!["wlan", "show", "profiles"])
+            .read()
+        {
+             // This is less reliable but might help in some environments
+             if output.contains(target_ssid) {
+                 return true;
+             }
         }
         false
     }
@@ -106,8 +132,17 @@ fn get_connected_wifi_linux(output: &str) -> Result<String, String> {
     Err("No connected WiFi found".to_string())
 }
 
-/// Parse SSID from airport -I output (macOS)
+/// Parse SSID from networksetup output (macOS)
 fn get_connected_wifi_macos(output: &str) -> Option<String> {
+    // Output format: "Current Wi-Fi Network: SSID_NAME"
+    if let Some(pos) = output.find(": ") {
+        return Some(output[pos + 2..].trim().to_string());
+    }
+    None
+}
+
+/// Parse SSID from airport -I output (macOS)
+fn get_connected_wifi_macos_airport(output: &str) -> Option<String> {
     for line in output.lines() {
         if line.trim().starts_with("SSID:") {
             let parts: Vec<&str> = line.splitn(2, ':').collect();

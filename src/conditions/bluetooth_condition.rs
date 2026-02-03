@@ -67,8 +67,20 @@ pub fn sync_condition(device: &str, match_by_mac: bool) -> bool {
 
     #[cfg(target_os = "macos")]
     {
-        // macOS: Use system_profiler (requires different approach)
-        // For now, we'll use a simple check - in production consider using IOKit or Bluetooth framework
+        // macOS: Use system_profiler
+        let connected = if let Ok(output) = cmd("system_profiler", vec!["SPBluetoothDataType"])
+            .read()
+        {
+            output.contains(device)
+        } else {
+            false
+        };
+
+        if connected {
+            return true;
+        }
+        
+        // Fallback to defaults read
         if let Ok(output) = cmd("defaults", vec!["read", "/Library/Preferences/com.apple.Bluetooth.plist"])
             .read()
         {
