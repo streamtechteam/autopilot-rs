@@ -62,12 +62,12 @@ pub async fn serve(config_path: Option<String>) {
     #[cfg(windows)]
     {
         // Handle Windows (only Ctrl+C)
-        tokio::spawn(async {
-            signal::ctrl_c().await.expect("Failed to listen for ctrl+c");
-            // println!("Received SIGINT/Ctrl+C, initializing state...");
-            warn!("{}", AUTOPILOT_SHUTDOWN);
-            set_status_initial().expect("Failed to initialize state");
-            std::process::exit(0);
-        });
+        // tokio::spawn(async {
+        signal::ctrl_c().await.expect("Failed to listen for ctrl+c");
+        // println!("Received SIGINT/Ctrl+C, initializing state...");
+        warn!("{}", AUTOPILOT_SHUTDOWN);
+        set_status_initial().expect("Failed to initialize state");
+        std::process::exit(0);
+        // });
     }
 }
