@@ -1,10 +1,17 @@
-use serde::{Deserialize, Serialize};
 use log::error;
+use serde::{Deserialize, Serialize};
 
-pub mod output_condition;
-pub mod variable_condition;
 pub mod bluetooth_condition;
 pub mod custom_condition;
+pub mod disk_space_condition;
+pub mod external_device_condition;
+pub mod file_condition;
+pub mod internet_condition;
+pub mod output_condition;
+pub mod power_condition;
+pub mod process_condition;
+pub mod resource_condition;
+pub mod variable_condition;
 pub mod wifi_condition;
 
 /// Base trait for all condition types
@@ -37,6 +44,10 @@ pub enum ConditionScheme {
     Custom(custom_condition::CustomConditionScheme),
     /// WiFi condition: checks if connected to a specific WiFi network
     Wifi(wifi_condition::WifiConditionScheme),
+    /// Power condition: checks charging status or battery level
+    Power(power_condition::PowerConditionScheme),
+    /// Resource condition: checks CPU or RAM usage
+    Resource(resource_condition::ResourceConditionScheme),
 }
 
 impl ConditionScheme {
@@ -55,8 +66,14 @@ impl ConditionScheme {
             ConditionScheme::Custom(scheme) => Box::new(
                 custom_condition::CustomCondition::from_scheme(scheme.clone()),
             ),
-            ConditionScheme::Wifi(scheme) => Box::new(
-                wifi_condition::WifiCondition::from_scheme(scheme.clone()),
+            ConditionScheme::Wifi(scheme) => {
+                Box::new(wifi_condition::WifiCondition::from_scheme(scheme.clone()))
+            }
+            ConditionScheme::Power(scheme) => {
+                Box::new(power_condition::PowerCondition::from_scheme(scheme.clone()))
+            }
+            ConditionScheme::Resource(scheme) => Box::new(
+                resource_condition::ResourceCondition::from_scheme(scheme.clone()),
             ),
         }
     }

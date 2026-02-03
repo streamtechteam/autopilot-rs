@@ -1,0 +1,80 @@
+use crate::conditions::Condition;
+use serde::{Deserialize, Serialize};
+use sysinfo::{Disks, System};
+
+/// Represents a disk space condition
+#[derive(Clone)]
+pub struct DiskSpaceCondition {
+    /// Path to the disk/mount point to check (e.g., "/", "C:\\", "/home")
+    pub path: String,
+    /// Minimum free space required in GB
+    pub min_free_gb: f64,
+    /// Maximum used space allowed in GB
+    pub max_used_gb: Option<f64>,
+}
+
+impl DiskSpaceCondition {
+    pub fn new(path: String, min_free_gb: f64, max_used_gb: Option<f64>) -> Self {
+        Self {
+            path,
+            min_free_gb,
+            max_used_gb,
+        }
+    }
+
+    pub fn from_scheme(scheme: DiskSpaceConditionScheme) -> Self {
+        Self {
+            path: scheme.path,
+            min_free_gb: scheme.min_free_gb,
+            max_used_gb: scheme.max_used_gb,
+        }
+    }
+}
+
+impl Condition for DiskSpaceCondition {
+    fn check(&self) -> bool {
+        let sys = System::new_all();
+        let disks = Disks::new_with_refreshed_list();
+        for disk in &disks {
+            let disk_path = disk.mount_point().to_string_lossy();
+
+            // Check if this disk matches our target path
+            if disk_path
+                .to_lowercase()
+                .starts_with(&self.path.to_lowercase())
+            {
+                let available_gb = disk.available_space() as f64 / (1024.0 * 1024.0 * 1024.0);
+
+                // Check minimum free space
+                if available_gb < self.min_free_gb {
+                    return false;
+                }
+
+                // Check maximum used space if specified
+                if let Some(max_used) = self.max_used_gb {
+                    let total_gb = disk.total_space() as f64 / (1024.0 * 1024.0 * 1024.0);
+                    let used_gb = total_gb - available_gb;
+                    if used_gb > max_used {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
+
+        // If we get here, the specified path wasn't found
+        false
+    }
+
+    fn clone_box(&self) -> Box<dyn Condition> {
+        Box::new(self.clone())
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DiskSpaceConditionScheme {
+    pub path: String,
+    pub min_free_gb: f64,
+    pub max_used_gb: Option<f64>,
+}

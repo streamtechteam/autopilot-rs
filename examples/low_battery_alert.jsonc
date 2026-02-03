@@ -1,0 +1,25 @@
+{
+  "id": "battery-saver",
+  "name": "Battery Saver Alert",
+  "description": "Notify when battery is low and not charging",
+  "conditions": [
+    {
+      "type": "power",
+      "condition": {
+        "check_charging": false,
+      },
+    },
+    {
+      "type": "power",
+      "condition": {
+        "threshold": 20.0,
+        "operator": "less",
+      },
+    },
+  ],
+  "tasks": [
+    {
+      "command": "notify-send 'AutoPilot' 'Battery is below 20%! Please plug in your charger.'",
+    },
+  ],
+}

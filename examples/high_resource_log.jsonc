@@ -1,0 +1,26 @@
+{
+    "id": "resource-monitor",
+    "name": "Heavy Load Monitor",
+    "description": "Log system state when CPU or RAM usage is very high",
+    "trigger": {
+        "type": "cron",
+        "expression": "0 * * * * *"
+    },
+    "conditions": [
+        {
+            "type": "resource",
+            "condition": {
+                "resource_type": "cpu",
+                "threshold": 90.0,
+                "operator": "greater"
+            }
+        }
+    ],
+    "tasks": [
+        {
+            "name": "Log High Usage",
+            "command": "echo \"$(date): High CPU usage detected!\" >> ~/autopilot_events.log",
+            "critical": false
+        }
+    ]
+}

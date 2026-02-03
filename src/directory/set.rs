@@ -10,16 +10,17 @@ use crate::{
     status::set::set_status_initial,
 };
 
-pub fn set_all_paths(quiet: bool) {
-    set_autopilot_path();
+pub fn set_all_paths(quiet: bool, config_path: Option<String>) {
+    set_autopilot_path(config_path);
     set_logs_path();
     set_config_path(quiet);
     set_jobs_path();
     set_status_path();
 }
 
-pub fn set_autopilot_path() {
-    fs::create_dir_all(&get_autopilot_path(None)).expect("Failed to create auto_pilot directory");
+pub fn set_autopilot_path(config_path: Option<String>) {
+    fs::create_dir_all(&get_autopilot_path(config_path))
+        .expect("Failed to create auto_pilot directory");
 }
 
 pub fn set_logs_path() {
