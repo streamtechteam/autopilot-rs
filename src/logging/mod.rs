@@ -32,8 +32,10 @@ pub fn init_logging() {
 
     #[cfg(target_os = "windows")]
     {
-        // On Windows, we'll stick to flexi_logger's file logging for now
-        // as winlog2 requires more setup and can be brittle
+        // Try to register and init winlog2 for Windows Event Log
+        if let Ok(_) = winlog2::register("AutoPilot") {
+            let _ = winlog2::init("AutoPilot");
+        }
         log::set_max_level(log::LevelFilter::Info);
     }
 }

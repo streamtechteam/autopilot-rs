@@ -1,0 +1,60 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: autopilot-rs-linux
+            asset_name: autopilot-rs-linux
+          - os: windows-latest
+            artifact_name: autopilot-rs-windows
+            asset_name: autopilot-rs-windows.exe
+          - os: macos-latest
+            artifact_name: autopilot-rs-macos
+            asset_name: autopilot-rs-macos
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libsystemd-dev
+
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2
+
+    - name: Build
+      run: cargo build --release
+
+    - name: Prepare Artifact
+      shell: bash
+      run: |
+        mkdir -p dist
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          cp target/release/autopilot-rs.exe dist/${{ matrix.asset_name }}
+        else
+          cp target/release/autopilot-rs dist/${{ matrix.asset_name }}
+        fi
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: dist/${{ matrix.asset_name }}
