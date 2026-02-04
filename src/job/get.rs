@@ -2,7 +2,6 @@ use std::{fs, path::PathBuf};
 
 use colored::*;
 use log::info;
-use tokio_cron_scheduler::JobScheduler;
 
 use crate::{
     directory::get_jobs_path,

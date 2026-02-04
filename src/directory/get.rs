@@ -1,6 +1,5 @@
-use std::{env, fs};
+use std::env;
 
-use log::info;
 
 pub fn get_autopilot_path(config_path: Option<String>) -> String {
     let home_path = env::home_dir().expect("Couldnt get home dir");

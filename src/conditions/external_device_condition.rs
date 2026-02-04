@@ -1,6 +1,6 @@
 use crate::conditions::Condition;
 use serde::{Deserialize, Serialize};
-use sysinfo::{Disk, Disks, System};
+use sysinfo::{Disks, System};
 
 /// Represents an external device (USB/mount) condition
 #[derive(Clone)]

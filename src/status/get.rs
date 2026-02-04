@@ -1,11 +1,10 @@
-use colored::*;
 use std::fs;
 
 // use serde_json::value;
 
 use crate::{
     directory::get_status_path,
-    status::{JobStatus, Status, StatusLog, set::set_status_initial},
+    status::{Status, StatusLog, set::set_status_initial},
     utilities,
 };
 

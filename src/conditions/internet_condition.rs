@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use crate::conditions::Condition;
 use duct::cmd;
-use log::warn;
 
 /// Represents an internet reachability condition (ping based)
 #[derive(Clone)]

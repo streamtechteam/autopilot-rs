@@ -1,8 +1,6 @@
 use clap::{Parser, Subcommand};
-use log::info;
 
 use crate::{
-    autopilot::AutoPilot,
     cli::{create::create, list::list, remove::remove, serve::serve, status::status, stop::stop},
     status::set::set_status_initial,
 };

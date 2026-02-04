@@ -1,4 +1,3 @@
-use log::error;
 use serde::{Deserialize, Serialize};
 
 pub mod bluetooth_condition;

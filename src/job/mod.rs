@@ -9,7 +9,7 @@ use tokio_cron_scheduler::JobScheduler;
 use crate::{
     conditions::{Condition, ConditionScheme},
     cron::{DateTimeScheme, add::add_job, to_datatime},
-    status::{Status, get::get_status_log, set::set_state_item},
+    status::{Status, set::set_state_item},
     tasks::{self, TaskScheme},
 };
 

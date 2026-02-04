@@ -1,10 +1,6 @@
-use crate::{cli::handle_cli, directory::set_all_paths, status::set::set_status_initial};
+use crate::{cli::handle_cli, directory::set_all_paths};
 use tokio::{
     self,
-    signal::{
-        self,
-        unix::{SignalKind, signal},
-    },
 };
 
 mod autopilot;

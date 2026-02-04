@@ -2,13 +2,9 @@ use std::fs;
 
 use log::info;
 
-use crate::{
-    directory::{
+use crate::directory::{
         get_autopilot_path, get_config_path, get_jobs_path, get_logs_path, get_status_path,
-    },
-    job::get::get_jobs_paths,
-    status::set::set_status_initial,
-};
+    };
 
 pub fn set_all_paths(quiet: bool, config_path: Option<String>) {
     set_autopilot_path(config_path);

@@ -1,6 +1,4 @@
 use crate::conditions::Condition;
-use duct::cmd;
-use log::warn;
 use serde::{Deserialize, Serialize};
 
 /// Represents a power/battery condition

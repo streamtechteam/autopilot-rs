@@ -1,13 +1,9 @@
 use crate::{
     autopilot::AutoPilot,
-    directory::{get_autopilot_path, set_all_paths},
+    directory::set_all_paths,
     job::get::get_jobs,
-    language::{self, en_us::AUTOPILOT_SHUTDOWN},
     status::set::set_status_initial,
 };
-use colored::*;
-use log::{error, info, warn};
-use std::panic::{self, AssertUnwindSafe};
 use tokio::{self, signal};
 // use tokio_cron_scheduler::JobScheduler;
 
