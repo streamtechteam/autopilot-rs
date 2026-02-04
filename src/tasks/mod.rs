@@ -16,6 +16,7 @@ impl Task {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TaskScheme {
     // pub name: String,
     pub command: String,

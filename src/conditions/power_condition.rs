@@ -1,4 +1,5 @@
 use crate::conditions::Condition;
+use duct::cmd;
 use serde::{Deserialize, Serialize};
 
 /// Represents a power/battery condition
@@ -146,6 +147,7 @@ impl Condition for PowerCondition {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct PowerConditionScheme {
     pub check_charging: Option<bool>,
     pub threshold: Option<f32>,

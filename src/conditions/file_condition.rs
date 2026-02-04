@@ -93,6 +93,7 @@ impl Condition for FileCondition {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct FileConditionScheme {
     pub path: String,
     pub check_type: String,

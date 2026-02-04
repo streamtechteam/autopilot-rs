@@ -38,6 +38,7 @@ pub async fn async_condition(var: &str, target: &str) -> bool {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct VariableConditionScheme {
     variable: String,
     target: String,

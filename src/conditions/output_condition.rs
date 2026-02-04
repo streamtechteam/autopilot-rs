@@ -29,6 +29,7 @@ impl Condition for OutputCondition {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct OutputConditionScheme {
     pub command: String,
     pub target: String,

@@ -150,6 +150,7 @@ pub fn run_job(job: &Job) {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct JobScheme {
     id: String,
     name: Option<String>,

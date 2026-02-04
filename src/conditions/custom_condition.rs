@@ -120,6 +120,7 @@ pub async fn async_condition(
 
 /// Scheme for deserializing CustomCondition from JSON/JSONC
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct CustomConditionScheme {
     /// The shell command to execute
     pub command: String,

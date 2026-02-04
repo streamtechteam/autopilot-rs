@@ -138,6 +138,7 @@ fn check_bluetooth_linux(output: &str, target_device: &str, match_by_mac: bool) 
 
 /// Scheme for deserializing BluetoothCondition from JSON/JSONC
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct BluetoothConditionScheme {
     /// The Bluetooth device address or name to match
     pub device: String,

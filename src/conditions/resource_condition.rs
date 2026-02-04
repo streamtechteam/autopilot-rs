@@ -74,6 +74,7 @@ impl Condition for ResourceCondition {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct ResourceConditionScheme {
     pub resource_type: String,
     pub threshold: f32,
