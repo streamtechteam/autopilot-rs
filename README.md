@@ -65,7 +65,7 @@ autopilot-rs serve
 AutoPilot runs in the background, checking conditions and running tasks.
 
 ### 2. Create a Job
-
+not available right now
 ```bash
 autopilot-rs new
 ```
