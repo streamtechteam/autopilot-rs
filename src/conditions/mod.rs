@@ -5,6 +5,7 @@ pub mod bluetooth_condition;
 pub mod custom_condition;
 pub mod disk_space_condition;
 pub mod external_device_condition;
+pub mod fail_condition;
 pub mod file_condition;
 pub mod internet_condition;
 pub mod output_condition;
@@ -48,6 +49,17 @@ pub enum ConditionScheme {
     Power(power_condition::PowerConditionScheme),
     /// Resource condition: checks CPU or RAM usage
     Resource(resource_condition::ResourceConditionScheme),
+    /// Internet condition: checks internet reachability
+    Internet(internet_condition::InternetConditionScheme),
+    /// Process condition: checks if a process is running
+    Process(process_condition::ProcessConditionScheme),
+    /// Disk space condition: checks available disk space
+    DiskSpace(disk_space_condition::DiskSpaceConditionScheme),
+    /// File condition: checks file existence or properties
+    File(file_condition::FileConditionScheme),
+    /// External device condition: checks for connected USB/external drives
+    ExternalDevice(external_device_condition::ExternalDeviceConditionScheme),
+    Fail(fail_condition::FailCondition),
 }
 
 impl ConditionScheme {
@@ -75,20 +87,22 @@ impl ConditionScheme {
             ConditionScheme::Resource(scheme) => Box::new(
                 resource_condition::ResourceCondition::from_scheme(scheme.clone()),
             ),
+            ConditionScheme::Internet(scheme) => Box::new(
+                internet_condition::InternetCondition::from_scheme(scheme.clone()),
+            ),
+            ConditionScheme::Process(scheme) => Box::new(
+                process_condition::ProcessCondition::from_scheme(scheme.clone()),
+            ),
+            ConditionScheme::DiskSpace(scheme) => Box::new(
+                disk_space_condition::DiskSpaceCondition::from_scheme(scheme.clone()),
+            ),
+            ConditionScheme::File(scheme) => {
+                Box::new(file_condition::FileCondition::from_scheme(scheme.clone()))
+            }
+            ConditionScheme::ExternalDevice(scheme) => Box::new(
+                external_device_condition::ExternalDeviceCondition::from_scheme(scheme.clone()),
+            ),
+            ConditionScheme::Fail(scheme) => Box::new(scheme.clone()),
         }
-    }
-}
-
-/// A condition that always returns false, used as a fallback for error cases
-#[derive(Clone)]
-struct FailCondition;
-
-impl Condition for FailCondition {
-    fn check(&self) -> bool {
-        false
-    }
-
-    fn clone_box(&self) -> Box<dyn Condition> {
-        Box::new(FailCondition)
     }
 }

@@ -6,20 +6,20 @@
     {
       "type": "power",
       "condition": {
-        "check_charging": false,
-      },
+        "check_charging": false
+      }
     },
     {
       "type": "power",
       "condition": {
         "threshold": 20.0,
-        "operator": "less",
-      },
-    },
+        "operator": "less"
+      }
+    }
   ],
   "tasks": [
     {
-      "command": "notify-send 'AutoPilot' 'Battery is below 20%! Please plug in your charger.'",
-    },
-  ],
+      "command": "notify-send 'AutoPilot' 'Battery is below 20%! Please plug in your charger.'"
+    }
+  ]
 }

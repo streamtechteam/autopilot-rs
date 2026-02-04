@@ -1,8 +1,9 @@
+use std::{thread::sleep, time::Duration};
+
 use chrono::{DateTime, Local};
 use colored::Colorize;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
-use tokio;
 use tokio_cron_scheduler::JobScheduler;
 
 use crate::{
@@ -21,6 +22,7 @@ pub struct Job {
     pub status: Status,
     pub description: String,
     pub when: Option<DateTime<Local>>,
+    pub check_interval: Option<String>,
     pub conditions: Vec<Box<dyn Condition>>,
     pub tasks: Vec<tasks::Task>,
 }
@@ -30,6 +32,7 @@ impl Job {
         id: String,
         name: String,
         description: String,
+        check_interval: Option<String>,
         when: Option<DateTime<Local>>,
         conditions: Vec<Box<dyn Condition>>,
         tasks: Vec<tasks::Task>,
@@ -40,6 +43,7 @@ impl Job {
             status: Status::Pending,
             description,
             when,
+            check_interval,
             conditions,
             tasks,
         }
@@ -68,6 +72,7 @@ impl Job {
             status: Status::Unknown,
             description: scheme.description.unwrap_or(" ".to_string()),
             when,
+            check_interval: scheme.check_interval,
             conditions,
             tasks,
         }
@@ -89,35 +94,40 @@ impl Job {
 
         set_state_item(self.id.clone(), Status::Running).expect("failed to set state item");
 
-        let mut result = true;
         if self.when.is_none() {
-            for condition in &self.conditions {
-                let condition_result = condition.check();
-                // condition.run();
-                result = result && condition_result;
-
-                // return;
-            }
-            if result {
-                for task in &self.tasks {
-                    task.run();
+            loop {
+                let mut result = true;
+                for condition in &self.conditions {
+                    let condition_result = condition.check();
+                    result = result && condition_result;
+                }
+                if result {
+                    for task in &self.tasks {
+                        task.run();
+                    }
+                    break;
+                } else if !result && self.check_interval.is_some() {
+                    sleep(Duration::from_millis(
+                        self.check_interval
+                            .as_ref()
+                            .unwrap()
+                            .parse::<u64>()
+                            .expect("check_interval value is not valid"),
+                    ));
+                    continue;
                 }
             }
         } else if self.when.is_some() {
             // Since add_job is async, we need to spawn it as a task
             let scheduler_clone = scheduler.clone();
             let job_clone = self.clone();
-            // tokio::spawn(async move {
             let _result = add_job(&job_clone, &scheduler_clone, run_job).await;
             match _result {
                 Err(error) => {
                     error!("{} : {}", job_clone.name, error);
                 }
-                Ok(_) => {
-                    // info!("job successfull")
-                }
+                Ok(_) => {}
             }
-            // });
         };
         if !quiet {
             info!("{} : {}", "Job completed".green(), self.name);
@@ -130,10 +140,7 @@ pub fn run_job(job: &Job) {
     let mut result = true;
     for condition in &job.conditions {
         let condition_result = condition.check();
-        // condition.run();
         result = result && condition_result;
-
-        // return;
     }
     if result {
         for task in &job.tasks {
@@ -148,6 +155,7 @@ pub struct JobScheme {
     name: Option<String>,
     description: Option<String>,
     when: Option<DateTimeScheme>,
+    check_interval: Option<String>,
     conditions: Vec<ConditionScheme>,
     tasks: Vec<TaskScheme>,
 }

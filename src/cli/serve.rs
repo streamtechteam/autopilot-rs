@@ -12,8 +12,8 @@ use tokio::{self, signal};
 // use tokio_cron_scheduler::JobScheduler;
 
 pub async fn serve(config_path: Option<String>) {
-    let mut restart = true;
-    while restart {
+    // let mut restart = true;
+    loop {
         let mut auto_pilot = AutoPilot::new().await;
         auto_pilot.start();
         let scheduler = &auto_pilot.scheduler;
@@ -71,6 +71,17 @@ pub async fn serve(config_path: Option<String>) {
             // Wait for either signal handler to potentially terminate the process
             // In normal operation, handle_cli() would run indefinitely if it's a service
             tokio::try_join!(sigterm_handle, sigint_handle, sighup_handle).ok();
+            // tokio::select! {
+            //     _ = sigint_handle =>{
+
+            //     }
+            //     _ = sighup_handle =>{
+
+            //     }
+            //     _ = sigterm_handle =>{
+
+            //     }
+            // }
         }
 
         #[cfg(windows)]

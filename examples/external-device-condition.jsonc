@@ -1,0 +1,19 @@
+{
+  "id": "usb_backup",
+  "name": "USB Auto-Backup Job",
+  "description": "Trigger backup when specific USB is plugged in",
+  "conditions": [
+    {
+      "type": "externaldevice",
+      "condition": {
+        "device_identifier": "BACKUP_DRIVE",
+        "check_by_name": true
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "command": "echo 'Backup drive detected! Starting backup...' >> /tmp/autopilot_usb.txt"
+    }
+  ]
+}

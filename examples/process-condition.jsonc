@@ -1,0 +1,19 @@
+{
+  "id": "process_check",
+  "name": "Process Monitoring Job",
+  "description": "Runs a task if a specific process is running (or not)",
+  "conditions": [
+    {
+      "type": "process",
+      "condition": {
+        "process_name": "firefox",
+        "should_be_running": true
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "command": "echo 'Firefox is running, syncing bookmarks...' >> /tmp/autopilot_process.txt"
+    }
+  ]
+}

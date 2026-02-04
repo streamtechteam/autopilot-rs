@@ -1,0 +1,19 @@
+{
+  "id": "internet_check",
+  "name": "Internet Reachability Job",
+  "description": "Runs a task only if internet is accessible",
+  "conditions": [
+    {
+      "type": "internet",
+      "condition": {
+        "host": "8.8.8.8",
+        "timeout": 2
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "command": "echo 'Internet is up!' >> /tmp/autopilot_internet.txt"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "disk_space_check",
+  "name": "Disk Space Monitoring Job",
+  "description": "Runs a task if disk space is low",
+  "conditions": [
+    {
+      "type": "diskspace",
+      "condition": {
+        "path": "/",
+        "min_free_gb": 10.0
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "command": "echo 'Disk space is above 10GB' >> /tmp/autopilot_disk.txt"
+    }
+  ]
+}

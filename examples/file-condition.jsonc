@@ -1,0 +1,19 @@
+{
+  "id": "file_monitor",
+  "name": "File Monitoring Job",
+  "description": "Runs a task if a file exists or was modified",
+  "conditions": [
+    {
+      "type": "file",
+      "condition": {
+        "path": "/tmp/trigger.txt",
+        "check_type": "exists"
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "command": "echo 'Trigger file found! Processing...' >> /tmp/autopilot_file.txt"
+    }
+  ]
+}
