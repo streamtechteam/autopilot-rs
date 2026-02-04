@@ -247,10 +247,10 @@ autopilot-rs --help             # Show help
 
 ## Configuration
 
-AutoPilot reads from `~/.autopilot-rs/`:
+AutoPilot reads from `~/.auto_pilot/`:
 
 ```
-~/.autopilot-rs/
+~/.auto_pilot/
 ├── jobs/
 │   ├── morning.jsonc
 │   ├── evening.jsonc
