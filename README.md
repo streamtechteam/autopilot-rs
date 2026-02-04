@@ -33,6 +33,7 @@ AutoPilot checks: Are you on office WiFi? Are your headphones connected? If both
 ### macOS
 
 ```bash
+# not available right now, but hopefully available someday
 brew install autopilot-rs
 # or build from source
 cargo build --release
