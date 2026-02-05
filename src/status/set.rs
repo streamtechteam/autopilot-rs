@@ -3,17 +3,17 @@ use std::fs;
 use crate::{
     directory::get_status_path,
     job::get::get_jobs,
-    status::{JobStatus, Status, StatusLog, get::get_status_log},
+    status::{JobStatusEnum, JobStatusStruct, StatusLog, get::get_status_log},
 };
 
-pub fn set_state_item(id: String, status: Status) -> Result<(), String> {
+pub fn set_state_item(id: String, status: JobStatusEnum) -> Result<(), String> {
     let state_path = get_status_path();
     let mut status_log = get_status_log().clone();
     let mut statuses = status_log
         .statuses
         .clone()
         .into_iter()
-        .collect::<Vec<JobStatus>>();
+        .collect::<Vec<JobStatusStruct>>();
     let index = statuses.iter().position(|item| item.id == id);
 
     match index {
@@ -39,10 +39,10 @@ pub fn set_status_initial() -> Result<(), String> {
     };
 
     for job in get_jobs(true) {
-        status_log.statuses.push(JobStatus {
+        status_log.statuses.push(JobStatusStruct {
             id: job.id,
             name: job.name,
-            status: Status::Unknown,
+            status: JobStatusEnum::Unknown,
         });
     }
     let json = serde_json::to_string_pretty(&status_log).map_err(|e| e.to_string())?;

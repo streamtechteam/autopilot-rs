@@ -1,9 +1,17 @@
 use std::env;
 
+use log::error;
 
 pub fn get_autopilot_path(config_path: Option<String>) -> String {
-    let home_path = env::home_dir().expect("Couldnt get home dir");
-    
+    let home_path = env::home_dir().unwrap_or_else(|| {
+        if log::log_enabled!(log::Level::Error) {
+            error!("Could not determine home directory. Using current directory as fallback.");
+        } else {
+            eprintln!("Could not determine home directory. Using current directory as fallback.");
+        }
+        std::path::PathBuf::from(".")
+    });
+
     let default_subdir = if cfg!(target_os = "windows") {
         "/AppData/Roaming/auto-pilot"
     } else {
@@ -11,9 +19,7 @@ pub fn get_autopilot_path(config_path: Option<String>) -> String {
     };
 
     let auto_pilot_path: String = home_path.to_str().unwrap().to_string()
-        + config_path
-            .unwrap_or(default_subdir.to_string())
-            .as_str();
+        + config_path.unwrap_or(default_subdir.to_string()).as_str();
 
     auto_pilot_path
 }

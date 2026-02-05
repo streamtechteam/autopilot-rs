@@ -49,7 +49,6 @@ pub async fn handle_cli() {
     // AutoPilot::prepare_logging();
     match &cli.command {
         Some(Commands::Serve) => {
-            set_status_initial().expect("Failed to initialize status");
             serve(cli.config_path).await;
         }
         Some(Commands::Create) => {

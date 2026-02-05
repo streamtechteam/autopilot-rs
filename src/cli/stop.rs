@@ -8,8 +8,10 @@ pub fn stop(quiet: bool) {
     if !quiet {
         info!("{}", language::en_us::AUTOPILOT_SHUTDOWN.yellow());
     }
-    cmd("sh", vec!["-c", "kill $(pgrep autopilot)"])
-        .read()
-        .expect("failed to stop auto_pilot");
-    set_status_initial().expect("Failed to initialize state");
+    if let Err(e) = cmd("sh", vec!["-c", "kill $(pgrep autopilot)"]).read() {
+        eprintln!("Warning: failed to stop auto_pilot: {}", e);
+    }
+    if let Err(e) = set_status_initial() {
+        eprintln!("Warning: Failed to initialize state: {}", e);
+    }
 }

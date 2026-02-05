@@ -9,7 +9,7 @@ use tokio_cron_scheduler::JobScheduler;
 use crate::{
     conditions::{Condition, ConditionScheme},
     cron::{DateTimeScheme, add::add_job, to_datatime},
-    status::{Status, set::set_state_item},
+    status::{JobStatusEnum, set::set_state_item},
     tasks::{self, TaskScheme},
 };
 
@@ -19,7 +19,7 @@ pub mod get;
 pub struct Job {
     pub id: String,
     pub name: String,
-    pub status: Status,
+    pub status: JobStatusEnum,
     pub description: String,
     pub when: Option<DateTime<Local>>,
     pub check_interval: Option<String>,
@@ -40,7 +40,7 @@ impl Job {
         Job {
             id,
             name,
-            status: Status::Pending,
+            status: JobStatusEnum::Pending,
             description,
             when,
             check_interval,
@@ -69,7 +69,7 @@ impl Job {
         Job {
             id: scheme.id.clone(),
             name: scheme.name.unwrap_or(format!("job_{}", scheme.id)),
-            status: Status::Unknown,
+            status: JobStatusEnum::Unknown,
             description: scheme.description.unwrap_or(" ".to_string()),
             when,
             check_interval: scheme.check_interval,
@@ -92,7 +92,9 @@ impl Job {
             info!("{} : {}", "Running job".yellow(), self.name);
         }
 
-        set_state_item(self.id.clone(), Status::Running).expect("failed to set state item");
+        if let Err(e) = set_state_item(self.id.clone(), JobStatusEnum::Running) {
+            error!("Failed to set state item: {}", e);
+        }
 
         if self.when.is_none() {
             loop {
@@ -105,17 +107,31 @@ impl Job {
                     for task in &self.tasks {
                         task.run();
                     }
+                    if let Err(e) = set_state_item(self.id.clone(), JobStatusEnum::Success) {
+                        error!("Failed to set state item: {}", e);
+                    }
+                    if !quiet {
+                        info!("{} : {}", "Job Completed".green(), self.name);
+                    }
                     break;
                 } else if !result && self.check_interval.is_some() {
-                    sleep(Duration::from_millis(
-                        self.check_interval
-                            .as_ref()
-                            .unwrap()
-                            .parse::<u64>()
-                            .expect("check_interval value is not valid"),
-                    ));
+                    let interval_ms = match self.check_interval.as_ref().unwrap().parse::<u64>() {
+                        Ok(ms) => ms,
+                        Err(_) => {
+                            error!("check_interval value is not valid, using 1000ms as default");
+                            1000
+                        }
+                    };
+                    sleep(Duration::from_millis(interval_ms));
                     continue;
                 }
+                if let Err(e) = set_state_item(self.id.clone(), JobStatusEnum::Unsatisfied) {
+                    error!("Failed to set state item: {}", e);
+                }
+                if !quiet {
+                    info!("{} : {}", "Job Unsatisfied".yellow(), self.name);
+                }
+                break;
             }
         } else if self.when.is_some() {
             // Since add_job is async, we need to spawn it as a task
@@ -129,10 +145,10 @@ impl Job {
                 Ok(_) => {}
             }
         };
-        if !quiet {
-            info!("{} : {}", "Job completed".green(), self.name);
-        }
-        set_state_item(self.id.clone(), Status::Completed).expect("failed to set state item");
+
+        // if let Err(e) = set_state_item(self.id.clone(), JobStatusEnum::) {
+        //     error!("Failed to set state item: {}", e);
+        // }
     }
 }
 

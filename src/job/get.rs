@@ -1,7 +1,7 @@
 use std::{fs, path::PathBuf};
 
 use colored::*;
-use log::info;
+use log::{error, info};
 
 use crate::{
     directory::get_jobs_path,
@@ -14,7 +14,18 @@ pub fn get_jobs(quiet: bool) -> Vec<Job> {
     let mut job_objects: Vec<Job> = vec![];
     let jobs_path = get_jobs_paths();
     for job in &jobs_path {
-        jobs_string.push(fs::read_to_string(job).expect("Failed to read job file"));
+        match fs::read_to_string(job) {
+            Ok(content) => jobs_string.push(content),
+            Err(e) => {
+                if !quiet {
+                    if log::log_enabled!(log::Level::Error) {
+                        error!("Failed to read job file {}: {}", job.display(), e);
+                    } else {
+                        eprintln!("Failed to read job file {}: {}", job.display(), e);
+                    }
+                }
+            }
+        }
     }
 
     for (i, job_str) in jobs_string.iter().enumerate() {
@@ -49,8 +60,28 @@ pub fn get_jobs_paths() -> Vec<PathBuf> {
     let path = get_jobs_path();
     let mut jobs_path: Vec<PathBuf> = vec![];
 
-    for job in fs::read_dir(path).unwrap() {
-        jobs_path.push(job.unwrap().path());
+    match fs::read_dir(path) {
+        Ok(entries) => {
+            for entry in entries {
+                match entry {
+                    Ok(job_entry) => jobs_path.push(job_entry.path()),
+                    Err(e) => {
+                        if log::log_enabled!(log::Level::Error) {
+                            error!("Failed to read directory entry: {}", e)
+                        } else {
+                            eprintln!("Failed to read directory entry: {}", e)
+                        }
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            if log::log_enabled!(log::Level::Error) {
+                error!("Failed to read jobs directory: {}", e);
+            } else {
+                eprintln!("Failed to read jobs directory: {}", e);
+            }
+        }
     }
     jobs_path
 }
