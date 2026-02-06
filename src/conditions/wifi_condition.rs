@@ -1,7 +1,11 @@
+use dialoguer::{Input, theme::ColorfulTheme};
 use duct::cmd;
 use serde::{Deserialize, Serialize};
 
-use crate::conditions::Condition;
+use crate::{
+    conditions::{Condition, ConditionScheme},
+    error::AutoPilotError,
+};
 
 /// Represents a WiFi network condition that checks if a specific network is connected
 #[derive(Clone)]
@@ -18,9 +22,7 @@ impl WifiCondition {
 
     /// Create from a scheme (used for deserialization)
     pub fn from_scheme(scheme: WifiConditionScheme) -> Self {
-        Self {
-            ssid: scheme.ssid,
-        }
+        Self { ssid: scheme.ssid }
     }
 }
 
@@ -32,6 +34,19 @@ impl Condition for WifiCondition {
     fn clone_box(&self) -> Box<dyn Condition> {
         Box::new(self.clone())
     }
+
+    fn name(&self) -> &str {
+        "WiFi"
+    }
+
+    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
+        let ssid = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter WiFi network name (SSID):")
+            .interact_text()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+
+        Ok(ConditionScheme::Wifi(WifiConditionScheme { ssid }))
+    }
 }
 
 /// Check if the current WiFi network matches the target SSID (synchronously)
@@ -39,9 +54,7 @@ pub fn sync_condition(target_ssid: &str) -> bool {
     #[cfg(target_os = "linux")]
     {
         // Try nmcli (NetworkManager) first - most common on Linux
-        if let Ok(output) = cmd("nmcli", vec!["-t", "-f", "active,ssid", "dev", "wifi"])
-            .read()
-        {
+        if let Ok(output) = cmd("nmcli", vec!["-t", "-f", "active,ssid", "dev", "wifi"]).read() {
             if let Ok(ssid) = get_connected_wifi_linux(&output) {
                 return ssid == target_ssid;
             }
@@ -59,20 +72,19 @@ pub fn sync_condition(target_ssid: &str) -> bool {
     {
         // macOS: use networksetup or ipconfig
         // networksetup is more reliable for SSID
-        let _ssid = if let Ok(output) = cmd("networksetup", vec!["-getairportnetwork", "en0"])
-            .read()
-        {
-            get_connected_wifi_macos(&output)
-        } else {
-            None
-        };
+        let _ssid =
+            if let Ok(output) = cmd("networksetup", vec!["-getairportnetwork", "en0"]).read() {
+                get_connected_wifi_macos(&output)
+            } else {
+                None
+            };
 
         if let Some(ssid) = _ssid {
             if ssid == target_ssid {
                 return true;
             }
         }
-        
+
         // Fallback for other interfaces if en0 fails
         if let Ok(output) = cmd("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", vec!["-I"])
             .read()
@@ -87,22 +99,18 @@ pub fn sync_condition(target_ssid: &str) -> bool {
     #[cfg(target_os = "windows")]
     {
         // Windows: use netsh
-        if let Ok(output) = cmd("netsh", vec!["wlan", "show", "interfaces"])
-            .read()
-        {
+        if let Ok(output) = cmd("netsh", vec!["wlan", "show", "interfaces"]).read() {
             if let Some(ssid) = get_connected_wifi_windows(&output) {
                 return ssid == target_ssid;
             }
         }
-        
+
         // Fallback for Windows: try parsing netsh show current profile
-        if let Ok(output) = cmd("netsh", vec!["wlan", "show", "profiles"])
-            .read()
-        {
-             // This is less reliable but might help in some environments
-             if output.contains(target_ssid) {
-                 return true;
-             }
+        if let Ok(output) = cmd("netsh", vec!["wlan", "show", "profiles"]).read() {
+            // This is less reliable but might help in some environments
+            if output.contains(target_ssid) {
+                return true;
+            }
         }
         false
     }

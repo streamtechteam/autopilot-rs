@@ -1,6 +1,5 @@
 use crate::{
-    autopilot::AutoPilot, directory::set_all_paths, job::get::get_jobs,
-    status::set::set_status_initial,
+    autopilot::AutoPilot, fs::set_all_paths, job::get::get_jobs, status::set::set_status_initial,
 };
 use log::{error, warn};
 use tokio::{self, signal};

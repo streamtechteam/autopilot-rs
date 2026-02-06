@@ -1,4 +1,8 @@
-use crate::conditions::Condition;
+use crate::{
+    conditions::{Condition, ConditionScheme},
+    error::AutoPilotError,
+};
+use dialoguer::{Confirm, Input, theme::ColorfulTheme};
 use serde::{Deserialize, Serialize};
 use sysinfo::{Disks, System};
 
@@ -58,6 +62,30 @@ impl Condition for ExternalDeviceCondition {
 
     fn clone_box(&self) -> Box<dyn Condition> {
         Box::new(self.clone())
+    }
+
+    fn name(&self) -> &str {
+        "External Device"
+    }
+
+    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
+        let device_identifier = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter device name or mount point to check for:")
+            .interact_text()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+
+        let check_by_name = Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt("Check by device name? (Otherwise check by mount point)")
+            .interact_opt()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?
+            .unwrap_or(true);
+
+        Ok(ConditionScheme::ExternalDevice(
+            ExternalDeviceConditionScheme {
+                device_identifier,
+                check_by_name: Some(check_by_name),
+            },
+        ))
     }
 }
 

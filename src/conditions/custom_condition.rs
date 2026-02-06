@@ -1,8 +1,12 @@
+use dialoguer::{Confirm, Input, theme::ColorfulTheme};
 use duct::cmd;
-use serde::{Deserialize, Serialize};
 use log::error;
+use serde::{Deserialize, Serialize};
 
-use crate::conditions::Condition;
+use crate::{
+    conditions::{Condition, ConditionScheme},
+    error::AutoPilotError,
+};
 
 /// Represents a custom condition that executes an arbitrary command and checks its exit code
 #[derive(Clone)]
@@ -56,6 +60,39 @@ impl Condition for CustomCondition {
     fn clone_box(&self) -> Box<dyn Condition> {
         Box::new(self.clone())
     }
+
+    fn name(&self) -> &str {
+        "Custom"
+    }
+
+    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
+        let command = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter command to execute:")
+            .interact_text()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+
+        let check_exit_code = Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt("Check command exit code (success/failure)?")
+            .interact_opt()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?
+            .unwrap_or(true);
+
+        let target_output = if !check_exit_code {
+            let output = Input::with_theme(&ColorfulTheme::default())
+                .with_prompt("Enter expected output to match:")
+                .interact_text()
+                .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+            Some(output)
+        } else {
+            None
+        };
+
+        Ok(ConditionScheme::Custom(CustomConditionScheme {
+            command,
+            check_exit_code: Some(check_exit_code),
+            target_output,
+        }))
+    }
 }
 
 /// Check if a custom command condition is satisfied (synchronously)
@@ -101,7 +138,10 @@ pub fn sync_condition(command: &str, check_exit_code: bool, target_output: Optio
             }
         }
         Err(e) => {
-            error!("Error executing custom condition command '{}': {}", command, e);
+            error!(
+                "Error executing custom condition command '{}': {}",
+                command, e
+            );
             false
         }
     }

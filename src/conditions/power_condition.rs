@@ -1,4 +1,8 @@
-use crate::conditions::Condition;
+use crate::{
+    conditions::{Condition, ConditionScheme},
+    error::AutoPilotError,
+};
+use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
 use duct::cmd;
 use serde::{Deserialize, Serialize};
 
@@ -143,6 +147,50 @@ impl Condition for PowerCondition {
 
     fn clone_box(&self) -> Box<dyn Condition> {
         Box::new(self.clone())
+    }
+
+    fn name(&self) -> &str {
+        "Power"
+    }
+
+    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
+        let check_charging = Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt("Check if charging? (Otherwise check battery level)")
+            .interact_opt()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?
+            .unwrap_or(true);
+
+        if check_charging {
+            Ok(ConditionScheme::Power(PowerConditionScheme {
+                check_charging: Some(true),
+                threshold: None,
+                operator: None,
+            }))
+        } else {
+            let threshold: f32 = Input::<f32>::with_theme(&ColorfulTheme::default())
+                .with_prompt("Enter battery threshold percentage (0-100):")
+                .interact_text()
+                .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+            // .parse()
+            // .map_err(|_| AutoPilotError::Condition("Invalid threshold value".to_string()))?;
+
+            let operators = ["Greater than (>)", "Less than (<)"];
+            let selected_op = Select::with_theme(&ColorfulTheme::default())
+                .with_prompt("Select comparison operator:")
+                .items(&operators)
+                .default(0)
+                .interact_opt()
+                .map_err(|err| AutoPilotError::Condition(err.to_string()))?
+                .unwrap_or(0);
+
+            let operator = if selected_op == 0 { "greater" } else { "less" }.to_string();
+
+            Ok(ConditionScheme::Power(PowerConditionScheme {
+                check_charging: Some(false),
+                threshold: Some(threshold),
+                operator: Some(operator),
+            }))
+        }
     }
 }
 

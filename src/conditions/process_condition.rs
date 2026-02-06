@@ -1,4 +1,8 @@
-use crate::conditions::Condition;
+use crate::{
+    conditions::{Condition, ConditionScheme},
+    error::AutoPilotError,
+};
+use dialoguer::{Confirm, Input, theme::ColorfulTheme};
 use serde::{Deserialize, Serialize};
 use sysinfo::System;
 
@@ -50,6 +54,28 @@ impl Condition for ProcessCondition {
 
     fn clone_box(&self) -> Box<dyn Condition> {
         Box::new(self.clone())
+    }
+
+    fn name(&self) -> &str {
+        "Process"
+    }
+
+    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
+        let process_name = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter process name to monitor:")
+            .interact_text()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+
+        let should_be_running = Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt("Should the process be running? (Otherwise check if NOT running)")
+            .interact_opt()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?
+            .unwrap_or(true);
+
+        Ok(ConditionScheme::Process(ProcessConditionScheme {
+            process_name,
+            should_be_running: Some(should_be_running),
+        }))
     }
 }
 

@@ -3,6 +3,8 @@ use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 use strum::{EnumIter, IntoEnumIterator};
 
+use crate::error::AutoPilotError;
+
 pub mod bluetooth_condition;
 pub mod custom_condition;
 pub mod disk_space_condition;
@@ -24,6 +26,10 @@ pub trait Condition: Send + Sync {
 
     /// Method to support cloning through trait objects
     fn clone_box(&self) -> Box<dyn Condition>;
+
+    fn create(&self) -> Result<ConditionScheme, AutoPilotError>;
+
+    fn name(&self) -> &str;
 }
 
 /// Implement Clone for Box<dyn Condition>
@@ -112,7 +118,7 @@ impl ConditionScheme {
         ConditionScheme::iter()
             .map(|variant| {
                 // Convert to lowercase to match your serde rename
-                format!("{:?}", variant)
+                variant.to_condition().name().to_string()
             })
             .collect()
     }

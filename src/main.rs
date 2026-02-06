@@ -1,17 +1,17 @@
-use crate::{cli::handle_cli, directory::set_all_paths};
+use crate::{cli::handle_cli, fs::set_all_paths};
 use tokio::{self};
 
 mod autopilot;
 mod cli;
 mod conditions;
 mod cron;
-mod directory;
 mod error;
+mod fs;
 mod job;
 mod language;
 mod logging;
 mod status;
-mod tasks;
+mod task;
 mod utilities;
 
 #[tokio::main]

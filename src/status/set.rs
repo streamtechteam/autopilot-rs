@@ -1,7 +1,7 @@
 use std::fs;
 
 use crate::{
-    directory::get_status_path,
+    fs::get_status_path,
     job::get::get_jobs,
     status::{JobStatusEnum, JobStatusStruct, StatusLog, get::get_status_log},
 };

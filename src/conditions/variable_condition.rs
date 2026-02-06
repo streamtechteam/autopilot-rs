@@ -1,6 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use crate::conditions::Condition;
+use crate::{
+    conditions::{Condition, ConditionScheme},
+    error::AutoPilotError,
+};
+use dialoguer::{Input, theme::ColorfulTheme};
 #[derive(Clone)]
 pub struct VariableCondition {
     variable: String,
@@ -24,6 +28,27 @@ impl Condition for VariableCondition {
 
     fn clone_box(&self) -> Box<dyn Condition> {
         Box::new(self.clone())
+    }
+
+    fn name(&self) -> &str {
+        "Variable"
+    }
+
+    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
+        let variable = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter environment variable name:")
+            .interact_text()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+
+        let target = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter expected value:")
+            .interact_text()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+
+        Ok(ConditionScheme::Variable(VariableConditionScheme {
+            variable,
+            target,
+        }))
     }
 }
 

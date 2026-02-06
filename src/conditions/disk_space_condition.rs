@@ -1,4 +1,8 @@
-use crate::conditions::Condition;
+use crate::{
+    conditions::{Condition, ConditionScheme},
+    error::AutoPilotError,
+};
+use dialoguer::{Input, theme::ColorfulTheme};
 use serde::{Deserialize, Serialize};
 use sysinfo::{Disks, System};
 
@@ -69,6 +73,45 @@ impl Condition for DiskSpaceCondition {
 
     fn clone_box(&self) -> Box<dyn Condition> {
         Box::new(self.clone())
+    }
+
+    fn name(&self) -> &str {
+        "Disk Space"
+    }
+
+    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
+        let path = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter path to check disk space (e.g., /, C:\\, /home):")
+            .interact_text()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+
+        let min_free_gb: f64 = Input::<f64>::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter minimum free space required in GB:")
+            .interact_text()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+        // .parse()
+        // .map_err(|_| AutoPilotError::Condition("Invalid number format".to_string()))?;
+
+        let max_used_gb_input: f64 = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter maximum used space allowed in GB (leave empty for no limit):")
+            // .allow_empty(true)
+            .interact_text()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+
+        let max_used_gb = if max_used_gb_input == 0.0 {
+            None
+        } else {
+            Some(
+                max_used_gb_input, // .parse()
+                                   // .map_err(|_| AutoPilotError::Condition("Invalid number format".to_string()))?,
+            )
+        };
+
+        Ok(ConditionScheme::DiskSpace(DiskSpaceConditionScheme {
+            path,
+            min_free_gb,
+            max_used_gb,
+        }))
     }
 }
 

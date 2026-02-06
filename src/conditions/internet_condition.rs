@@ -1,6 +1,10 @@
-use serde::{Deserialize, Serialize};
-use crate::conditions::Condition;
+use crate::{
+    conditions::{Condition, ConditionScheme},
+    error::AutoPilotError,
+};
+use dialoguer::{Input, theme::ColorfulTheme};
 use duct::cmd;
+use serde::{Deserialize, Serialize};
 
 /// Represents an internet reachability condition (ping based)
 #[derive(Clone)]
@@ -27,7 +31,7 @@ impl InternetCondition {
 impl Condition for InternetCondition {
     fn check(&self) -> bool {
         let timeout_str = self.timeout.to_string();
-        
+
         #[cfg(target_os = "windows")]
         {
             // Windows ping: -n is count, -w is timeout in ms
@@ -62,6 +66,43 @@ impl Condition for InternetCondition {
 
     fn clone_box(&self) -> Box<dyn Condition> {
         Box::new(self.clone())
+    }
+
+    fn name(&self) -> &str {
+        "Internet"
+    }
+
+    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
+        let host: String = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter host to ping (default: 8.8.8.8):")
+            .allow_empty(true)
+            .interact_text()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+
+        let host = if host.is_empty() {
+            "8.8.8.8".to_string()
+        } else {
+            host
+        };
+
+        let timeout_input: u64 = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter timeout in seconds (default: 2):")
+            .allow_empty(true)
+            .interact_text()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+
+        let timeout = if timeout_input == 0 {
+            2
+        } else {
+            timeout_input
+            // .parse()
+            // .map_err(|_| AutoPilotError::Condition("Invalid timeout value".to_string()))?
+        };
+
+        Ok(ConditionScheme::Internet(InternetConditionScheme {
+            host: Some(host),
+            timeout: Some(timeout),
+        }))
     }
 }
 

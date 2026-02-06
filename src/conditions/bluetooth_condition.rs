@@ -1,7 +1,11 @@
+use dialoguer::{Confirm, Input, theme::ColorfulTheme};
 use duct::cmd;
 use serde::{Deserialize, Serialize};
 
-use crate::conditions::Condition;
+use crate::{
+    conditions::{Condition, ConditionScheme},
+    error::AutoPilotError,
+};
 
 /// Represents a Bluetooth device condition that checks if a specific device is connected
 #[derive(Clone)]
@@ -46,6 +50,27 @@ impl Condition for BluetoothCondition {
     fn clone_box(&self) -> Box<dyn Condition> {
         Box::new(self.clone())
     }
+
+    fn name(&self) -> &str {
+        "Bluetooth"
+    }
+
+    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
+        let device = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter device name :")
+            .interact_text()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+
+        let match_by_mac = Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt("Match by MAC address?")
+            .interact_opt()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+
+        Ok(ConditionScheme::Bluetooth(BluetoothConditionScheme {
+            device,
+            match_by_mac,
+        }))
+    }
 }
 
 /// Check if a Bluetooth device is connected (synchronously)
@@ -68,21 +93,23 @@ pub fn sync_condition(device: &str, match_by_mac: bool) -> bool {
     #[cfg(target_os = "macos")]
     {
         // macOS: Use system_profiler
-        let connected = if let Ok(output) = cmd("system_profiler", vec!["SPBluetoothDataType"])
-            .read()
-        {
-            output.contains(device)
-        } else {
-            false
-        };
+        let connected =
+            if let Ok(output) = cmd("system_profiler", vec!["SPBluetoothDataType"]).read() {
+                output.contains(device)
+            } else {
+                false
+            };
 
         if connected {
             return true;
         }
-        
+
         // Fallback to defaults read
-        if let Ok(output) = cmd("defaults", vec!["read", "/Library/Preferences/com.apple.Bluetooth.plist"])
-            .read()
+        if let Ok(output) = cmd(
+            "defaults",
+            vec!["read", "/Library/Preferences/com.apple.Bluetooth.plist"],
+        )
+        .read()
         {
             return output.contains(device);
         }
@@ -120,7 +147,7 @@ pub async fn async_condition(device: &str, match_by_mac: bool) -> bool {
 fn check_bluetooth_linux(output: &str, target_device: &str, match_by_mac: bool) -> bool {
     for line in output.lines() {
         let line = line.trim();
-        
+
         if match_by_mac {
             // MAC address format: XX:XX:XX:XX:XX:XX
             if line.contains(target_device) {

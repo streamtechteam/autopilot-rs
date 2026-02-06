@@ -1,4 +1,5 @@
 use std::env;
+use std::path::PathBuf;
 
 use log::error;
 
@@ -38,4 +39,9 @@ pub fn get_status_path() -> String {
 
 pub fn get_jobs_path() -> String {
     get_autopilot_path(None) + "/jobs"
+}
+
+pub fn get_jobs_dir() -> Result<PathBuf, crate::error::AutoPilotError> {
+    let jobs_path = get_jobs_path();
+    Ok(PathBuf::from(jobs_path))
 }

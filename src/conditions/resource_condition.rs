@@ -1,4 +1,8 @@
-use crate::conditions::Condition;
+use crate::{
+    conditions::{Condition, ConditionScheme},
+    error::AutoPilotError,
+};
+use dialoguer::{Input, Select, theme::ColorfulTheme};
 use serde::{Deserialize, Serialize};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, System};
 
@@ -70,6 +74,45 @@ impl Condition for ResourceCondition {
 
     fn clone_box(&self) -> Box<dyn Condition> {
         Box::new(self.clone())
+    }
+
+    fn name(&self) -> &str {
+        "Resource"
+    }
+
+    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
+        let resource_types = ["CPU", "Memory (RAM)"];
+        let selected_type = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Select resource type to monitor:")
+            .items(&resource_types)
+            .default(0)
+            .interact_opt()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?
+            .unwrap_or(0);
+
+        let resource_type = if selected_type == 0 { "cpu" } else { "memory" }.to_string();
+
+        let threshold: f32 = Input::<f32>::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter threshold percentage (0-100):")
+            .interact_text()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+
+        let operators = ["Greater than (>)", "Less than (<)"];
+        let selected_op = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Select comparison operator:")
+            .items(&operators)
+            .default(0)
+            .interact_opt()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?
+            .unwrap_or(0);
+
+        let operator = if selected_op == 0 { "greater" } else { "less" }.to_string();
+
+        Ok(ConditionScheme::Resource(ResourceConditionScheme {
+            resource_type,
+            threshold,
+            operator: Some(operator),
+        }))
     }
 }
 

@@ -4,7 +4,7 @@ use colored::*;
 use log::{error, info};
 
 use crate::{
-    directory::get_jobs_path,
+    fs::get_jobs_path,
     job::{Job, JobScheme},
     utilities::jsonc_parser::jsonc_parse,
 };

@@ -5,7 +5,7 @@ use std::fs;
 // use serde_json::value;
 
 use crate::{
-    directory::get_status_path,
+    fs::get_status_path,
     status::{JobStatusEnum, StatusLog, set::set_status_initial},
     utilities,
 };

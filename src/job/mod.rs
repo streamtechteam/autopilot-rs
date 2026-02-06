@@ -10,11 +10,12 @@ use crate::{
     conditions::{Condition, ConditionScheme},
     cron::{DateTimeScheme, add::add_job, to_datatime},
     status::{JobStatusEnum, set::set_state_item},
-    tasks::{self, TaskScheme},
+    task::{self, TaskScheme},
 };
 
 pub mod get;
-// #[derive(Clone)]
+pub mod set;
+
 #[derive(Clone)]
 pub struct Job {
     pub id: String,
@@ -24,7 +25,7 @@ pub struct Job {
     pub when: Option<DateTime<Local>>,
     pub check_interval: Option<String>,
     pub conditions: Vec<Box<dyn Condition>>,
-    pub tasks: Vec<tasks::Task>,
+    pub tasks: Vec<task::Task>,
 }
 
 impl Job {
@@ -35,7 +36,7 @@ impl Job {
         check_interval: Option<String>,
         when: Option<DateTime<Local>>,
         conditions: Vec<Box<dyn Condition>>,
-        tasks: Vec<tasks::Task>,
+        tasks: Vec<task::Task>,
     ) -> Self {
         Job {
             id,
@@ -56,10 +57,10 @@ impl Job {
             .map(|condition_scheme| condition_scheme.to_condition())
             .collect();
 
-        let tasks: Vec<tasks::Task> = scheme
+        let tasks: Vec<task::Task> = scheme
             .tasks
             .into_iter()
-            .map(|task_scheme| tasks::Task::new(task_scheme.command))
+            .map(|task_scheme| task::Task::new(task_scheme.command))
             .collect();
 
         let when = match scheme.when {

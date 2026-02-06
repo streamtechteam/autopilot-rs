@@ -1,4 +1,8 @@
-use crate::conditions::Condition;
+use crate::{
+    conditions::{Condition, ConditionScheme},
+    error::AutoPilotError,
+};
+use dialoguer::{Input, theme::ColorfulTheme};
 use duct::cmd;
 use log::error;
 use serde::{Deserialize, Serialize};
@@ -26,6 +30,26 @@ impl Condition for OutputCondition {
 
     fn clone_box(&self) -> Box<dyn Condition> {
         Box::new(self.clone())
+    }
+
+    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
+        //TODO
+        let command = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter command : ")
+            .interact_text()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+        let target = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Enter target : ")
+            .interact_text()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+        Ok(ConditionScheme::Output(OutputConditionScheme {
+            command,
+            target,
+        }))
+    }
+
+    fn name(&self) -> &str {
+        "Output"
     }
 }
 

@@ -31,6 +31,9 @@ pub enum AutoPilotError {
 
     #[error("Cron scheduler error: {0}")]
     Cron(#[from] tokio_cron_scheduler::JobSchedulerError),
+
+    #[error("Condition conversion error: {0}")]
+    Condition(String),
 }
 
 // Type alias for convenience
