@@ -61,9 +61,11 @@ impl Condition for ExternalDeviceCondition {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(deny_unknown_fields)]
 pub struct ExternalDeviceConditionScheme {
+    #[serde(default)]
     pub device_identifier: String,
+    #[serde(default)]
     pub check_by_name: Option<bool>,
 }

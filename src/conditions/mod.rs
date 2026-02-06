@@ -1,4 +1,7 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
+use strum::{EnumIter, IntoEnumIterator};
 
 pub mod bluetooth_condition;
 pub mod custom_condition;
@@ -31,7 +34,7 @@ impl Clone for Box<dyn Condition> {
 }
 
 /// Unified enum for all condition types, supporting deserialization from JSON/JSONC
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, EnumIter)]
 #[serde(tag = "type", content = "condition", rename_all = "lowercase")]
 pub enum ConditionScheme {
     /// Output condition: checks if command output matches a target value
@@ -104,4 +107,15 @@ impl ConditionScheme {
             ConditionScheme::Fail(scheme) => Box::new(scheme.clone()),
         }
     }
+
+    pub fn varient_names() -> Vec<String> {
+        ConditionScheme::iter()
+            .map(|variant| {
+                // Convert to lowercase to match your serde rename
+                format!("{:?}", variant)
+            })
+            .collect()
+    }
+
+    // pub fn get_props(&self)
 }

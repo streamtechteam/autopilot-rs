@@ -119,10 +119,11 @@ pub async fn async_condition(
 }
 
 /// Scheme for deserializing CustomCondition from JSON/JSONC
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(deny_unknown_fields)]
 pub struct CustomConditionScheme {
     /// The shell command to execute
+    #[serde(default)]
     pub command: String,
     /// Check for exit code 0 (true) or match output (false). Defaults to true.
     #[serde(default)]

@@ -72,10 +72,13 @@ impl Condition for DiskSpaceCondition {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(deny_unknown_fields)]
 pub struct DiskSpaceConditionScheme {
+    #[serde(default)]
     pub path: String,
+    #[serde(default)]
     pub min_free_gb: f64,
+    #[serde(default)]
     pub max_used_gb: Option<f64>,
 }

@@ -65,9 +65,11 @@ impl Condition for InternetCondition {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(deny_unknown_fields)]
 pub struct InternetConditionScheme {
+    #[serde(default)]
     pub host: Option<String>,
+    #[serde(default)]
     pub timeout: Option<u64>,
 }

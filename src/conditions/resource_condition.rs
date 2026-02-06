@@ -73,10 +73,13 @@ impl Condition for ResourceCondition {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceConditionScheme {
+    #[serde(default)]
     pub resource_type: String,
+    #[serde(default)]
     pub threshold: f32,
+    #[serde(default)]
     pub operator: Option<String>,
 }

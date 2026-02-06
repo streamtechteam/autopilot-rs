@@ -92,11 +92,15 @@ impl Condition for FileCondition {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(deny_unknown_fields)]
 pub struct FileConditionScheme {
+    #[serde(default)]
     pub path: String,
+    #[serde(default)]
     pub check_type: String,
+    #[serde(default)]
     pub time_threshold: Option<i64>,
+    #[serde(default)]
     pub size_threshold: Option<u64>,
 }

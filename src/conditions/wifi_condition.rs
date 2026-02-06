@@ -171,10 +171,11 @@ fn get_connected_wifi_windows(output: &str) -> Option<String> {
 }
 
 /// Scheme for deserializing WifiCondition from JSON/JSONC
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(deny_unknown_fields)]
 pub struct WifiConditionScheme {
     /// The SSID (network name) to match
+    #[serde(default)]
     pub ssid: String,
 }
 

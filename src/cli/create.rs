@@ -1,6 +1,7 @@
 use chrono::NaiveDate;
 use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
 use log::error;
+use strum::IntoEnumIterator;
 
 use crate::conditions::ConditionScheme;
 
@@ -65,7 +66,16 @@ pub fn create() {
             }
         }
     }
+    // for condition in ConditionScheme::varient_names() {
+    //     println!("Condition: {}", condition);
+    // }
 
-    // let conditions  = Select::with_theme(&ColorfulTheme::default()).items(ConditionScheme::varient_names(&self))
+    // for condition in ConditionScheme::iter() {
+    //     println!("Condition: {}", condition.to_condition());
+    // }
+    let conditions = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Choose a condition type : ")
+        .items(ConditionScheme::varient_names())
+        .interact();
     // .default(" ").;
 }

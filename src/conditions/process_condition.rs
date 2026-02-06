@@ -53,9 +53,11 @@ impl Condition for ProcessCondition {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(deny_unknown_fields)]
 pub struct ProcessConditionScheme {
+    #[serde(default)]
     pub process_name: String,
+    #[serde(default)]
     pub should_be_running: Option<bool>,
 }

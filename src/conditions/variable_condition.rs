@@ -37,9 +37,11 @@ pub async fn async_condition(var: &str, target: &str) -> bool {
     env_var == target
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(deny_unknown_fields)]
 pub struct VariableConditionScheme {
+    #[serde(default)]
     variable: String,
+    #[serde(default)]
     target: String,
 }

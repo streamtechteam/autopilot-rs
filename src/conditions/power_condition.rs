@@ -146,10 +146,13 @@ impl Condition for PowerCondition {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(deny_unknown_fields)]
 pub struct PowerConditionScheme {
+    #[serde(default)]
     pub check_charging: Option<bool>,
+    #[serde(default)]
     pub threshold: Option<f32>,
+    #[serde(default)]
     pub operator: Option<String>,
 }
