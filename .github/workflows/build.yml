@@ -2,9 +2,9 @@ name: Build and Release
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["master"]
   workflow_dispatch:
 
 env:
@@ -29,32 +29,32 @@ jobs:
             asset_name: autopilot-rs-macos
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Install dependencies (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libsystemd-dev
+      - name: Install dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsystemd-dev
 
-    - name: Rust Cache
-      uses: Swatinem/rust-cache@v2
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
 
-    - name: Build
-      run: cargo build --release
+      - name: Build
+        run: cargo build --release
 
-    - name: Prepare Artifact
-      shell: bash
-      run: |
-        mkdir -p dist
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          cp target/release/autopilot-rs.exe dist/${{ matrix.asset_name }}
-        else
-          cp target/release/autopilot-rs dist/${{ matrix.asset_name }}
-        fi
+      - name: Prepare Artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cp target/release/autopilot-rs.exe dist/${{ matrix.asset_name }}
+          else
+            cp target/release/autopilot-rs dist/${{ matrix.asset_name }}
+          fi
 
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.artifact_name }}
-        path: dist/${{ matrix.asset_name }}
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.asset_name }}
