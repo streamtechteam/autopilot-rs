@@ -56,21 +56,20 @@ cargo build --release
 
 ## Quick Start
 
-### 1. Start the Daemon
+### 1. Create a Job
+```bash
+autopilot-rs create
+```
+Or manually create a JSON file in `~/.autopilot-rs/jobs/my-job.jsonc`
+
+
+### 2. Start the Daemon
 
 ```bash
 autopilot-rs serve
 ```
-
 AutoPilot runs in the background, checking conditions and running tasks.
 
-### 2. Create a Job
-not available right now
-```bash
-autopilot-rs new
-```
-
-Or manually create a JSON file in `~/.autopilot-rs/jobs/my-job.jsonc`
 
 ### 3. List Jobs
 
@@ -80,7 +79,13 @@ autopilot-rs list
 
 See all your jobs and their status.
 
-### 4. Stop AutoPilot
+### 4. Remove job
+
+```bash
+autopilot-rs remove
+```
+
+### 5. Stop AutoPilot
 
 ```bash
 autopilot-rs stop
@@ -113,13 +118,13 @@ Run when a device is connected:
 }
 ```
 
-### Custom
+### Command
 
 Run a shell command and check the result:
 
 ```jsonc
 {
-  "type": "custom",
+  "type": "command",
   "condition": {
     "command": "test -f /tmp/trigger-file",
     "check_exit_code": true,
@@ -131,7 +136,7 @@ Or check command output:
 
 ```jsonc
 {
-  "type": "custom",
+  "type": "command",
   "condition": {
     "command": "date +%A",
     "target_output": "Monday",
@@ -140,19 +145,6 @@ Or check command output:
 }
 ```
 
-### Output
-
-Check if command output matches:
-
-```jsonc
-{
-  "type": "output",
-  "condition": {
-    "command": "whoami",
-    "target": "alice",
-  },
-}
-```
 
 ### Variable
 
@@ -195,6 +187,8 @@ If any condition fails, the task doesn't run.
     "time": "08:00:00",
     "date": "2026/02/02",
   },
+  // check conditions every 1000 miliseconds (1 second)
+  "check_interval": "1000",
   "conditions": [
     // Zero or more conditions
   ],
@@ -210,6 +204,7 @@ If any condition fails, the task doesn't run.
 - **name:** Display name for humans (optional)
 - **description:** What this job does (optional)
 - **when:** When to run the job (optional, defaults to run at autopilot startup)
+- **check_interval** if a condition fails, autopilot will check it again every x millsecond
 - **conditions:** List of conditions to check (optional, defaults to always run)
 - **tasks:** List of commands to execute (required)
 
@@ -239,8 +234,8 @@ Tasks run sequentially. If one fails, remaining tasks still run (for now).
 autopilot-rs serve              # Start daemon
 autopilot-rs stop               # Stop daemon
 autopilot-rs list               # List all jobs
-autopilot-rs new                # Create new job
-autopilot-rs remove <job-id>    # Remove a job
+autopilot-rs create             # Create new job
+autopilot-rs remove             # Remove a job
 autopilot-rs --verbose          # Verbose logging
 autopilot-rs --help             # Show help
 ```
@@ -365,7 +360,7 @@ test -f /tmp/file && echo "Exists" || echo "Missing"
 **Check logs:**
 
 ```bash
-tail -f ~/.autopilot-rs/logs/autopilot.log
+tail -f ~/.config/auto_pilot/logs/<logdate>.log
 ```
 
 **Enable verbose mode:**
@@ -425,7 +420,7 @@ MIT
 - [ ] Distributed execution (multiple machines)
 - [ ] Performance optimizations
 - [ ] Metrics and monitoring
-- [ ] Merging OutputCondition and CustomCondition
+- [✅] Merging OutputCondition and CustomCondition
 
 ## FAQ
 
