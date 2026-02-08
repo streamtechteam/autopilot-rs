@@ -5,14 +5,17 @@ use strum::{EnumIter, IntoEnumIterator};
 
 use crate::error::AutoPilotError;
 
+pub mod and_condition;
 pub mod bluetooth_condition;
+pub mod command_condition;
 pub mod custom_condition;
+pub mod de_condition;
 pub mod disk_space_condition;
 pub mod external_device_condition;
 pub mod fail_condition;
 pub mod file_condition;
 pub mod internet_condition;
-pub mod output_condition;
+pub mod or_condition;
 pub mod power_condition;
 pub mod process_condition;
 pub mod resource_condition;
@@ -40,17 +43,15 @@ impl Clone for Box<dyn Condition> {
 }
 
 /// Unified enum for all condition types, supporting deserialization from JSON/JSONC
-#[derive(Debug, Serialize, Deserialize, EnumIter)]
+#[derive(Clone, Debug, Serialize, Deserialize, EnumIter)]
 #[serde(tag = "type", content = "condition", rename_all = "lowercase")]
 pub enum ConditionScheme {
-    /// Output condition: checks if command output matches a target value
-    Output(output_condition::OutputConditionScheme),
+    /// Command condition: checks if command output matches a target value
+    Command(command_condition::CommandConditionScheme),
     /// Variable condition: checks if an environment variable matches a target value
     Variable(variable_condition::VariableConditionScheme),
     /// Bluetooth condition: checks if a Bluetooth device is connected
     Bluetooth(bluetooth_condition::BluetoothConditionScheme),
-    /// Custom condition: executes a custom shell command and checks the result
-    Custom(custom_condition::CustomConditionScheme),
     /// WiFi condition: checks if connected to a specific WiFi network
     Wifi(wifi_condition::WifiConditionScheme),
     /// Power condition: checks charging status or battery level
@@ -68,23 +69,21 @@ pub enum ConditionScheme {
     /// External device condition: checks for connected USB/external drives
     ExternalDevice(external_device_condition::ExternalDeviceConditionScheme),
     Fail(fail_condition::FailCondition),
+    And(and_condition::AndConditionScheme),
 }
 
 impl ConditionScheme {
     /// Convert a ConditionScheme into a boxed Condition trait object
     pub fn to_condition(&self) -> Box<dyn Condition> {
         match self {
-            ConditionScheme::Output(scheme) => Box::new(
-                output_condition::OutputCondition::from_scheme(scheme.clone()),
+            ConditionScheme::Command(scheme) => Box::new(
+                command_condition::CommandCondition::from_scheme(scheme.clone()),
             ),
             ConditionScheme::Variable(scheme) => Box::new(
                 variable_condition::VariableCondition::from_scheme(scheme.clone()),
             ),
             ConditionScheme::Bluetooth(scheme) => Box::new(
                 bluetooth_condition::BluetoothCondition::from_scheme(scheme.clone()),
-            ),
-            ConditionScheme::Custom(scheme) => Box::new(
-                custom_condition::CustomCondition::from_scheme(scheme.clone()),
             ),
             ConditionScheme::Wifi(scheme) => {
                 Box::new(wifi_condition::WifiCondition::from_scheme(scheme.clone()))
@@ -111,6 +110,9 @@ impl ConditionScheme {
                 external_device_condition::ExternalDeviceCondition::from_scheme(scheme.clone()),
             ),
             ConditionScheme::Fail(scheme) => Box::new(scheme.clone()),
+            ConditionScheme::And(scheme) => {
+                Box::new(and_condition::AndCondition::from_scheme(scheme.clone()))
+            }
         }
     }
 

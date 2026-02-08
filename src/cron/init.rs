@@ -1,8 +1,15 @@
 use tokio_cron_scheduler::JobScheduler;
 
-pub async fn init_time_check() -> JobScheduler {
-    let scheduler = JobScheduler::new().await.unwrap();
+use crate::error::AutoPilotError;
 
-    scheduler.start().await.unwrap();
+pub async fn init_time_check() -> Result<JobScheduler, AutoPilotError> {
+    let scheduler = JobScheduler::new()
+        .await
+        .map_err(|err| AutoPilotError::Cron(err))?;
+
     scheduler
+        .start()
+        .await
+        .map_err(|err| AutoPilotError::Cron(err))?;
+    Ok(scheduler)
 }

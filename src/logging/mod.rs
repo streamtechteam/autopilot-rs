@@ -4,12 +4,12 @@ use crate::fs::get_logs_path;
 
 pub fn init_logging() {
     let _logger = Logger::try_with_str("info, my::critical::module=trace")
-        .unwrap()
+        .expect("Failed to init logger")
         .log_to_file(FileSpec::default().directory(get_logs_path()))
         .duplicate_to_stdout(Duplicate::All)
         .write_mode(WriteMode::BufferAndFlush)
         .start()
-        .unwrap();
+        .expect("Failed to start logger");
 
     #[cfg(target_os = "linux")]
     {

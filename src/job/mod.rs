@@ -64,7 +64,7 @@ impl Job {
             .collect();
 
         let when = match scheme.when {
-            Some(value) => to_datatime(value),
+            Some(value) => Some(to_datatime(value).expect("Failed to parse when property")),
             None => None,
         };
         Job {
@@ -116,7 +116,12 @@ impl Job {
                     }
                     break;
                 } else if !result && self.check_interval.is_some() {
-                    let interval_ms = match self.check_interval.as_ref().unwrap().parse::<u64>() {
+                    let interval_ms = match self
+                        .check_interval
+                        .as_ref()
+                        .expect("WTF you should NOT be seeing this")
+                        .parse::<u64>()
+                    {
                         Ok(ms) => ms,
                         Err(_) => {
                             error!("check_interval value is not valid, using 1000ms as default");

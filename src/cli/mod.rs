@@ -46,7 +46,6 @@ enum Commands {
 
 pub async fn handle_cli() {
     let cli = Cli::parse();
-    // AutoPilot::prepare_logging();
     match &cli.command {
         Some(Commands::Serve) => {
             serve(cli.config_path).await;

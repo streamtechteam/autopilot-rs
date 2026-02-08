@@ -36,25 +36,37 @@ impl Condition for InternetCondition {
         {
             // Windows ping: -n is count, -w is timeout in ms
             let ms_timeout = (self.timeout * 1000).to_string();
-            cmd("ping", vec!["-n", "1", "-w", &ms_timeout, &self.host])
-                .run()
-                .is_ok()
+            duct_sh::sh_dangerous(
+                vec!["ping", "-n", "1", "-w", &ms_timeout, &self.host]
+                    .join(" ")
+                    .to_string(),
+            )
+            .run()
+            .is_ok()
         }
 
         #[cfg(target_os = "macos")]
         {
             // macOS ping: -c is count, -t is timeout in seconds
-            cmd("ping", vec!["-c", "1", "-t", &timeout_str, &self.host])
-                .run()
-                .is_ok()
+            duct_sh::sh_dangerous(
+                vec!["ping", "-c", "1", "-t", &timeout_str, &self.host]
+                    .join(" ")
+                    .to_string(),
+            )
+            .run()
+            .is_ok()
         }
 
         #[cfg(target_os = "linux")]
         {
             // Linux ping: -c is count, -W is timeout in seconds
-            cmd("ping", vec!["-c", "1", "-W", &timeout_str, &self.host])
-                .run()
-                .is_ok()
+            duct_sh::sh_dangerous(
+                vec!["ping", "-c", "1", "-W", &timeout_str, &self.host]
+                    .join(" ")
+                    .to_string(),
+            )
+            .run()
+            .is_ok()
         }
 
         #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
@@ -91,13 +103,7 @@ impl Condition for InternetCondition {
             .interact_text()
             .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
 
-        let timeout = if timeout_input == 0 {
-            2
-        } else {
-            timeout_input
-            // .parse()
-            // .map_err(|_| AutoPilotError::Condition("Invalid timeout value".to_string()))?
-        };
+        let timeout = if timeout_input == 0 { 2 } else { timeout_input };
 
         Ok(ConditionScheme::Internet(InternetConditionScheme {
             host: Some(host),

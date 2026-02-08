@@ -5,6 +5,7 @@ mod autopilot;
 mod cli;
 mod conditions;
 mod cron;
+mod cross_platform;
 mod error;
 mod fs;
 mod job;

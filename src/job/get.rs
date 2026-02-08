@@ -4,6 +4,7 @@ use colored::*;
 use log::{error, info};
 
 use crate::{
+    error::AutoPilotError,
     fs::get_jobs_path,
     job::{Job, JobScheme},
     utilities::jsonc_parser::jsonc_parse,
@@ -84,4 +85,22 @@ pub fn get_jobs_paths() -> Vec<PathBuf> {
         }
     }
     jobs_path
+}
+
+pub fn get_job(path: PathBuf) -> Result<Job, AutoPilotError> {
+    match fs::read_to_string(&path) {
+        Ok(content) => match serde_json::from_str::<JobScheme>(jsonc_parse(&content).as_str()) {
+            Ok(job_scheme) => Ok(Job::from_scheme(job_scheme)),
+            Err(e) => Err(AutoPilotError::InvalidJob(format!(
+                "Failed to parse job file {}: {}",
+                path.display(),
+                e
+            )))?,
+        },
+        Err(e) => Err(AutoPilotError::Json(format!(
+            "Failed to read job file {}: {}",
+            path.display(),
+            e
+        )))?,
+    }
 }

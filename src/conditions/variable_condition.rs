@@ -36,7 +36,7 @@ impl Condition for VariableCondition {
 
     fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
         let variable = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter environment variable name:")
+            .with_prompt("Enter environment variable name (without $):")
             .interact_text()
             .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
 

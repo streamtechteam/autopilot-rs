@@ -1,4 +1,5 @@
 use chrono::{NaiveDate, NaiveTime};
+use colored::Colorize;
 use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
 use log::error;
 use serde_json::json;
@@ -12,11 +13,11 @@ use crate::cron::DateTimeScheme;
 use crate::error::AutoPilotError;
 use crate::fs::get_jobs_dir;
 use crate::job::JobScheme;
-use crate::job::set::set_job;
+use crate::job::set::add_job;
 use crate::task::TaskScheme;
 
 pub fn create() {
-    match create_interactive_job() {
+    match create_interactive() {
         Ok(job_file_path) => {
             println!("Job created successfully at: {}", job_file_path.display());
         }
@@ -26,7 +27,7 @@ pub fn create() {
     }
 }
 
-fn create_interactive_job() -> Result<PathBuf, AutoPilotError> {
+fn create_interactive() -> Result<PathBuf, AutoPilotError> {
     // Get job basic information
     let name: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Enter job name:")
@@ -133,13 +134,17 @@ fn create_interactive_job() -> Result<PathBuf, AutoPilotError> {
     let mut tasks: Vec<TaskScheme> = Vec::new();
     loop {
         if !Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("Do you want to add a task?")
+            .with_prompt("Do you want to add a task? (at least one is required)")
             .interact_opt()
             .map_err(|err| {
                 AutoPilotError::InvalidJob(format!("Failed to get task preference: {}", err))
             })?
             .unwrap_or(false)
         {
+            if tasks.len() == 0 {
+                println!("{}", "You must add at least one task.".red());
+                continue;
+            }
             break;
         }
 
@@ -170,7 +175,7 @@ fn create_interactive_job() -> Result<PathBuf, AutoPilotError> {
     }else {
         None
     };
-    let job_file_path = set_job(
+    let job_file_path = add_job(
         Some(name),
         Some(description),
         when,

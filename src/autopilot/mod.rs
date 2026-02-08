@@ -9,7 +9,7 @@ pub struct AutoPilot {
 impl AutoPilot {
     pub async fn new() -> Self {
         Self {
-            scheduler: init_time_check().await,
+            scheduler: init_time_check().await.expect("failed to init cron"),
         }
     }
     pub fn start(&mut self) {

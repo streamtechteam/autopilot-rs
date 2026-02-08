@@ -138,9 +138,6 @@ impl Condition for FileCondition {
                 let time_threshold = if time_input == 0 {
                     Some(300)
                 } else {
-                    // Some(time_input.parse().map_err(|_| {
-                    //     AutoPilotError::Condition("Invalid number format".to_string())
-                    // })?)
                     Some(time_input)
                 };
 
@@ -153,11 +150,7 @@ impl Condition for FileCondition {
                     .interact_text()
                     .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
 
-                let size_threshold =
-                    // Some(size_input.parse().map_err(|_| {
-                    //     AutoPilotError::Condition("Invalid number format".to_string())
-                    // })?);
-                    Some(size_input);
+                let size_threshold = Some(size_input);
 
                 (None, size_threshold)
             }

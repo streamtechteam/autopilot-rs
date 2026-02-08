@@ -6,7 +6,7 @@ pub enum AutoPilotError {
     Io(#[from] std::io::Error),
 
     #[error("JSON serialization/deserialization error: {0}")]
-    Json(#[from] serde_json::Error),
+    Json(String),
 
     #[error("Job execution error: {0}")]
     JobExecution(String),
@@ -25,6 +25,9 @@ pub enum AutoPilotError {
 
     #[error("Invalid job definition: {0}")]
     InvalidJob(String),
+
+    #[error("Dialoguer error: {0}")]
+    Dialoguer(String),
 
     #[error("Signal handling error: {0}")]
     Signal(String),

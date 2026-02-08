@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 pub mod runner;
-#[derive(Clone)]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Task {
     pub command: String,
@@ -18,7 +17,3 @@ impl Task {
 }
 
 pub type TaskScheme = Task;
-
-// pub struct TaskScheme {
-//     pub command: String,
-// }

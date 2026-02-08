@@ -1,6 +1,10 @@
-use chrono::{DateTime, Local, NaiveDate, NaiveTime, TimeZone};
+use std::error::Error;
+
+use chrono::{DateTime, Local, NaiveDate, NaiveTime, ParseError, TimeZone};
 use log::error;
 use serde::{Deserialize, Serialize};
+
+use crate::error::AutoPilotError;
 
 pub mod add;
 pub mod init;
@@ -11,7 +15,7 @@ pub struct DateTimeScheme {
     pub time: String,
 }
 
-pub fn to_datatime(scheme: DateTimeScheme) -> Option<DateTime<Local>> {
+pub fn to_datatime(scheme: DateTimeScheme) -> Result<DateTime<Local>, ParseError> {
     let date: NaiveDate;
     let time: NaiveTime;
     let naive_dt;
@@ -27,24 +31,19 @@ pub fn to_datatime(scheme: DateTimeScheme) -> Option<DateTime<Local>> {
                         .from_local_datetime(&naive_dt)
                         .single()
                         .ok_or("Ambiguous or invalid local datetime".to_string())
-                        .unwrap();
+                        .expect("invalid local datetime");
                 }
                 Err(e) => {
-                    local_dt = Local.with_ymd_and_hms(0001, 01, 01, 01, 01, 01).unwrap();
-
                     error!("Invalid date format. Expected YYYY/MM/DD: {}", e);
+                    return Err(e);
                 }
             }
         }
         Err(e) => {
-            local_dt = Local.with_ymd_and_hms(0001, 01, 01, 01, 01, 01).unwrap();
             error!("Invalid time format. Expected HH:MM:SS: {}", e);
+            return Err(e);
         }
     }
 
-    // Parse time
-
-    // Convert to local time safely
-
-    Some(local_dt)
+    Ok(local_dt)
 }

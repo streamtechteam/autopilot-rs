@@ -19,6 +19,7 @@ tokio-cron-scheduler = "0.15.1"
 sysinfo = "0.33.1"
 dialoguer = "0.12.0"
 strum = { version = "0.27.2", features = ["derive"] }
+duct_sh = "1.0.0"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 systemd = "0.10.1"

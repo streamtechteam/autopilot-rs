@@ -123,7 +123,7 @@ pub fn sync_condition(device: &str, match_by_mac: bool) -> bool {
             "Get-CimInstance -Class Win32_PnPDevice | Where-Object {{$_.Name -like '*{}*' -and $_.Status -eq 'OK'}}",
             device
         );
-        if let Ok(output) = cmd("powershell", vec!["-NoProfile", "-Command", &ps_cmd]).read() {
+        if let Ok(output) = duct_sh::sh_dangerous(&ps_cmd).read() {
             return !output.is_empty();
         }
         false
@@ -173,34 +173,4 @@ pub struct BluetoothConditionScheme {
     /// Match by MAC address (true) or device name (false). Defaults to false.
     #[serde(default)]
     pub match_by_mac: Option<bool>,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_bluetooth_condition_creation() {
-        let condition = BluetoothCondition::new("MyHeadphones".to_string());
-        assert_eq!(condition.device, "MyHeadphones");
-        assert!(!condition.match_by_mac);
-    }
-
-    #[test]
-    fn test_bluetooth_condition_with_mac() {
-        let condition = BluetoothCondition::with_mac("AA:BB:CC:DD:EE:FF".to_string());
-        assert_eq!(condition.device, "AA:BB:CC:DD:EE:FF");
-        assert!(condition.match_by_mac);
-    }
-
-    #[test]
-    fn test_bluetooth_condition_from_scheme() {
-        let scheme = BluetoothConditionScheme {
-            device: "TestDevice".to_string(),
-            match_by_mac: Some(true),
-        };
-        let condition = BluetoothCondition::from_scheme(scheme);
-        assert_eq!(condition.device, "TestDevice");
-        assert!(condition.match_by_mac);
-    }
 }

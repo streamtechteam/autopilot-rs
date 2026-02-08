@@ -19,7 +19,10 @@ pub fn get_autopilot_path(config_path: Option<String>) -> String {
         "/.config/auto-pilot"
     };
 
-    let auto_pilot_path: String = home_path.to_str().unwrap().to_string()
+    let auto_pilot_path: String = home_path
+        .to_str()
+        .expect("cant convert home path to String")
+        .to_string()
         + config_path.unwrap_or(default_subdir.to_string()).as_str();
 
     auto_pilot_path
