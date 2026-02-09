@@ -543,7 +543,6 @@ All 12 condition types work on all platforms.
 ## Documentation
 
 - **[CONDITIONS.md](docs/CONDITIONS.md)** - Detailed condition reference (12 types)
-- **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Debug guides
 - **[PLUGIN-SYSTEM.md](PLUGIN-SYSTEM.md)** - Extend AutoPilot with custom plugins (coming soon)
 
 ## Contributing
