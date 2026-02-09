@@ -9,8 +9,6 @@ use log::{error, info, warn};
 use tokio::{self, signal};
 use tokio_cron_scheduler::job;
 
-// const AUTOPILOT_SHUTDOWN: &str = "AutoPilot shutting down...";
-
 pub async fn serve(config_path: Option<String>) {
     let mut auto_pilot = AutoPilot::new().await;
     auto_pilot.start();
@@ -107,17 +105,14 @@ pub async fn serve(config_path: Option<String>) {
     #[cfg(windows)]
     {
         // Handle Windows (only Ctrl+C)
-        // tokio::spawn(async {
         if let Err(e) = signal::ctrl_c().await {
             error!("Failed to listen for ctrl+c: {}", e);
             std::process::exit(1);
         }
-        // println!("Received SIGINT/Ctrl+C, initializing state...");
-        warn!("{}", AUTOPILOT_SHUTDOWN);
+        warn!("{}", crate::language::en_us::AUTOPILOT_SHUTDOWN);
         if let Err(e) = set_status_initial() {
             error!("Failed to initialize status: {}", e);
         }
         std::process::exit(0);
-        // });
     }
 }
