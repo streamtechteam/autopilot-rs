@@ -12,17 +12,17 @@ Define a job, set conditions, list tasks. AutoPilot does the rest.
   "name": "Setup my workday",
   "when": {
     "time": "08:00:00",
-    "date": "2026/02/02",
+    "date": "2026/02/02"
   },
   "conditions": [
     { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } },
-    { "type": "bluetooth", "condition": { "device": "My Headphones" } },
+    { "type": "bluetooth", "condition": { "device": "My Headphones" } }
   ],
   "tasks": [
     { "command": "open /Applications/Slack.app" },
     { "command": "open /Applications/VSCode.app" },
-    { "command": "notify-send 'Good morning!'" },
-  ],
+    { "command": "notify-send 'Good morning!'" }
+  ]
 }
 ```
 
@@ -93,6 +93,8 @@ autopilot-rs stop
 
 ## Condition Types
 
+AutoPilot supports 12 condition types for flexible automation:
+
 ### WiFi
 
 Run when connected to a specific network:
@@ -100,7 +102,7 @@ Run when connected to a specific network:
 ```jsonc
 {
   "type": "wifi",
-  "condition": { "ssid": "HomeNetwork" },
+  "condition": { "ssid": "HomeNetwork" }
 }
 ```
 
@@ -113,8 +115,8 @@ Run when a device is connected:
   "type": "bluetooth",
   "condition": {
     "device": "My Headphones",
-    "match_by_mac": false,
-  },
+    "match_by_mac": false
+  }
 }
 ```
 
@@ -127,8 +129,8 @@ Run a shell command and check the result:
   "type": "command",
   "condition": {
     "command": "test -f /tmp/trigger-file",
-    "check_exit_code": true,
-  },
+    "check_exit_code": true
+  }
 }
 ```
 
@@ -140,11 +142,10 @@ Or check command output:
   "condition": {
     "command": "date +%A",
     "target_output": "Monday",
-    "check_exit_code": false,
-  },
+    "check_exit_code": false
+  }
 }
 ```
-
 
 ### Variable
 
@@ -155,8 +156,118 @@ Check environment variables:
   "type": "variable",
   "condition": {
     "variable": "USER",
-    "target": "alice",
-  },
+    "target": "alice"
+  }
+}
+```
+
+### Power
+
+Check battery status or charging:
+
+```jsonc
+{
+  "type": "power",
+  "condition": {
+    "check_charging": true
+  }
+}
+```
+
+Or battery level:
+
+```jsonc
+{
+  "type": "power",
+  "condition": {
+    "threshold": 20,
+    "operator": "less"
+  }
+}
+```
+
+### Resource
+
+Check CPU or memory usage:
+
+```jsonc
+{
+  "type": "resource",
+  "condition": {
+    "resource_type": "cpu",
+    "threshold": 20,
+    "operator": "less"
+  }
+}
+```
+
+### Internet
+
+Check internet connectivity:
+
+```jsonc
+{
+  "type": "internet",
+  "condition": {
+    "host": "8.8.8.8",
+    "timeout": 2
+  }
+}
+```
+
+### Process
+
+Check if a process is running:
+
+```jsonc
+{
+  "type": "process",
+  "condition": {
+    "process_name": "firefox",
+    "should_be_running": true
+  }
+}
+```
+
+### Disk Space
+
+Check available disk space:
+
+```jsonc
+{
+  "type": "diskspace",
+  "condition": {
+    "path": "/",
+    "min_free_gb": 10
+  }
+}
+```
+
+### File
+
+Check file existence or state:
+
+```jsonc
+{
+  "type": "file",
+  "condition": {
+    "path": "/tmp/ready.flag",
+    "check_type": "exists"
+  }
+}
+```
+
+### External Device
+
+Check for USB/external drives:
+
+```jsonc
+{
+  "type": "externaldevice",
+  "condition": {
+    "device_identifier": "My USB Drive",
+    "check_by_name": true
+  }
 }
 ```
 
@@ -169,8 +280,8 @@ All conditions must be true (AND logic):
   "conditions": [
     { "type": "wifi", "condition": { "ssid": "Office" } },
     { "type": "bluetooth", "condition": { "device": "My Headphones" } },
-    { "type": "custom", "condition": { "command": "test -f /etc/hosts" } },
-  ],
+    { "type": "power", "condition": { "check_charging": true } }
+  ]
 }
 ```
 
@@ -185,9 +296,9 @@ If any condition fails, the task doesn't run.
   "description": "What this job does",
   "when": {
     "time": "08:00:00",
-    "date": "2026/02/02",
+    "date": "2026/02/02"
   },
-  // check conditions every 1000 miliseconds (1 second)
+  // check conditions every 1000 milliseconds (1 second)
   "check_interval": "1000",
   "conditions": [
     // Zero or more conditions
@@ -195,8 +306,8 @@ If any condition fails, the task doesn't run.
   "tasks": [
     // One or more tasks
     { "command": "echo 'Hello'" },
-    { "command": "touch /tmp/file" },
-  ],
+    { "command": "touch /tmp/file" }
+  ]
 }
 ```
 
@@ -204,7 +315,7 @@ If any condition fails, the task doesn't run.
 - **name:** Display name for humans (optional)
 - **description:** What this job does (optional)
 - **when:** When to run the job (optional, defaults to run at autopilot startup)
-- **check_interval** if a condition fails, autopilot will check it again every x millsecond
+- **check_interval:** If a condition fails, autopilot will check it again every x milliseconds
 - **conditions:** List of conditions to check (optional, defaults to always run)
 - **tasks:** List of commands to execute (required)
 
@@ -214,7 +325,7 @@ Each task is a shell command:
 
 ```jsonc
 {
-  "command": "ls -la /home",
+  "command": "ls -la /home"
 }
 ```
 
@@ -222,7 +333,7 @@ Or multi-step with pipes:
 
 ```jsonc
 {
-  "command": "cat /var/log/system.log | grep ERROR | wc -l",
+  "command": "cat /var/log/system.log | grep ERROR | wc -l"
 }
 ```
 
@@ -265,7 +376,7 @@ AutoPilot reads from `~/.auto_pilot/`:
   "id": "sync-home-wifi",
   "name": "Sync files when on home network",
   "conditions": [{ "type": "wifi", "condition": { "ssid": "HomeNetwork" } }],
-  "tasks": [{ "command": "rsync -av ~/Documents /mnt/nas" }],
+  "tasks": [{ "command": "rsync -av ~/Documents /mnt/nas" }]
 }
 ```
 
@@ -277,17 +388,17 @@ AutoPilot reads from `~/.auto_pilot/`:
   "name": "Morning setup",
   "when": {
     "time": "08:00:00",
-    "date": "2026/02/02",
+    "date": "2026/02/02"
   },
   "conditions": [
     { "type": "bluetooth", "condition": { "device": "Headphones" } },
-    { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
+    { "type": "wifi", "condition": { "ssid": "HomeNetwork" } }
   ],
   "tasks": [
     { "command": "brew update" },
     { "command": "notify-send 'Good morning!'" },
-    { "command": "open /Applications/Mail.app" },
-  ],
+    { "command": "open /Applications/Mail.app" }
+  ]
 }
 ```
 
@@ -298,12 +409,38 @@ AutoPilot reads from `~/.auto_pilot/`:
   "id": "headphones-connected",
   "name": "Play sound when headphones connect",
   "conditions": [
-    { "type": "bluetooth", "condition": { "device": "Sony Headphones" } },
+    { "type": "bluetooth", "condition": { "device": "Sony Headphones" } }
   ],
   "tasks": [
     { "command": "pactl set-default-sink 'Sony Headphones'" },
-    { "command": "speaker-test -t sine -f 1000 -l 1" },
+    { "command": "speaker-test -t sine -f 1000 -l 1" }
+  ]
+}
+```
+
+### Run only when system is idle
+
+```jsonc
+{
+  "id": "idle-backup",
+  "name": "Backup when CPU is idle",
+  "conditions": [
+    {
+      "type": "resource",
+      "condition": {
+        "resource_type": "cpu",
+        "threshold": 20,
+        "operator": "less"
+      }
+    },
+    {
+      "type": "power",
+      "condition": { "check_charging": true }
+    }
   ],
+  "tasks": [
+    { "command": "backup.sh" }
+  ]
 }
 ```
 
@@ -315,17 +452,17 @@ AutoPilot reads from `~/.auto_pilot/`:
   "name": "Process when trigger file exists",
   "conditions": [
     {
-      "type": "custom",
+      "type": "file",
       "condition": {
-        "command": "test -f /tmp/ready-to-process",
-        "check_exit_code": true,
-      },
-    },
+        "path": "/tmp/ready-to-process",
+        "check_type": "exists"
+      }
+    }
   ],
   "tasks": [
     { "command": "process_data.sh" },
-    { "command": "rm /tmp/ready-to-process" },
-  ],
+    { "command": "rm /tmp/ready-to-process" }
+  ]
 }
 ```
 
@@ -390,16 +527,23 @@ autopilot-rs serve --verbose
 | ------------------- | ----- | ----- | ------- |
 | WiFi detection      | ✅    | ✅    | ✅      |
 | Bluetooth detection | ✅    | ✅    | ✅      |
-| Custom commands     | ✅    | ✅    | ✅      |
+| Command execution   | ✅    | ✅    | ✅      |
 | Output matching     | ✅    | ✅    | ✅      |
 | Variables           | ✅    | ✅    | ✅      |
+| Power/Battery       | ✅    | ✅    | ✅      |
+| Resource (CPU/RAM)  | ✅    | ✅    | ✅      |
+| Internet check      | ✅    | ✅    | ✅      |
+| Process monitoring  | ✅    | ✅    | ✅      |
+| Disk space          | ✅    | ✅    | ✅      |
+| File monitoring     | ✅    | ✅    | ✅      |
+| External devices    | ✅    | ✅    | ✅      |
 
-All conditions work on all platforms.
+All 12 condition types work on all platforms.
 
 ## Documentation
 
-- **[CONDITIONS.md](docs/CONDITIONS.md)** - Detailed condition reference
-- **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Debug guides (coming soon)
+- **[CONDITIONS.md](docs/CONDITIONS.md)** - Detailed condition reference (12 types)
+- **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Debug guides
 - **[PLUGIN-SYSTEM.md](PLUGIN-SYSTEM.md)** - Extend AutoPilot with custom plugins (coming soon)
 
 ## Contributing
@@ -420,7 +564,7 @@ MIT
 - [ ] Distributed execution (multiple machines)
 - [ ] Performance optimizations
 - [ ] Metrics and monitoring
-- [✅] Merging OutputCondition and CustomCondition
+- [x] 12 condition types (WiFi, Bluetooth, Command, Variable, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, And)
 
 ## FAQ
 
@@ -438,6 +582,9 @@ A: Mostly. Dependencies are minimal. Check docs for platform-specific requiremen
 
 **Q: Can I use this with cron?**  
 A: Yes, but AutoPilot is designed to replace constant cron tasks with condition-based execution.
+
+**Q: How many condition types are supported?**  
+A: 12 condition types: WiFi, Bluetooth, Command, Variable, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, and And (composite).
 
 ---
 

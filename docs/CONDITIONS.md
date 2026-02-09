@@ -18,8 +18,8 @@ Conditions are checks that must pass before a job's tasks are executed. A job wi
 {
   "type": "wifi",
   "condition": {
-    "ssid": "network_name", // Required: WiFi network name (SSID)
-  },
+    "ssid": "network_name" // Required: WiFi network name (SSID)
+  }
 }
 ```
 
@@ -29,8 +29,8 @@ Conditions are checks that must pass before a job's tasks are executed. A job wi
 {
   "type": "wifi",
   "condition": {
-    "ssid": "HomeNetwork",
-  },
+    "ssid": "HomeNetwork"
+  }
 }
 ```
 
@@ -59,8 +59,8 @@ Conditions are checks that must pass before a job's tasks are executed. A job wi
   "type": "bluetooth",
   "condition": {
     "device": "device_name_or_mac", // Required: Device name or MAC address
-    "match_by_mac": false, // Optional: true to match by MAC, false for name (default: false)
-  },
+    "match_by_mac": false // Optional: true to match by MAC, false for name (default: false)
+  }
 }
 ```
 
@@ -73,8 +73,8 @@ _Match by device name:_
   "type": "bluetooth",
   "condition": {
     "device": "My Headphones",
-    "match_by_mac": false,
-  },
+    "match_by_mac": false
+  }
 }
 ```
 
@@ -85,8 +85,8 @@ _Match by MAC address:_
   "type": "bluetooth",
   "condition": {
     "device": "AA:BB:CC:DD:EE:FF",
-    "match_by_mac": true,
-  },
+    "match_by_mac": true
+  }
 }
 ```
 
@@ -104,7 +104,7 @@ _Match by MAC address:_
 
 ---
 
-### 3. Custom Condition
+### 3. Command Condition
 
 **Purpose:** Execute arbitrary shell commands and check the result.
 
@@ -112,12 +112,12 @@ _Match by MAC address:_
 
 ```jsonc
 {
-  "type": "custom",
+  "type": "command",
   "condition": {
     "command": "shell_command", // Required: Command to execute
     "check_exit_code": true, // Optional: Check exit code 0 (default: true)
-    "target_output": "expected_text", // Optional: Check if output matches this value
-  },
+    "target_output": "expected_text" // Optional: Check if output matches this value
+  }
 }
 ```
 
@@ -127,11 +127,11 @@ _Check exit code (success/failure):_
 
 ```jsonc
 {
-  "type": "custom",
+  "type": "command",
   "condition": {
     "command": "test -f /tmp/my-file",
-    "check_exit_code": true,
-  },
+    "check_exit_code": true
+  }
 }
 ```
 
@@ -139,12 +139,12 @@ _Check command output:_
 
 ```jsonc
 {
-  "type": "custom",
+  "type": "command",
   "condition": {
     "command": "cat /sys/class/power_supply/BAT0/status",
     "check_exit_code": false,
-    "target_output": "Discharging",
-  },
+    "target_output": "Discharging"
+  }
 }
 ```
 
@@ -159,48 +159,12 @@ _Check command output:_
 **Shell Platform Notes:**
 
 - **Linux:** Uses `sh` (POSIX shell)
-- **macOS:** Uses `zsh`
-- **Windows:** Uses PowerShell
+- **macOS:** Uses `sh`
+- **Windows:** Uses windows default shell
 
 ---
 
-### 4. Output Condition
-
-**Purpose:** Execute a command and check if its output matches a target value.
-
-**Schema:**
-
-```jsonc
-{
-  "type": "output",
-  "condition": {
-    "command": "shell_command", // Required: Command to execute
-    "target": "expected_output", // Required: Expected output
-  },
-}
-```
-
-**Example:**
-
-```jsonc
-{
-  "type": "output",
-  "condition": {
-    "command": "date +%A",
-    "target": "Monday",
-  },
-}
-```
-
-**Use Cases:**
-
-- Run tasks on specific days of the week
-- Check hostname or environment variables
-- Parse log files or config values
-
----
-
-### 5. Variable Condition
+### 4. Variable Condition
 
 **Purpose:** Check if an environment variable matches an expected value.
 
@@ -211,8 +175,8 @@ _Check command output:_
   "type": "variable",
   "condition": {
     "variable": "VAR_NAME", // Required: Environment variable name
-    "target": "expected_value", // Required: Expected value
-  },
+    "target": "expected_value" // Required: Expected value
+  }
 }
 ```
 
@@ -223,8 +187,8 @@ _Check command output:_
   "type": "variable",
   "condition": {
     "variable": "USER",
-    "target": "alice",
-  },
+    "target": "alice"
+  }
 }
 ```
 
@@ -236,9 +200,370 @@ _Check command output:_
 
 ---
 
+### 5. Power Condition
+
+**Purpose:** Check charging status or battery level.
+
+**Schema:**
+
+```jsonc
+{
+  "type": "power",
+  "condition": {
+    "check_charging": true, // Optional: Check if charging (default: false)
+    "threshold": 20, // Optional: Battery percentage threshold (0-100)
+    "operator": "less" // Optional: "greater" or "less" (default: "greater")
+  }
+}
+```
+
+**Examples:**
+
+_Check if charging:_
+
+```jsonc
+{
+  "type": "power",
+  "condition": {
+    "check_charging": true
+  }
+}
+```
+
+_Check battery level:_
+
+```jsonc
+{
+  "type": "power",
+  "condition": {
+    "threshold": 20,
+    "operator": "less"
+  }
+}
+```
+
+**Platform Support:**
+
+- **Linux:** Reads from `/sys/class/power_supply/`
+- **macOS:** Uses `pmset -g batt`
+- **Windows:** Uses PowerShell `Win32_Battery`
+
+**Use Cases:**
+
+- Pause heavy tasks when battery is low
+- Run backup only when charging
+- Alert when battery drops below threshold
+
+---
+
+### 6. Resource Condition
+
+**Purpose:** Check CPU or RAM usage.
+
+**Schema:**
+
+```jsonc
+{
+  "type": "resource",
+  "condition": {
+    "resource_type": "cpu", // Required: "cpu" or "memory"
+    "threshold": 80, // Required: Percentage threshold (0-100)
+    "operator": "less" // Optional: "greater" or "less" (default: "greater")
+  }
+}
+```
+
+**Examples:**
+
+_Run when CPU is idle:_
+
+```jsonc
+{
+  "type": "resource",
+  "condition": {
+    "resource_type": "cpu",
+    "threshold": 20,
+    "operator": "less"
+  }
+}
+```
+
+_Check if RAM is high:_
+
+```jsonc
+{
+  "type": "resource",
+  "condition": {
+    "resource_type": "memory",
+    "threshold": 80,
+    "operator": "greater"
+  }
+}
+```
+
+**Use Cases:**
+
+- Run heavy tasks only when system is idle
+- Trigger cleanup when memory is high
+- Pause background jobs during high CPU usage
+
+---
+
+### 7. Internet Condition
+
+**Purpose:** Check internet reachability (ping-based).
+
+**Schema:**
+
+```jsonc
+{
+  "type": "internet",
+  "condition": {
+    "host": "8.8.8.8", // Optional: Host to ping (default: "8.8.8.8")
+    "timeout": 2 // Optional: Timeout in seconds (default: 2)
+  }
+}
+```
+
+**Example:**
+
+```jsonc
+{
+  "type": "internet",
+  "condition": {
+    "host": "google.com",
+    "timeout": 5
+  }
+}
+```
+
+**Use Cases:**
+
+- Sync files only when online
+- Skip network-dependent tasks when offline
+- Check if a specific server is reachable
+
+---
+
+### 8. Process Condition
+
+**Purpose:** Check if a process is running (or not running).
+
+**Schema:**
+
+```jsonc
+{
+  "type": "process",
+  "condition": {
+    "process_name": "firefox", // Required: Process name to check
+    "should_be_running": true // Optional: true = must be running, false = must NOT be running (default: true)
+  }
+}
+```
+
+**Examples:**
+
+_Run only if Firefox is running:_
+
+```jsonc
+{
+  "type": "process",
+  "condition": {
+    "process_name": "firefox",
+    "should_be_running": true
+  }
+}
+```
+
+_Run only if no browser is open:_
+
+```jsonc
+{
+  "type": "process",
+  "condition": {
+    "process_name": "chrome",
+    "should_be_running": false
+  }
+}
+```
+
+**Use Cases:**
+
+- Take action when an app starts
+- Wait until a process exits
+- Prevent conflicts with running applications
+
+---
+
+### 9. Disk Space Condition
+
+**Purpose:** Check available disk space.
+
+**Schema:**
+
+```jsonc
+{
+  "type": "diskspace",
+  "condition": {
+    "path": "/", // Required: Path to check (mount point)
+    "min_free_gb": 10, // Required: Minimum free space in GB
+    "max_used_gb": 100 // Optional: Maximum used space in GB
+  }
+}
+```
+
+**Example:**
+
+```jsonc
+{
+  "type": "diskspace",
+  "condition": {
+    "path": "/home",
+    "min_free_gb": 5
+  }
+}
+```
+
+**Use Cases:**
+
+- Trigger cleanup when disk is almost full
+- Skip downloads if space is low
+- Alert on disk space issues
+
+---
+
+### 10. File Condition
+
+**Purpose:** Check file existence or properties.
+
+**Schema:**
+
+```jsonc
+{
+  "type": "file",
+  "condition": {
+    "path": "/path/to/file", // Required: File or directory path
+    "check_type": "exists", // Required: "exists", "modified_recently", or "size_changed"
+    "time_threshold": 300, // Optional: Seconds for "modified_recently" (default: 300)
+    "size_threshold": 1024 // Optional: Bytes for "size_changed"
+  }
+}
+```
+
+**Examples:**
+
+_Check if file exists:_
+
+```jsonc
+{
+  "type": "file",
+  "condition": {
+    "path": "/tmp/ready.flag",
+    "check_type": "exists"
+  }
+}
+```
+
+_Check if file was recently modified:_
+
+```jsonc
+{
+  "type": "file",
+  "condition": {
+    "path": "/var/log/app.log",
+    "check_type": "modified_recently",
+    "time_threshold": 60
+  }
+}
+```
+
+**Use Cases:**
+
+- Wait for a file to appear
+- React to file changes
+- Trigger on log activity
+
+---
+
+### 11. External Device Condition
+
+**Purpose:** Check for connected USB/external drives.
+
+**Schema:**
+
+```jsonc
+{
+  "type": "externaldevice",
+  "condition": {
+    "device_identifier": "USB_Drive", // Required: Device name or mount point
+    "check_by_name": true // Optional: true = match by name, false = match by mount point (default: false)
+  }
+}
+```
+
+**Examples:**
+
+_Check by device name:_
+
+```jsonc
+{
+  "type": "externaldevice",
+  "condition": {
+    "device_identifier": "My USB Drive",
+    "check_by_name": true
+  }
+}
+```
+
+_Check by mount point:_
+
+```jsonc
+{
+  "type": "externaldevice",
+  "condition": {
+    "device_identifier": "/media/backup",
+    "check_by_name": false
+  }
+}
+```
+
+**Use Cases:**
+
+- Auto-backup when USB drive is connected
+- Eject drive after operation completes
+- Sync files when specific drive is mounted
+
+---
+
+### 12. And Condition (Composite)
+
+**Purpose:** Combine multiple conditions with AND logic (all must pass).
+
+**Schema:**
+
+```jsonc
+{
+  "type": "and",
+  "condition": {
+    "conditions": [
+      { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
+      { "type": "bluetooth", "condition": { "device": "MyPhone" } }
+    ]
+  }
+}
+```
+
+**Use Cases:**
+
+- Complex multi-factor conditions
+- Nested condition logic
+- Reusable condition groups
+
+---
+
 ## Multiple Conditions (AND Logic)
 
-When a job has multiple conditions, **all conditions must be true** for the job to execute:
+When a job has multiple conditions in the `conditions` array, **all conditions must be true** for the job to execute:
 
 ```jsonc
 {
@@ -247,14 +572,14 @@ When a job has multiple conditions, **all conditions must be true** for the job 
   "conditions": [
     {
       "type": "wifi",
-      "condition": { "ssid": "HomeNetwork" },
+      "condition": { "ssid": "HomeNetwork" }
     },
     {
       "type": "bluetooth",
-      "condition": { "device": "MyPhone" },
-    },
+      "condition": { "device": "MyPhone" }
+    }
   ],
-  "tasks": [{ "command": "notify-send 'Welcome home!'" }],
+  "tasks": [{ "command": "notify-send 'Welcome home!'" }]
 }
 ```
 
@@ -269,9 +594,9 @@ In this example, the job runs **only if**:
 
 ### Performance
 
-- **Avoid expensive commands** in custom conditions (they run before each task)
-- **Use platform-native tools** (nmcli, bluetoothctl) instead of parsing complex output
-- **Cache conditions** - if checking the same thing multiple times, consider cron jobs instead
+- **Avoid expensive commands** in conditions (they run before each task)
+- **Use platform-native conditions** (WiFi, Bluetooth, Process) instead of shell commands when possible
+- **Use appropriate intervals** - don't check conditions every millisecond
 
 ### Reliability
 
@@ -284,9 +609,9 @@ In this example, the job runs **only if**:
 
 ### Security
 
-- **Avoid shell injection** - don't use user input in commands
-- **Be careful with `target_output`** - can be slow for large outputs
-- **Limit command scope** - use `test` command for file/directory checks instead of `ls`
+- **Avoid shell injection** - don't use untrusted input in commands
+- **Be careful with `target_output`** - output comparison can be slow for large outputs
+- **Use absolute paths** in commands for predictability
 
 ### Debugging
 
@@ -304,49 +629,53 @@ In this example, the job runs **only if**:
 [
   {
     "type": "wifi",
-    "condition": { "ssid": "HomeNetwork" },
+    "condition": { "ssid": "HomeNetwork" }
   },
   {
     "type": "bluetooth",
-    "condition": { "device": "HomeHub" },
-  },
+    "condition": { "device": "HomeHub" }
+  }
 ]
-```
-
-### Only During Business Hours
-
-```jsonc
-{
-  "type": "custom",
-  "condition": {
-    "command": "test $(date +%H) -ge 09 && test $(date +%H) -lt 17",
-    "check_exit_code": true,
-  },
-}
 ```
 
 ### Only on Weekdays
 
 ```jsonc
 {
-  "type": "custom",
+  "type": "command",
   "condition": {
-    "command": "test $(date +%u) -le 5", // 1-5 = Mon-Fri
-    "check_exit_code": true,
-  },
+    "command": "test $(date +%u) -le 5",
+    "check_exit_code": true
+  }
 }
 ```
 
-### Never on Holidays
+### Only When Idle
 
 ```jsonc
 {
-  "type": "custom",
+  "type": "resource",
   "condition": {
-    "command": "! grep -q \"$(date +%Y-%m-%d)\" ~/.holidays",
-    "check_exit_code": true,
-  },
+    "resource_type": "cpu",
+    "threshold": 20,
+    "operator": "less"
+  }
 }
+```
+
+### Only When Charging with Sufficient Battery
+
+```jsonc
+[
+  {
+    "type": "power",
+    "condition": { "check_charging": true }
+  },
+  {
+    "type": "power",
+    "condition": { "threshold": 50, "operator": "greater" }
+  }
+]
 ```
 
 ---
@@ -362,9 +691,28 @@ If a condition fails to parse or execute:
 Example logs:
 
 ```
-Error parsing custom condition: Invalid command syntax
-Error executing custom condition command 'bad syntax': (error details)
+Error parsing condition: Invalid command syntax
+Error executing condition command 'bad syntax': (error details)
 ```
+
+---
+
+## Condition Reference Table
+
+| Type           | Key Fields                                       | Platform |
+| -------------- | ------------------------------------------------ | -------- |
+| wifi           | `ssid`                                           | All      |
+| bluetooth      | `device`, `match_by_mac`                         | All      |
+| command        | `command`, `check_exit_code`, `target_output`    | All      |
+| variable       | `variable`, `target`                             | All      |
+| power          | `check_charging`, `threshold`, `operator`        | All      |
+| resource       | `resource_type`, `threshold`, `operator`         | All      |
+| internet       | `host`, `timeout`                                | All      |
+| process        | `process_name`, `should_be_running`              | All      |
+| diskspace      | `path`, `min_free_gb`, `max_used_gb`             | All      |
+| file           | `path`, `check_type`, `time_threshold`, `size_threshold` | All      |
+| externaldevice | `device_identifier`, `check_by_name`             | All      |
+| and            | `conditions` (array of conditions)               | All      |
 
 ---
 
@@ -372,6 +720,5 @@ Error executing custom condition command 'bad syntax': (error details)
 
 - [Job Configuration Guide](./JOBS.md)
 - [Tasks Documentation](./TASKS.md)
+- [Troubleshooting Guide](./TROUBLESHOOTING.md)
 - [Example Jobs](../templates/)
-
-this document is written with the help of AI - just to be honest
