@@ -58,3 +58,75 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}
           path: dist/${{ matrix.asset_name }}
+
+  build-rpm:
+    name: Build RPM Package
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsystemd-dev rpm
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-rpm
+        run: cargo install cargo-rpm
+
+      - name: Build RPM
+        run: cargo rpm build
+
+      - name: Find RPM
+        id: find_rpm
+        run: |
+          RPM_PATH=$(find target/release/rpmbuild/RPMS -name "*.rpm" | head -1)
+          RPM_NAME=$(basename "$RPM_PATH")
+          echo "rpm_path=$RPM_PATH" >> $GITHUB_OUTPUT
+          echo "rpm_name=$RPM_NAME" >> $GITHUB_OUTPUT
+
+      - name: Upload RPM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: autopilot-rs-rpm
+          path: ${{ steps.find_rpm.outputs.rpm_path }}
+
+  build-deb:
+    name: Build DEB Package
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsystemd-dev
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-deb
+        run: cargo install cargo-deb
+
+      - name: Build DEB
+        run: cargo deb
+
+      - name: Find DEB
+        id: find_deb
+        run: |
+          DEB_PATH=$(find target/debian -name "*.deb" | head -1)
+          DEB_NAME=$(basename "$DEB_PATH")
+          echo "deb_path=$DEB_PATH" >> $GITHUB_OUTPUT
+          echo "deb_name=$DEB_NAME" >> $GITHUB_OUTPUT
+
+      - name: Upload DEB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: autopilot-rs-deb
+          path: ${{ steps.find_deb.outputs.deb_path }}
