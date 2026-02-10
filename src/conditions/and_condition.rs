@@ -2,6 +2,7 @@ use crate::{
     conditions::{Condition, ConditionScheme},
     error::AutoPilotError,
 };
+use colored::Colorize;
 use dialoguer::{Confirm, Select, theme::ColorfulTheme};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
@@ -44,11 +45,9 @@ impl Condition for AndCondition {
     }
 
     fn create(&self) -> Result<super::ConditionScheme, AutoPilotError> {
-        // for condition in &self.conditions {
-        //     condition.create()?;
-        // }
         let mut conditions: Vec<ConditionScheme> = Vec::new();
         loop {
+            println!("{}", "[AND CONDITION]".yellow());
             if !Confirm::with_theme(&ColorfulTheme::default())
                 .with_prompt("Do you want to add a condition to 'AND'? ")
                 .interact_opt()
@@ -74,7 +73,7 @@ impl Condition for AndCondition {
                         .map(|s| s.as_str())
                         .collect::<Vec<_>>(),
                 )
-                // .default(0)
+                .default(0)
                 .interact_opt()
                 .map_err(|err| {
                     AutoPilotError::InvalidJob(format!("Failed to select condition type: {}", err))
@@ -103,7 +102,7 @@ impl Condition for AndCondition {
         //     .map(|value| value.to_condition())
         //     .collect();
         Ok(ConditionScheme::And(AndConditionScheme {
-            conditions: conditions.iter().map(|c| c.clone()).collect::<Vec<_>>(),
+            conditions: conditions,
         }))
     }
 }
