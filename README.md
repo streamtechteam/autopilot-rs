@@ -1,5 +1,9 @@
 # AutoPilot-rs
 
+https://github.com/user-attachments/assets/ebd05a58-7097-49df-85e0-8c3fee02406b
+
+
+
 A cross-platform automation tool that runs tasks when conditions are met. Write once, run on Linux, macOS, and Windows.
 
 ## What It Does
