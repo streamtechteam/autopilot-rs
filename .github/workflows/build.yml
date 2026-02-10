@@ -193,13 +193,19 @@ jobs:
   build-msi:
     name: Build Windows MSI
     runs-on: windows-latest
-    needs: [build]
+    # We no longer strictly "need" the other build job if we build here
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Install cargo-wix
         run: cargo install cargo-wix
-      - name: Build MSI
-        run: cargo wix --no-build
+
+      - name: Build and Package MSI
+        run: cargo wix
+
       - name: Upload MSI
         uses: actions/upload-artifact@v4
         with:
