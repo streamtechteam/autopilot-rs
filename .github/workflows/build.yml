@@ -64,19 +64,25 @@ jobs:
   build-linux-musl:
     name: Build Linux (MUSL Static)
     runs-on: ubuntu-latest
+    container:
+      # Use Alpine, which is based on musl libc
+      image: rust:alpine
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install systemd-libs in Alpine container
+        # Install the musl-compatible static library development package
+        run: apk add --no-cache libsystemd-static
+
       - name: Install MUSL target
+        # This is already present, but ensures it's available
         run: rustup target add x86_64-unknown-linux-musl
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          cache-on-failure: true
-
-      - name: Install MUSL tools
-        run: sudo apt-get update && sudo apt-get install -y musl-tools
+          # Target directory for musl builds
+          cache-directory: target/x86_64-unknown-linux-musl
 
       - name: Build with MUSL
         run: cargo build --release --target x86_64-unknown-linux-musl
@@ -85,17 +91,15 @@ jobs:
         run: |
           mkdir -p dist
           cp target/x86_64-unknown-linux-musl/release/autopilot-rs dist/autopilot-rs-linux-musl
-          # Optional: strip binary to reduce size
-          strip dist/autopilot-rs-linux-musl 2>/dev/null || true
-          echo "Binary size:" && ls -lh dist/autopilot-rs-linux-musl
+          echo "✅ MUSL binary built successfully."
+          ls -lh dist/autopilot-rs-linux-musl
 
       - name: Upload Static Binary
         uses: actions/upload-artifact@v4
         with:
           name: autopilot-rs-linux-musl
           path: dist/autopilot-rs-linux-musl
-
-  # 3. Older glibc Build (Maximum Dynamic Compatibility)
+  # 3. Older glibc Build
   build-linux-compat:
     name: Build Linux (CentOS 7 - glibc 2.17)
     runs-on: ubuntu-latest
@@ -128,7 +132,7 @@ jobs:
           name: autopilot-rs-linux-compatible
           path: dist/autopilot-rs-linux-glibc2.17
 
-  # 4. Release Assets (Optional - if you want GitHub Releases)
+  # 4. Release Assets
   create-release:
     name: Create Release Assets
     runs-on: ubuntu-latest
@@ -156,12 +160,11 @@ jobs:
           # Create checksums
           cd release && sha256sum * > SHA256SUMS
 
-  # Your existing RPM/DEB builds (updated to use compatible binary)
+
   build-rpm:
     name: Build RPM Package
     runs-on: ubuntu-latest
-    needs: [build, build-linux-compat]  # Can use compatible build
-    # Consider building RPM inside CentOS container too
+    needs: [build, build-linux-compat]
     container:
       image: centos:7
 
@@ -194,9 +197,8 @@ jobs:
           path: ${{ steps.find_rpm.outputs.rpm_path }}
 
   build-deb:
-    # Similar to RPM - consider using Ubuntu 20.04 for wider compatibility
     name: Build DEB Package
-    runs-on: ubuntu-20.04  # Older Ubuntu for compatibility
+    runs-on: ubuntu-20.04
     needs: [build, build-linux-compat]
 
     steps:
