@@ -98,7 +98,7 @@ jobs:
     name: Create Release Assets
     runs-on: ubuntu-latest
     # Add the new jobs to the needs list
-    needs: [build, build-linux-compat, build-rpm, build-deb, build-msi, build-dmg]
+    needs: [build, build-linux-compat, build-rpm, build-deb, build-msi,build-arch, build-dmg]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
     steps:
@@ -190,6 +190,30 @@ jobs:
         with:
           name: autopilot-rs-deb
           path: ${{ steps.find_deb.outputs.deb_path }}
+  
+  
+  build-arch:
+    name: Build Arch Package
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm base-devel rustup git
+          rustup default stable
+      - uses: actions/checkout@v4
+      - name: Build Package
+        run: |
+          # Allowing makepkg to run as root for CI purposes
+          chmod -R a+rw .
+          #sudo -u (id -u -n) makepkg -s --noconfirm
+          makepkg
+      - name: Upload Arch Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: autopilot-rs-arch
+          path: "*.pkg.tar.zst"
   build-msi:
     name: Build Windows MSI
     runs-on: windows-latest
