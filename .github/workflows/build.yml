@@ -200,15 +200,20 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          pacman -Syu --noconfirm base-devel rustup git
+          pacman -Syu --noconfirm base-devel rustup git sudo
           rustup default stable
       - uses: actions/checkout@v4
       - name: Build Package
         run: |
-          # Allowing makepkg to run as root for CI purposes
-          chmod -R a+rw .
-          #sudo -u (id -u -n) makepkg -s --noconfirm
-          makepkg
+          # Create a non-root user for makepkg
+          useradd -m builduser
+          # Allow builduser to use sudo without a password (needed for -s flag)
+          echo "builduser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          # Give the user ownership of the working directory
+          chown -R builduser:builduser .
+          # Run makepkg as the new user
+          # -s installs dependencies, --noconfirm skips prompts
+          sudo -u builduser makepkg -s --noconfirm
       - name: Upload Arch Artifact
         uses: actions/upload-artifact@v4
         with:
