@@ -60,7 +60,69 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: dist/${{ matrix.asset_name }}
 
-  # 2. Older glibc Build
+  # 2. Arch Linux Build
+  build-arch-linux:
+    name: Build Arch Linux
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust and dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm base-devel rust python gcc systemd systemd-libs
+          rustup default stable
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Prepare Arch Binary
+        run: |
+          mkdir -p dist
+          cp target/release/autopilot-rs dist/autopilot-rs-arch-linux
+
+      - name: Upload Arch Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: autopilot-rs-arch-linux
+          path: dist/autopilot-rs-arch-linux
+
+  # 3. Alpine Linux Build
+  build-alpine-linux:
+    name: Build Alpine Linux
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust and dependencies
+        run: |
+          apk add --no-cache curl gcc musl-dev libsystemd-dev pkgconfig openssl-dev
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          source $HOME/.cargo/env
+
+      - name: Build
+        run: |
+          source $HOME/.cargo/env
+          cargo build --release
+
+      - name: Prepare Alpine Binary
+        run: |
+          mkdir -p dist
+          cp target/release/autopilot-rs dist/autopilot-rs-alpine
+          # Verify static linking for Alpine compatibility
+          ldd dist/autopilot-rs-alpine || echo "Binary is statically linked"
+
+      - name: Upload Alpine Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: autopilot-rs-alpine
+          path: dist/autopilot-rs-alpine
+
+  # 4. Older glibc Build
   build-linux-compat:
     name: Build Linux (Fedora 35 - glibc 2.34)
     runs-on: ubuntu-latest
@@ -93,11 +155,79 @@ jobs:
           name: autopilot-rs-linux-compatible
           path: dist/autopilot-rs-linux-glibc2.17
 
-  # 3. Release Assets
+  # 5. Windows Installer
+  build-windows-installer:
+    name: Build Windows Installer
+    runs-on: windows-latest
+    needs: [build]
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Windows Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: autopilot-rs-windows
+          path: .
+
+      - name: Install WiX Toolset
+        run: |
+          choco install wixtoolset
+          
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-wix
+        run: cargo install cargo-wix
+
+      - name: Create MSI Installer
+        run: |
+          # Create installer configuration
+          mkdir -p installer
+          Copy-Item "autopilot-rs-windows.exe" "installer\autopilot-rs.exe"
+          
+          # Create WiX template
+          @"
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="autopilot-rs" Language="1033" Version="0.1.0" Manufacturer="Taha" UpgradeCode="*">
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine"/>
+    <MediaTemplate/>
+    <Feature Id="ProductFeature" Title="autopilot-rs" Level="1">
+      <ComponentGroupRef Id="ProductComponents"/>
+    </Feature>
+  </Product>
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="autopilot-rs"/>
+      </Directory>
+    </Directory>
+  </Fragment>
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="autopilot-rs.exe" Guid="*">
+        <File Id="autopilot-rs.exe" Source="installer\autopilot-rs.exe" KeyPath="yes"/>
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>
+"@ | Out-File -FilePath "installer\Product.wxs" -Encoding UTF8
+
+          # Build MSI
+          wix build installer\Product.wxs -o installer\autopilot-rs.msi
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: autopilot-rs-windows-installer
+          path: installer/autopilot-rs.msi
+
+  # 6. Release Assets
   create-release:
     name: Create Release Assets
     runs-on: ubuntu-latest
-    needs: [build, build-linux-compat]
+    needs: [build, build-arch-linux, build-alpine-linux, build-linux-compat]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
     steps:
@@ -106,13 +236,15 @@ jobs:
 
       - name: List all binaries
         run: |
-          find . -type f -executable -o -name "*.exe" | xargs -I {} sh -c 'file {} && echo ""'
+          find . -type f -executable -o -name "*.exe" -o -name "*.msi" -o -name "*.apk" | xargs -I {} sh -c 'file {} && echo ""'
 
       - name: Package for release
         run: |
           mkdir -p release
           # Copy all binaries with clear naming
           cp autopilot-rs-linux-latest/autopilot-rs-linux release/autopilot-rs-linux-latest
+          cp autopilot-rs-arch-linux/autopilot-rs-arch-linux release/autopilot-rs-arch-linux
+          cp autopilot-rs-alpine/autopilot-rs-alpine release/autopilot-rs-alpine
           cp autopilot-rs-linux-compatible/autopilot-rs-linux-glibc2.17 release/autopilot-rs-linux-compatible
           cp autopilot-rs-windows/autopilot-rs-windows.exe release/
           cp autopilot-rs-macos/autopilot-rs-macos release/
@@ -120,6 +252,152 @@ jobs:
           # Create checksums
           cd release && sha256sum * > SHA256SUMS
 
+  # 7. Arch Linux Package (AUR)
+  build-aur-package:
+    name: Build Arch Linux Package
+    runs-on: ubuntu-latest
+    needs: [build, build-arch-linux]
+    container:
+      image: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust and dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm base-devel rust python gcc systemd systemd-libs git
+          rustup default stable
+
+      - name: Install cargo-aur
+        run: cargo install cargo-aur
+
+      - name: Build AUR Package
+        run: |
+          cargo install --path .
+          cargo aur --init autopilot-rs
+          ls -la autopilot-rs-aur/
+
+      - name: Upload AUR Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: autopilot-rs-aur
+          path: autopilot-rs-aur/
+
+  # 8. Alpine Linux Package (APK)
+  build-apk-package:
+    name: Build Alpine Linux Package
+    runs-on: ubuntu-latest
+    needs: [build, build-alpine-linux]
+    container:
+      image: alpine:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install APK build tools
+        run: |
+          apk add --no-confirm alpine-sdk abuild sudo
+          
+          # Setup abuild user
+          adduser -D -G abuild builder
+          echo "builder ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+          
+          # Initialize abuild
+          su - builder -c "abuild-keygen -a -n"
+
+      - name: Download Alpine Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: autopilot-rs-alpine
+          path: /tmp
+
+      - name: Create APK Package
+        run: |
+          # Create package directory structure
+          mkdir -p ~/packages/testing/x86_64
+          cp /tmp/autopilot-rs-alpine ~/packages/testing/x86_64/autopilot-rs
+          
+          # Create APKBUILD template
+          cat << 'EOF' > APKBUILD
+          # Contributor: Taha <taha@domain.com>
+          # Maintainer: Taha <taha@domain.com>
+          pkgname=autopilot-rs
+          pkgver=0.1.0
+          pkgrel=1
+          pkgdesc="A cross-platform automation tool that runs tasks when conditions are met"
+          url="https://github.com/streamtechteam/auto_pilot_rs"
+          arch="x86_64"
+          license="MIT"
+          depends=""
+          makedepends="gcc"
+          
+          package() {
+            install -Dm755 "$srcdir/autopilot-rs" "$pkgdir/usr/bin/autopilot-rs"
+          }
+          EOF
+          
+          # Build the package
+          abuild -r
+
+      - name: Upload APK Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: autopilot-rs-apk
+          path: ~/packages/testing/x86_64/
+
+  # 9. Nix Package
+  build-nix-package:
+    name: Build Nix Package
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v20
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Create Nix Expression
+        run: |
+          mkdir -p nix-package
+          cat << 'EOF' > nix-package/default.nix
+          { lib
+          , rustPlatform
+          , fetchFromGitHub
+          , systemd
+          }:
+
+          rustPlatform.buildRustPackage rec {
+            pname = "autopilot-rs";
+            version = "0.1.0";
+
+            src = ./.; # Use the current checkout
+
+            cargoHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="; # Will be filled by nix-prefetch
+
+            buildFeatures = [ ];
+
+            nativeBuildInputs = [ ];
+
+            buildInputs = [ systemd ];
+
+            meta = with lib; {
+              description = "A cross-platform automation tool that runs tasks when conditions are met";
+              homepage = "https://github.com/streamtechteam/auto_pilot_rs";
+              license = licenses.mit;
+              maintainers = [ ];
+              mainProgram = "autopilot-rs";
+            };
+          }
+          EOF
+
+      - name: Upload Nix Package Template
+        uses: actions/upload-artifact@v4
+        with:
+          name: autopilot-rs-nix-template
+          path: nix-package/
+
+  # 10. Build RPM Package
   build-rpm:
     name: Build RPM Package
     runs-on: ubuntu-latest
@@ -155,6 +433,7 @@ jobs:
           name: autopilot-rs-rpm
           path: ${{ steps.find_rpm.outputs.rpm_path }}
 
+  # 11. Build DEB Package
   build-deb:
     name: Build DEB Package
     runs-on: ubuntu-latest
@@ -189,3 +468,113 @@ jobs:
         with:
           name: autopilot-rs-deb
           path: ${{ steps.find_deb.outputs.deb_path }}
+
+  # 12. Flatpak Package
+  build-flatpak:
+    name: Build Flatpak Package
+    runs-on: ubuntu-latest
+    needs: [build]
+    container:
+      image: bilelmoussaoui/flatpak-github-actions:freedesktop-21.08
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          apt update && apt install -y cargo rustc
+
+      - name: Create Flatpak manifest template
+        run: |
+          mkdir -p flatpak
+          cat << 'EOF' > flatpak/io.github.streamtechteam.autopilot-rs.json
+          {
+            "app-id": "io.github.streamtechteam.autopilot-rs",
+            "runtime": "org.freedesktop.Platform",
+            "runtime-version": "21.08",
+            "sdk": "org.freedesktop.Sdk",
+            "command": "autopilot-rs",
+            "finish-args": [
+              "--socket=session-bus",
+              "--socket=system-bus",
+              "--filesystem=home"
+            ],
+            "modules": [
+              {
+                "name": "autopilot-rs",
+                "buildsystem": "simple",
+                "build-commands": [
+                  "cargo build --release",
+                  "install -Dm755 target/release/autopilot-rs /app/bin/autopilot-rs"
+                ],
+                "sources": [
+                  {
+                    "type": "dir",
+                    "path": "."
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+
+      - name: Upload Flatpak Manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: autopilot-rs-flatpak
+          path: flatpak/
+
+  # 13. Snap Package
+  build-snap:
+    name: Build Snap Package
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install snapcraft
+        run: |
+          sudo snap install snapcraft --classic
+
+      - name: Create snapcraft.yaml
+        run: |
+          cat << 'EOF' > snap/snapcraft.yaml
+          name: autopilot-rs
+          version: '0.1.0'
+          summary: Cross-platform automation tool
+          description: A cross-platform automation tool that runs tasks when conditions are met.
+          
+          grade: stable
+          confinement: strict
+          
+          parts:
+            autopilot-rs:
+              plugin: rust
+              source: .
+              build-packages:
+                - gcc
+                - libsystemd-dev
+              stage-packages:
+                - libsystemd0
+          
+          apps:
+            autopilot-rs:
+              command: bin/autopilot-rs
+              plugs:
+                - network
+                - network-bind
+                - system-observe
+                - hardware-observe
+          EOF
+
+      - name: Build Snap
+        run: |
+          cd snap
+          snapcraft
+
+      - name: Upload Snap Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: autopilot-rs-snap
+          path: snap/*.snap
