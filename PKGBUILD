@@ -9,19 +9,19 @@ license=('MIT')
 depends=('systemd-libs')
 makedepends=('rust' 'cargo')
 
-# We leave 'source' empty because we are building from the local checked-out directory
 source=()
 sha256sums=()
 
 build() {
-  # We assume we are already in the root of the repo
+  # Build from the directory where PKGBUILD is located
+  cd "$startdir"
   cargo build --release --locked
 }
 
 package() {
-  # Install the binary to /usr/bin/
-  install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
+  # Reference the binary using the absolute start directory
+  install -Dm755 "$startdir/target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
   
-  # Optional: If you have a systemd service file, uncomment the line below:
-  # install -Dm644 "autopilot.service" "$pkgdir/usr/lib/systemd/system/autopilot.service"
+  # If you have a license file, it's good practice to include it:
+  install -Dm644 "$startdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
