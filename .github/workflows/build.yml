@@ -198,22 +198,22 @@ jobs:
     container:
       image: archlinux:latest
     steps:
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
-          pacman -Syu --noconfirm base-devel rustup git sudo
-          rustup default stable
+          pacman -Syu --noconfirm base-devel rust cargo git sudo systemd-libs
       - uses: actions/checkout@v4
       - name: Build Package
         run: |
-          # Create a non-root user for makepkg
+          # Create builduser
           useradd -m builduser
-          # Allow builduser to use sudo without a password (needed for -s flag)
           echo "builduser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-          # Give the user ownership of the working directory
+          
+          # Fix permissions so builduser can read the workspace
           chown -R builduser:builduser .
-          # Run makepkg as the new user
-          # -s installs dependencies, --noconfirm skips prompts
-          sudo -u builduser makepkg -s --noconfirm
+          
+          # Run makepkg. 
+          # --nodeps is used here because we already installed dependencies above
+          sudo -u builduser makepkg -sc --noconfirm
       - name: Upload Arch Artifact
         uses: actions/upload-artifact@v4
         with:
