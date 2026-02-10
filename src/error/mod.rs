@@ -8,6 +8,9 @@ pub enum AutoPilotError {
     #[error("JSON serialization/deserialization error: {0}")]
     Json(String),
 
+    #[error("Job error: {0}")]
+    Job(String),
+
     #[error("Job execution error: {0}")]
     JobExecution(String),
 
@@ -27,7 +30,7 @@ pub enum AutoPilotError {
     InvalidJob(String),
 
     #[error("Dialoguer error: {0}")]
-    Dialoguer(String),
+    Dialoguer(#[from] dialoguer::Error),
 
     #[error("Signal handling error: {0}")]
     Signal(String),
