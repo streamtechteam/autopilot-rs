@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 
 use crate::{
     cli::{create::create, list::list, remove::remove, serve::serve, status::status, stop::stop},
+    fs::{CONFIG_PATH, set_all_paths, set_autopilot_path},
     status::set::set_status_initial,
 };
 
@@ -46,6 +47,7 @@ enum Commands {
 
 pub async fn handle_cli() {
     let cli = Cli::parse();
+    handle_dir(cli.config_path.clone());
     match &cli.command {
         Some(Commands::Serve) => {
             serve(cli.config_path).await;
@@ -70,4 +72,16 @@ pub async fn handle_cli() {
             return;
         }
     };
+}
+
+fn handle_dir(config_path: Option<String>) {
+    // println!("cli config path : {}", config_path.clone().unwrap());
+
+    set_autopilot_path(config_path.clone());
+    if let Err(e) = set_all_paths(false) {
+        eprintln!("Failed to set up directories: {}", e);
+        std::process::exit(1);
+    }
+
+    // println!("CONFIG_PATH {}", CONFIG_PATH.get().unwrap());
 }

@@ -17,9 +17,5 @@ mod utilities;
 
 #[tokio::main]
 async fn main() {
-    if let Err(e) = set_all_paths(false, None) {
-        eprintln!("Failed to set up directories: {}", e);
-        std::process::exit(1);
-    }
     handle_cli().await;
 }

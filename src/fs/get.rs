@@ -3,45 +3,29 @@ use std::path::PathBuf;
 
 use log::error;
 
-pub fn get_autopilot_path(config_path: Option<String>) -> String {
-    let home_path = env::home_dir().unwrap_or_else(|| {
-        if log::log_enabled!(log::Level::Error) {
-            error!("Could not determine home directory. Using current directory as fallback.");
-        } else {
-            eprintln!("Could not determine home directory. Using current directory as fallback.");
-        }
-        std::path::PathBuf::from(".")
-    });
+use crate::fs::CONFIG_PATH;
 
-    let default_subdir = if cfg!(target_os = "windows") {
-        "/AppData/Roaming/auto-pilot"
-    } else {
-        "/.config/auto-pilot"
-    };
-
-    let auto_pilot_path: String = home_path
-        .to_str()
-        .expect("cant convert home path to String")
-        .to_string()
-        + config_path.unwrap_or(default_subdir.to_string()).as_str();
-
-    auto_pilot_path
+pub fn get_autopilot_path() -> String {
+    CONFIG_PATH
+        .get()
+        .expect("CONFIG_PATH Static is not initiated")
+        .clone()
 }
 
 pub fn get_logs_path() -> String {
-    get_autopilot_path(None) + "/logs"
+    get_autopilot_path() + "/logs"
 }
 
 pub fn get_config_path() -> String {
-    get_autopilot_path(None) + "/autopilot.jsonc"
+    get_autopilot_path() + "/autopilot.jsonc"
 }
 
 pub fn get_status_path() -> String {
-    get_autopilot_path(None) + "/status.jsonc"
+    get_autopilot_path() + "/status.jsonc"
 }
 
 pub fn get_jobs_path() -> String {
-    get_autopilot_path(None) + "/jobs"
+    get_autopilot_path() + "/jobs"
 }
 
 pub fn get_jobs_dir() -> Result<PathBuf, crate::error::AutoPilotError> {

@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-use dialoguer::{Confirm, Select, theme::ColorfulTheme};
+use colored::Colorize;
+use dialoguer::{Confirm, Error, Select, theme::ColorfulTheme};
 
 use crate::{
     error::AutoPilotError,
@@ -23,11 +24,15 @@ pub fn remove() {
 }
 
 pub fn remove_interactive() -> Result<PathBuf, AutoPilotError> {
+    println!(
+        "{}",
+        "This subcommand is now deprecated\nPlease use autopilot list instead".red()
+    );
     let job_paths = get_jobs_paths();
     let options: Vec<String> = job_paths
         .iter()
         .map(|value| {
-            println!("Processing job: {}", value.display());
+            // println!("Processing job: {}", value.display());
             let job_name = match get_job(value.clone()) {
                 Ok(job) => Some(job.name),
                 Err(_) => None,
@@ -49,20 +54,18 @@ pub fn remove_interactive() -> Result<PathBuf, AutoPilotError> {
     if options.is_empty() {
         // eprintln!("No jobs found");
 
-        return Err(AutoPilotError::Dialoguer(
-            "No jobs exist to remove!".to_string(),
-        ));
+        return Err(AutoPilotError::Job("No jobs exist to remove!".to_string()));
     }
     loop {
         selection = Select::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "Select an option to remove (root: {})",
-                get_autopilot_path(None)
+                get_autopilot_path()
             ))
             .default(0)
             .items(&options)
             .interact()
-            .map_err(|err| AutoPilotError::Dialoguer(err.to_string()))?;
+            .map_err(|err| AutoPilotError::Dialoguer(err))?;
         confirm = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "Are you sure you want to remove {} ?",
@@ -70,7 +73,7 @@ pub fn remove_interactive() -> Result<PathBuf, AutoPilotError> {
             ))
             .default(false)
             .interact()
-            .map_err(|err| AutoPilotError::Dialoguer(err.to_string()))?;
+            .map_err(|err| AutoPilotError::Dialoguer(err))?;
         if confirm {
             break;
         }

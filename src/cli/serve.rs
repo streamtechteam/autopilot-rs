@@ -1,10 +1,11 @@
 use crate::{
     autopilot::AutoPilot,
     cli::status::{check_if_running, status},
-    fs::set_all_paths,
+    fs::{CONFIG_PATH, set_all_paths},
     job::get::get_jobs,
     status::set::set_status_initial,
 };
+use colored::Colorize;
 use log::{error, info, warn};
 use tokio::{self, signal};
 use tokio_cron_scheduler::job;
@@ -25,10 +26,8 @@ pub async fn serve(config_path: Option<String>) {
         error!("Failed to initialize status: {}", e);
         return;
     }
-    if let Err(e) = set_all_paths(false, config_path.clone()) {
-        error!("Failed to set paths: {}", e);
-        std::process::exit(1);
-    }
+
+    info!("{}", "Autopilot served!".green());
     // Get jobs from JSON files and run them
     let jobs = get_jobs(false);
     for job in jobs {
