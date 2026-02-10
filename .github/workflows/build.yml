@@ -120,7 +120,6 @@ jobs:
           # Create checksums
           cd release && sha256sum * > SHA256SUMS
 
-
   build-rpm:
     name: Build RPM Package
     runs-on: ubuntu-latest
@@ -158,7 +157,7 @@ jobs:
 
   build-deb:
     name: Build DEB Package
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: [build, build-linux-compat]
 
     steps:
