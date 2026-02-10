@@ -60,48 +60,9 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: dist/${{ matrix.asset_name }}
 
-  # 2. MUSL Static Build (Universal Linux)
-  build-linux-musl:
-    name: Build Linux (MUSL Static)
-    runs-on: ubuntu-latest
-    container:
-      # Use Alpine, which is based on musl libc
-      image: rust:alpine
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install systemd-libs in Alpine container
-        # Install the musl-compatible static library development package
-        run: apk add --no-cache libsystemd-static
-
-      - name: Install MUSL target
-        # This is already present, but ensures it's available
-        run: rustup target add x86_64-unknown-linux-musl
-
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          # Target directory for musl builds
-          cache-directory: target/x86_64-unknown-linux-musl
-
-      - name: Build with MUSL
-        run: cargo build --release --target x86_64-unknown-linux-musl
-
-      - name: Prepare Static Binary
-        run: |
-          mkdir -p dist
-          cp target/x86_64-unknown-linux-musl/release/autopilot-rs dist/autopilot-rs-linux-musl
-          echo "✅ MUSL binary built successfully."
-          ls -lh dist/autopilot-rs-linux-musl
-
-      - name: Upload Static Binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: autopilot-rs-linux-musl
-          path: dist/autopilot-rs-linux-musl
-  # 3. Older glibc Build
+  # 2. Older glibc Build
   build-linux-compat:
-    name: Build Linux (CentOS 7 - glibc 2.17)
+    name: Build Linux (Fedora 35 - glibc 2.34)
     runs-on: ubuntu-latest
     container:
       image: fedora:35
@@ -132,7 +93,7 @@ jobs:
           name: autopilot-rs-linux-compatible
           path: dist/autopilot-rs-linux-glibc2.17
 
-  # 4. Release Assets
+  # 3. Release Assets
   create-release:
     name: Create Release Assets
     runs-on: ubuntu-latest
