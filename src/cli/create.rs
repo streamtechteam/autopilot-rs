@@ -107,7 +107,7 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
                     .map(|s| s.as_str())
                     .collect::<Vec<_>>(),
             )
-            // .default(0)
+            .default(0)
             .interact_opt()
             .map_err(|err| {
                 AutoPilotError::InvalidJob(format!("Failed to select condition type: {}", err))
