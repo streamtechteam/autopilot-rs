@@ -1,6 +1,6 @@
 # AutoPilot-rs
 
-https://github.com/user-attachments/assets/ebd05a58-7097-49df-85e0-8c3fee02406b
+[![autopilot-rs](https://img.youtube.com/vi/pRkjfip1s5M/0.jpg)](https://www.youtube.com/watch?v=pRkjfip1s5M)
 
 
 
