@@ -70,6 +70,7 @@ pub enum ConditionScheme {
     ExternalDevice(external_device_condition::ExternalDeviceConditionScheme),
     Fail(fail_condition::FailCondition),
     And(and_condition::AndConditionScheme),
+    Or(or_condition::OrConditionScheme),
 }
 
 impl ConditionScheme {
@@ -112,6 +113,9 @@ impl ConditionScheme {
             ConditionScheme::Fail(scheme) => Box::new(scheme.clone()),
             ConditionScheme::And(scheme) => {
                 Box::new(and_condition::AndCondition::from_scheme(scheme.clone()))
+            }
+            ConditionScheme::Or(scheme) => {
+                Box::new(or_condition::OrCondition::from_scheme(scheme.clone()))
             }
         }
     }
