@@ -131,6 +131,7 @@ impl Condition for FileCondition {
                 // Modified recently
                 let time_input: i64 = Input::with_theme(&ColorfulTheme::default())
                     .with_prompt("Enter time threshold in seconds (default: 300 for 5 minutes):")
+                    .default(300)
                     .allow_empty(true)
                     .interact_text()
                     .map_err(|err| AutoPilotError::Condition(err.to_string()))?;

@@ -94,6 +94,7 @@ impl Condition for DiskSpaceCondition {
 
         let max_used_gb_input: f64 = Input::with_theme(&ColorfulTheme::default())
             .with_prompt("Enter maximum used space allowed in GB (leave empty for no limit):")
+            .default(0.)
             // .allow_empty(true)
             .interact_text()
             .map_err(|err| AutoPilotError::Condition(err.to_string()))?;

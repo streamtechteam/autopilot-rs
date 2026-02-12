@@ -81,7 +81,7 @@ impl Condition for CommandCondition {
 
         let target_output = if !check_exit_code {
             let output = Input::with_theme(&ColorfulTheme::default())
-                .with_prompt("Enter expected output to match:")
+                .with_prompt("Enter expected output to match (optional, if you check exit code):")
                 .interact_text()
                 .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
             Some(output)

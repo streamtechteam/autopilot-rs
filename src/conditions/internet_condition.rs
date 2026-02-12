@@ -99,7 +99,7 @@ impl Condition for InternetCondition {
 
         let timeout_input: u64 = Input::with_theme(&ColorfulTheme::default())
             .with_prompt("Enter timeout in seconds (default: 2):")
-            .allow_empty(true)
+            .default(2)
             .interact_text()
             .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
 

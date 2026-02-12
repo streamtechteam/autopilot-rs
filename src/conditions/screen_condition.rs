@@ -55,11 +55,11 @@ impl Condition for ScreenCondition {
 
     fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
         let screen_count_str: String = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter target screen count (optional, press enter to skip):")
+            .with_prompt("Enter target screen count (optional, but at least 1 check is required):")
             .allow_empty(true)
             .interact_text()
             .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-        
+
         let screen_count = if screen_count_str.is_empty() {
             None
         } else {
@@ -84,7 +84,12 @@ impl Condition for ScreenCondition {
         let screen_names = if screen_names_str.is_empty() {
             None
         } else {
-            Some(screen_names_str.split(',').map(|s| s.trim().to_string()).collect())
+            Some(
+                screen_names_str
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .collect(),
+            )
         };
 
         if screen_count.is_none() && active_screen.is_empty() && screen_names.is_none() {
@@ -95,7 +100,11 @@ impl Condition for ScreenCondition {
 
         Ok(ConditionScheme::Screen(ScreenConditionScheme {
             screen_count,
-            active_screen_name: if active_screen.is_empty() { None } else { Some(active_screen) },
+            active_screen_name: if active_screen.is_empty() {
+                None
+            } else {
+                Some(active_screen)
+            },
             screen_names,
         }))
     }
@@ -136,9 +145,9 @@ pub fn sync_condition(
                 if targets.is_empty() {
                     return true;
                 }
-                
+
                 let current_names: Vec<String> = displays.iter().map(|d| d.name.clone()).collect();
-                
+
                 for target in targets {
                     let found = current_names.iter().any(|name| name.contains(target));
                     if !found {
