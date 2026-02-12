@@ -1,9 +1,11 @@
-use flexi_logger::{Duplicate, FileSpec, Logger, WriteMode};
+use flexi_logger::{Duplicate, FileSpec, LevelFilter, Logger, WriteMode};
 
 use crate::fs::get_logs_path;
 
-pub fn init_logging() {
-    let _logger = Logger::try_with_str("info, my::critical::module=trace")
+pub fn init_logging(verbose: bool) {
+    let log_level = if verbose { "debug" } else { "info" };
+    
+    let _logger = Logger::try_with_str(log_level)
         .expect("Failed to init logger")
         .log_to_file(FileSpec::default().directory(get_logs_path()))
         .duplicate_to_stdout(Duplicate::All)
@@ -16,7 +18,12 @@ pub fn init_logging() {
         // init journald or syslog
         if let Ok(logger) = systemd_journal_logger::JournalLog::new() {
             let _ = logger.install();
-            log::set_max_level(log::LevelFilter::Info);
+            let level = if verbose {
+                log::LevelFilter::Debug
+            } else {
+                log::LevelFilter::Info
+            };
+            log::set_max_level(level);
         }
     }
 
@@ -26,7 +33,12 @@ pub fn init_logging() {
         if let Ok(writer) = syslog::unix(syslog::Formatter3164::default()) {
             let logger = syslog::BasicLogger::new(writer);
             let _ = log::set_boxed_logger(Box::new(logger));
-            log::set_max_level(log::LevelFilter::Info);
+            let level = if verbose {
+                log::LevelFilter::Debug
+            } else {
+                log::LevelFilter::Info
+            };
+            log::set_max_level(level);
         }
     }
 
@@ -36,6 +48,11 @@ pub fn init_logging() {
         if let Ok(_) = winlog2::register("AutoPilot") {
             let _ = winlog2::init("AutoPilot");
         }
-        log::set_max_level(log::LevelFilter::Info);
+        let level = if verbose {
+            log::LevelFilter::Debug
+        } else {
+            log::LevelFilter::Info
+        };
+        log::set_max_level(level);
     }
 }

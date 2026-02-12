@@ -50,7 +50,7 @@ pub async fn handle_cli() {
     handle_dir(cli.config_path.clone());
     match &cli.command {
         Some(Commands::Serve) => {
-            serve(cli.config_path).await;
+            serve(cli.verbose).await;
         }
         Some(Commands::Create) => {
             create();
@@ -77,7 +77,7 @@ pub async fn handle_cli() {
 fn handle_dir(config_path: Option<String>) {
     // println!("cli config path : {}", config_path.clone().unwrap());
 
-    set_autopilot_path(config_path.clone());
+    set_autopilot_path(config_path.clone()).expect("Failed to setup dirs");
     if let Err(e) = set_all_paths(false) {
         eprintln!("Failed to set up directories: {}", e);
         std::process::exit(1);

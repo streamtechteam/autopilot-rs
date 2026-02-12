@@ -10,9 +10,9 @@ use log::{error, info, warn};
 use tokio::{self, signal};
 use tokio_cron_scheduler::job;
 
-pub async fn serve(config_path: Option<String>) {
+pub async fn serve(verbose: bool) {
     let mut auto_pilot = AutoPilot::new().await;
-    auto_pilot.start();
+    auto_pilot.start(verbose);
     match check_if_running() {
         true => {
             error!("there is already an instance of Autopilot running");

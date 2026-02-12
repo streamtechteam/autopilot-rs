@@ -12,10 +12,10 @@ impl AutoPilot {
             scheduler: init_time_check().await.expect("failed to init cron"),
         }
     }
-    pub fn start(&mut self) {
-        Self::prepare_logging();
+    pub fn start(&mut self, verbose: bool) {
+        Self::prepare_logging(verbose);
     }
-    pub fn prepare_logging() {
-        init_logging();
+    pub fn prepare_logging(verbose: bool) {
+        init_logging(verbose);
     }
 }

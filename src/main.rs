@@ -1,4 +1,4 @@
-use crate::{cli::handle_cli, fs::set_all_paths};
+use crate::cli::handle_cli;
 use tokio::{self};
 
 mod autopilot;
