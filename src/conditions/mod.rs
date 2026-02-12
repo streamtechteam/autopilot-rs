@@ -19,6 +19,7 @@ pub mod or_condition;
 pub mod power_condition;
 pub mod process_condition;
 pub mod resource_condition;
+pub mod screen_condition;
 pub mod variable_condition;
 pub mod wifi_condition;
 
@@ -71,6 +72,7 @@ pub enum ConditionScheme {
     Fail(fail_condition::FailCondition),
     And(and_condition::AndConditionScheme),
     Or(or_condition::OrConditionScheme),
+    Screen(screen_condition::ScreenConditionScheme),
 }
 
 impl ConditionScheme {
@@ -117,6 +119,9 @@ impl ConditionScheme {
             ConditionScheme::Or(scheme) => {
                 Box::new(or_condition::OrCondition::from_scheme(scheme.clone()))
             }
+            ConditionScheme::Screen(scheme) => Box::new(
+                screen_condition::ScreenCondition::from_scheme(scheme.clone()),
+            ),
         }
     }
 
