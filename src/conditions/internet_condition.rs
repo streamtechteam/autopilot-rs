@@ -3,7 +3,6 @@ use crate::{
     error::AutoPilotError,
 };
 use dialoguer::{Input, theme::ColorfulTheme};
-use duct::cmd;
 use serde::{Deserialize, Serialize};
 
 /// Represents an internet reachability condition (ping based)

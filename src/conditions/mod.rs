@@ -1,4 +1,3 @@
-use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 use strum::{EnumIter, IntoEnumIterator};

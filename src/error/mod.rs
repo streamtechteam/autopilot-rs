@@ -40,6 +40,12 @@ pub enum AutoPilotError {
 
     #[error("Condition conversion error: {0}")]
     Condition(String),
+
+    #[error("Unknown error: {0}")]
+    Unknown(String),
+
+    #[error("Time error: {0}")]
+    Time(String),
 }
 
 // Type alias for convenience

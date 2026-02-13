@@ -3,7 +3,6 @@ use crate::{
     error::AutoPilotError,
 };
 use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
-use duct::cmd;
 use serde::{Deserialize, Serialize};
 
 /// Represents a power/battery condition

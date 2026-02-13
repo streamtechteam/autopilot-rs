@@ -1,6 +1,5 @@
 use std::{thread::sleep, time::Duration};
 
-use chrono::{DateTime, Local};
 use colored::Colorize;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
@@ -8,9 +7,9 @@ use tokio_cron_scheduler::JobScheduler;
 
 use crate::{
     conditions::{Condition, ConditionScheme},
-    cron::{DateTimeScheme, add::add_job, to_datatime},
     status::{JobStatusEnum, set::set_state_item},
     task::{self, TaskScheme},
+    time::{When, add::add_job},
 };
 
 pub mod get;
@@ -22,7 +21,7 @@ pub struct Job {
     pub name: String,
     pub status: JobStatusEnum,
     pub description: String,
-    pub when: Option<DateTime<Local>>,
+    pub when: Option<When>,
     pub check_interval: Option<String>,
     pub conditions: Vec<Box<dyn Condition>>,
     pub tasks: Vec<task::Task>,
@@ -34,7 +33,7 @@ impl Job {
         name: String,
         description: String,
         check_interval: Option<String>,
-        when: Option<DateTime<Local>>,
+        when: Option<When>,
         conditions: Vec<Box<dyn Condition>>,
         tasks: Vec<task::Task>,
     ) -> Self {
@@ -63,10 +62,7 @@ impl Job {
             .map(|task_scheme| task::Task::new(task_scheme.command))
             .collect();
 
-        let when = match scheme.when {
-            Some(value) => Some(to_datatime(value).expect("Failed to parse when property")),
-            None => None,
-        };
+        let when = scheme.when;
         Job {
             id: scheme.id.clone(),
             name: scheme.name.unwrap_or(format!("job_{}", scheme.id)),
@@ -141,12 +137,12 @@ impl Job {
             }
         } else if self.when.is_some() {
             // Since add_job is async, we need to spawn it as a task
-            let scheduler_clone = scheduler.clone();
-            let job_clone = self.clone();
-            let _result = add_job(&job_clone, &scheduler_clone, run_job).await;
+            // let scheduler_clone = scheduler.clone();
+            // let job_clone = self.clone();
+            let _result = add_job(self, &scheduler, run_job).await;
             match _result {
                 Err(error) => {
-                    error!("{} : {}", job_clone.name, error);
+                    error!("{} : {}", self.name, error);
                 }
                 Ok(_) => {}
             }
@@ -158,7 +154,7 @@ impl Job {
     }
 }
 
-pub fn run_job(job: &Job) {
+pub fn run_job(job: Job) {
     let mut result = true;
     for condition in &job.conditions {
         let condition_result = condition.check();
@@ -177,7 +173,7 @@ pub struct JobScheme {
     id: String,
     name: Option<String>,
     description: Option<String>,
-    when: Option<DateTimeScheme>,
+    when: Option<When>,
     check_interval: Option<String>,
     conditions: Vec<ConditionScheme>,
     tasks: Vec<TaskScheme>,

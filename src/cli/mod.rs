@@ -2,8 +2,7 @@ use clap::{Parser, Subcommand};
 
 use crate::{
     cli::{create::create, list::list, remove::remove, serve::serve, status::status, stop::stop},
-    fs::{CONFIG_PATH, set_all_paths, set_autopilot_path},
-    status::set::set_status_initial,
+    fs::{set_all_paths, set_autopilot_path},
 };
 
 pub mod create;

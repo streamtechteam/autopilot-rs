@@ -1,7 +1,5 @@
-use std::env;
 use std::path::PathBuf;
 
-use log::error;
 
 use crate::fs::CONFIG_PATH;
 

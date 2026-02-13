@@ -37,7 +37,7 @@ impl DiskSpaceCondition {
 
 impl Condition for DiskSpaceCondition {
     fn check(&self) -> bool {
-        let sys = System::new_all();
+        let _sys = System::new_all();
         let disks = Disks::new_with_refreshed_list();
         for disk in &disks {
             let disk_path = disk.mount_point().to_string_lossy();

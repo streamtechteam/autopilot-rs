@@ -40,7 +40,7 @@ pub fn get_status_log() -> StatusLog {
     let status_log: StatusLog =
         match serde_json::from_str(utilities::jsonc_parser::jsonc_parse(&state_string).as_str()) {
             Ok(value) => value,
-            Err(e) => {
+            Err(_e) => {
                 // Use the index `i` directly instead of searching again
                 // println!(
                 //     "Failed to parse state file: \n Error: {}",

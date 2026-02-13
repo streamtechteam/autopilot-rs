@@ -1,7 +1,7 @@
 // use log::info;
 
 use colored::*;
-use dialoguer::{Confirm, Error, Select, theme::ColorfulTheme};
+use dialoguer::{Confirm, Select, theme::ColorfulTheme};
 
 use crate::{
     error::AutoPilotError,

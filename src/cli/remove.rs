@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
 use colored::Colorize;
-use dialoguer::{Confirm, Error, Select, theme::ColorfulTheme};
+use dialoguer::{Confirm, Select, theme::ColorfulTheme};
 
 use crate::{
     error::AutoPilotError,
     fs::get_autopilot_path,
     job::{
-        get::{get_job, get_jobs, get_jobs_paths},
+        get::{get_job, get_jobs_paths},
         set::remove_job,
     },
 };

@@ -1,4 +1,3 @@
-use duct::cmd;
 
 pub fn status() {
     match check_if_running() {

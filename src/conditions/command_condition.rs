@@ -1,8 +1,5 @@
-use std::io::ErrorKind;
 
 use dialoguer::{Confirm, Input, theme::ColorfulTheme};
-use duct::cmd;
-use log::error;
 use serde::{Deserialize, Serialize};
 
 use crate::{

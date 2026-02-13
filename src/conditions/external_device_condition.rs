@@ -33,7 +33,6 @@ impl ExternalDeviceCondition {
 
 impl Condition for ExternalDeviceCondition {
     fn check(&self) -> bool {
-        let sys = System::new_all();
         let disks = Disks::new_with_refreshed_list();
 
         for disk in &disks {

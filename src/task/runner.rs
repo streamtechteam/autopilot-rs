@@ -1,4 +1,3 @@
-use duct::cmd;
 use log::error;
 
 use crate::task::Task;

@@ -158,7 +158,7 @@ pub fn sync_condition(
 
             true
         }
-        Err(e) => {
+        Err(_e) => {
             // Log error if possible, or return false
             // eprintln!("Failed to get display info: {}", e);
             false

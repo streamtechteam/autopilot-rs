@@ -1,5 +1,4 @@
 use colored::Colorize;
-use duct::cmd;
 use log::info;
 
 use crate::{language, status::set::set_status_initial};

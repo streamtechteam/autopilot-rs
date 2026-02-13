@@ -1,6 +1,6 @@
 use tokio_cron_scheduler::JobScheduler;
 
-use crate::{cron::init::init_time_check, logging::init_logging};
+use crate::{logging::init_logging, time::init::init_time_check};
 
 pub struct AutoPilot {
     pub scheduler: JobScheduler,

@@ -1,20 +1,14 @@
 use chrono::{NaiveDate, NaiveTime};
 use colored::Colorize;
 use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
-use log::error;
-use serde_json::json;
-use std::collections::HashMap;
-use std::fs;
 use std::path::PathBuf;
 use strum::IntoEnumIterator;
 
 use crate::conditions::{Condition, ConditionScheme};
-use crate::cron::DateTimeScheme;
 use crate::error::AutoPilotError;
-use crate::fs::get_jobs_dir;
-use crate::job::JobScheme;
 use crate::job::set::add_job;
 use crate::task::TaskScheme;
+use crate::time::{DateTimeScheme, TimeScheme, When};
 
 pub fn create() {
     match create_interactive() {
@@ -51,33 +45,98 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
         })?
         .unwrap_or(false)
     {
-        let date_input: String = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter date (YYYY/MM/DD):")
-            .interact_text()
-            .map_err(|err| AutoPilotError::InvalidJob(format!("Failed to get date: {}", err)))?;
+        let schedule_types = vec![
+            "Once (Specific Date and Time)",
+            "Daily",
+            "Weekly",
+            "Monthly",
+            "Yearly",
+            "Cron Expression",
+        ];
 
-        let date = NaiveDate::parse_from_str(&date_input, "%Y/%m/%d").map_err(|_| {
-            AutoPilotError::InvalidJob("Invalid date format. Please use YYYY/MM/DD".to_string())
-        })?;
+        let selected_index = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Choose a schedule type:")
+            .items(&schedule_types)
+            .default(0)
+            .interact_opt()
+            .map_err(|err| {
+                AutoPilotError::InvalidJob(format!("Failed to select schedule type: {}", err))
+            })?
+            .ok_or_else(|| AutoPilotError::InvalidJob("No schedule type selected".to_string()))?;
 
-        let time_input: String = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter time (HH:MM:SS):")
-            .with_initial_text("00:00:00".to_string())
-            .interact_text()
-            .map_err(|err| AutoPilotError::InvalidJob(format!("Failed to get time: {}", err)))?;
+        match selected_index {
+            0 => {
+                // Once
+                let date_input: String = Input::with_theme(&ColorfulTheme::default())
+                    .with_prompt("Enter date (YYYY/MM/DD):")
+                    .interact_text()
+                    .map_err(|err| {
+                        AutoPilotError::InvalidJob(format!("Failed to get date: {}", err))
+                    })?;
 
-        let time = NaiveTime::parse_from_str(&time_input, "%H:%M:%S").map_err(|_| {
-            AutoPilotError::InvalidJob("Invalid time format. Please use HH:MM:SS".to_string())
-        })?;
+                let _date = NaiveDate::parse_from_str(&date_input, "%Y/%m/%d").map_err(|_| {
+                    AutoPilotError::InvalidJob("Invalid date format. Please use YYYY/MM/DD".to_string())
+                })?;
 
-        // Some(json!({
-        //     "date": date.format("%Y/%m/%d").to_string(),
-        //     "time": time.format("%H:%M:%S").to_string()
-        // }))
-        Some(DateTimeScheme {
-            date: date.format("%Y/%m/%d").to_string(),
-            time: time.format("%H:%M:%S").to_string(),
-        })
+                let time_input: String = Input::with_theme(&ColorfulTheme::default())
+                    .with_prompt("Enter time (HH:MM):")
+                    .interact_text()
+                    .map_err(|err| {
+                        AutoPilotError::InvalidJob(format!("Failed to get time: {}", err))
+                    })?;
+
+                let _time = NaiveTime::parse_from_str(&time_input, "%H:%M").map_err(|_| {
+                    AutoPilotError::InvalidJob("Invalid time format. Please use HH:MM".to_string())
+                })?;
+
+                Some(When::Once(DateTimeScheme {
+                    date: date_input,
+                    time: time_input,
+                }))
+            }
+            1 | 2 | 3 | 4 => {
+                // Daily, Weekly, Monthly, Yearly (all use TimeScheme)
+                let time_input: String = Input::with_theme(&ColorfulTheme::default())
+                    .with_prompt("Enter time of day (HH:MM):")
+                    .interact_text()
+                    .map_err(|err| {
+                        AutoPilotError::InvalidJob(format!("Failed to get time: {}", err))
+                    })?;
+
+                let _time = NaiveTime::parse_from_str(&time_input, "%H:%M").map_err(|_| {
+                    AutoPilotError::InvalidJob("Invalid time format. Please use HH:MM".to_string())
+                })?;
+
+                let time_scheme = TimeScheme { time: time_input };
+
+                match selected_index {
+                    1 => Some(When::Daily(time_scheme)),
+                    2 => Some(When::Weekly(time_scheme)),
+                    3 => Some(When::Monthly(time_scheme)),
+                    4 => Some(When::Yearly(time_scheme)),
+                    _ => unreachable!(),
+                }
+            }
+            5 => {
+                // Cron Expression
+                let cron_exp: String = Input::with_theme(&ColorfulTheme::default())
+                    .with_prompt("Enter cron expression (e.g., 0 30 9 * * * for 9:30 AM daily):")
+                    .interact_text()
+                    .map_err(|err| {
+                        AutoPilotError::InvalidJob(format!("Failed to get cron expression: {}", err))
+                    })?;
+
+                // Basic validation, actual validation is done during job creation
+                if cron_exp.split_whitespace().count() < 5 {
+                    return Err(AutoPilotError::InvalidJob(
+                        "Cron expression must have at least 5 fields (minute hour day-of-month month day-of-week)".to_string(),
+                    ));
+                }
+
+                Some(When::Cron(cron_exp))
+            }
+            _ => None,
+        }
     } else {
         None
     };

@@ -1,14 +1,12 @@
 use crate::{
     autopilot::AutoPilot,
-    cli::status::{check_if_running, status},
-    fs::{CONFIG_PATH, set_all_paths},
+    cli::status::check_if_running,
     job::get::get_jobs,
     status::set::set_status_initial,
 };
 use colored::Colorize;
-use log::{error, info, warn};
+use log::{error, info};
 use tokio::{self, signal};
-use tokio_cron_scheduler::job;
 
 pub async fn serve(verbose: bool) {
     let mut auto_pilot = AutoPilot::new().await;

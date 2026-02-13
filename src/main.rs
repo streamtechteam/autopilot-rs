@@ -4,7 +4,6 @@ use tokio::{self};
 mod autopilot;
 mod cli;
 mod conditions;
-mod cron;
 mod cross_platform;
 mod error;
 mod fs;
@@ -13,6 +12,7 @@ mod language;
 mod logging;
 mod status;
 mod task;
+mod time;
 mod utilities;
 
 #[tokio::main]

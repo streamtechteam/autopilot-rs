@@ -1,10 +1,8 @@
 use std::{collections::HashMap, path::PathBuf};
 
-use serde_json::json;
 
 use crate::{
     conditions::ConditionScheme,
-    cron::DateTimeScheme,
     error::AutoPilotError,
     fs::{self, get_jobs_dir},
     job::{
@@ -12,12 +10,13 @@ use crate::{
         get::{get_job, get_jobs_paths},
     },
     task::TaskScheme,
+    time::When,
 };
 
 pub fn add_job(
     name: Option<String>,
     description: Option<String>,
-    when: Option<DateTimeScheme>,
+    when: Option<When>,
     check_interval: Option<String>,
     conditions: Vec<ConditionScheme>,
     tasks: Vec<TaskScheme>,
@@ -94,7 +93,7 @@ pub fn remove_job(id: Option<String>, file_name: Option<String>) -> Result<(), A
     }
     if id.is_some() && file_name.is_none() {
         let jobs_path = get_jobs_paths();
-        let path_id_hashmap: HashMap<PathBuf, String> = HashMap::new();
+        let _path_id_hashmap: HashMap<PathBuf, String> = HashMap::new();
         for path in jobs_path {
             match get_job(path.clone()) {
                 Ok(value) => {
