@@ -1,11 +1,9 @@
 use crate::{
-    autopilot::AutoPilot,
-    cli::status::check_if_running,
-    job::get::get_jobs,
+    autopilot::AutoPilot, cli::status::check_if_running, job::get::get_jobs,
     status::set::set_status_initial,
 };
 use colored::Colorize;
-use log::{error, info};
+use log::{error, info, warn};
 use tokio::{self, signal};
 
 pub async fn serve(verbose: bool) {
@@ -58,6 +56,7 @@ pub async fn serve(verbose: bool) {
             if let Err(e) = set_status_initial() {
                 error!("Failed to initialize status: {}", e);
             }
+            warn!("{}", crate::language::en_us::AUTOPILOT_SHUTDOWN);
             std::process::exit(0);
         });
 
@@ -88,10 +87,11 @@ pub async fn serve(verbose: bool) {
                 error!("Failed to listen for ctrl+c: {}", e);
                 std::process::exit(1);
             }
-            println!("Received SIGINT, resetting status...");
+            warn!("Received SIGINT, resetting status...");
             if let Err(e) = set_status_initial() {
                 error!("Failed to initialize status: {}", e);
             }
+            warn!("{}", crate::language::en_us::AUTOPILOT_SHUTDOWN);
             std::process::exit(0);
         });
         // Wait for either signal handler to potentially terminate the process
