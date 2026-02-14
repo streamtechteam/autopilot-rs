@@ -6,7 +6,7 @@ pkgdesc="AutoPilot-rs runs automation jobs based on conditions like WiFi, Blueto
 arch=('x86_64')
 url="https://github.com/streamtechteam/auto_pilot_rs"
 license=('MIT')
-depends=('systemd-libs', 'libxcb', 'libxrandr', 'libx11', 'libxau')
+depends=('systemd-libs' 'libxcb' 'libxrandr' 'libx11' 'libxau')
 makedepends=('rust' 'cargo' 'libxcb' 'libxrandr' 'libxau' 'libx11')
 
 source=()
