@@ -73,7 +73,7 @@ jobs:
       - name: Install Rust and dependencies
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-          source $HOME/.cargo/env\
+          source $HOME/.cargo/env
           # dnf install -y systemd-devel
           dnf install -y gcc libxcb-devel libxcb libXau libXau-devel libXrandr libXrandr-devel
 
