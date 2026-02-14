@@ -6,12 +6,46 @@ on:
   pull_request:
     branches: ["master"]
   workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create a GitHub Release?'
+        required: true
+        type: boolean
+        default: false
+      tag_name:
+        description: 'Release tag (e.g., v1.0.0)'
+        required: false
+        type: string
+        default: ''
+      release_name:
+        description: 'Release name/title'
+        required: false
+        type: string
+        default: ''
+      prerelease:
+        description: 'Mark as pre-release?'
+        required: false
+        type: boolean
+        default: false
+      draft:
+        description: 'Create as draft?'
+        required: false
+        type: boolean
+        default: false
+      release_notes:
+        description: 'Custom release notes (leave empty for auto-generated)'
+        required: false
+        type: string
+        default: ''
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  # 1. Regular builds for latest systems
+  # ============================================
+  # BUILD JOBS
+  # ============================================
+
   build:
     name: Build - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -36,7 +70,6 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          # sudo apt-get install -y libsystemd-dev
           sudo apt-get install -y libxcb1-dev libxcb1 libxau6 libxau-dev libxrandr2 libxrandr-dev
 
       - name: Rust Cache
@@ -61,7 +94,6 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: dist/${{ matrix.asset_name }}
 
-  # 2. Older glibc Build
   build-linux-compat:
     name: Build Linux (Fedora 35 - glibc 2.34)
     runs-on: ubuntu-latest
@@ -74,7 +106,6 @@ jobs:
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
           source $HOME/.cargo/env
-          # dnf install -y systemd-devel
           dnf install -y gcc libxcb-devel libxcb libXau libXau-devel libXrandr libXrandr-devel
 
       - name: Build
@@ -86,7 +117,6 @@ jobs:
         run: |
           mkdir -p dist
           cp target/release/autopilot-rs dist/autopilot-rs-linux-glibc2.17
-          # Verify glibc version requirement
           objdump -T dist/autopilot-rs-linux-glibc2.17 | grep GLIBC | sort -u
 
       - name: Upload Compatible Binary
@@ -94,34 +124,6 @@ jobs:
         with:
           name: autopilot-rs-linux-compatible
           path: dist/autopilot-rs-linux-glibc2.17
-
-  # 3. Release Assets
-  create-release:
-    name: Create Release Assets
-    runs-on: ubuntu-latest
-    # Add the new jobs to the needs list
-    needs: [build, build-linux-compat, build-rpm, build-deb, build-msi,build-arch, build-dmg]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-
-      - name: Package for release
-        run: |
-          mkdir -p release
-          # Copy previous binaries
-          cp autopilot-rs-linux-latest/autopilot-rs-linux release/
-          cp autopilot-rs-windows/autopilot-rs-windows.exe release/
-
-          # Copy new installers
-          cp autopilot-rs-msi/*.msi release/
-          cp autopilot-rs-arch/*.pkg.tar.zst release/
-          cp autopilot-rs-dmg/*.dmg release/
-          cp autopilot-rs-rpm/*.rpm release/
-          cp autopilot-rs-deb/*.deb release/
-
-          cd release && sha256sum * > SHA256SUMS
 
   build-rpm:
     name: Build RPM Package
@@ -137,7 +139,6 @@ jobs:
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           source $HOME/.cargo/env
-          # dnf install -y systemd-devel
           dnf install -y gcc rpm-build cargo libxcb-devel libxcb libXau libXau-devel libXrandr libXrandr-devel
 
       - name: Build RPM
@@ -170,7 +171,6 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          #sudo apt-get install -y libsystemd-dev
           sudo apt-get install -y libxcb1-dev libxcb1 libxau6 libxau-dev libxrandr2 libxrandr-dev
 
       - name: Rust Cache
@@ -195,7 +195,6 @@ jobs:
           name: autopilot-rs-deb
           path: ${{ steps.find_deb.outputs.deb_path }}
 
-
   build-arch:
     name: Build Arch Package
     runs-on: ubuntu-latest
@@ -204,30 +203,23 @@ jobs:
     steps:
       - name: Install system dependencies
         run: |
-          # pacman -Syu systemd-libs
           pacman -Syu --noconfirm base-devel rust cargo git sudo libxcb libxrandr libx11 libxau
       - uses: actions/checkout@v4
       - name: Build Package
         run: |
-          # Create builduser
           useradd -m builduser
           echo "builduser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-
-          # Fix permissions so builduser can read the workspace
           chown -R builduser:builduser .
-
-          # Run makepkg.
-          # --nodeps is used here because we already installed dependencies above
           sudo -u builduser makepkg -sc --noconfirm
       - name: Upload Arch Artifact
         uses: actions/upload-artifact@v4
         with:
           name: autopilot-rs-arch
           path: "*.pkg.tar.zst"
+
   build-msi:
     name: Build Windows MSI
     runs-on: windows-latest
-    # We no longer strictly "need" the other build job if we build here
     steps:
       - uses: actions/checkout@v4
 
@@ -275,3 +267,163 @@ jobs:
         with:
           name: autopilot-rs-dmg
           path: "*.dmg"
+
+  # ============================================
+  # PACKAGE ARTIFACTS JOB
+  # ============================================
+
+  prepare-release-assets:
+    name: Prepare Release Assets
+    runs-on: ubuntu-latest
+    needs: [build, build-linux-compat, build-rpm, build-deb, build-msi, build-arch, build-dmg]
+    # Run on push to master OR on workflow_dispatch (regardless of release choice)
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+      github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: List downloaded artifacts
+        run: find artifacts -type f -ls
+
+      - name: Package for release
+        run: |
+          mkdir -p release
+
+          # Copy binaries
+          cp artifacts/autopilot-rs-linux-latest/autopilot-rs-linux release/ || true
+          cp artifacts/autopilot-rs-linux-compatible/autopilot-rs-linux-glibc2.17 release/ || true
+          cp artifacts/autopilot-rs-windows/autopilot-rs-windows.exe release/ || true
+          cp artifacts/autopilot-rs-macos/autopilot-rs-macos release/ || true
+
+          # Copy installers
+          cp artifacts/autopilot-rs-msi/*.msi release/ || true
+          cp artifacts/autopilot-rs-arch/*.pkg.tar.zst release/ || true
+          cp artifacts/autopilot-rs-dmg/*.dmg release/ || true
+          cp artifacts/autopilot-rs-rpm/*.rpm release/ || true
+          cp artifacts/autopilot-rs-deb/*.deb release/ || true
+
+          # Generate checksums
+          cd release
+          sha256sum * > SHA256SUMS
+
+          # List final release assets
+          echo "=== Release Assets ==="
+          ls -la
+
+      - name: Upload prepared release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: release/
+          retention-days: 1
+
+  # ============================================
+  # RELEASE JOB (Separate - Requires Confirmation)
+  # ============================================
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [prepare-release-assets]
+    # Only run when:
+    # 1. workflow_dispatch is triggered AND create_release is true
+    if: github.event_name == 'workflow_dispatch' && inputs.create_release == true
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Validate tag name
+        run: |
+          TAG="${{ inputs.tag_name }}"
+          if [ -z "$TAG" ]; then
+            echo "Error: tag_name is required when creating a release"
+            exit 1
+          fi
+          echo "TAG_NAME=$TAG" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: release/
+
+      - name: Generate version info
+        id: version
+        run: |
+          TAG="${{ inputs.tag_name }}"
+          # Remove 'v' prefix if present for version number
+          VERSION="${TAG#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Prepare release notes
+        id: notes
+        run: |
+          if [ -n "${{ inputs.release_notes }}" ]; then
+            # Use custom release notes
+            echo "body<<EOF" >> $GITHUB_OUTPUT
+            echo "${{ inputs.release_notes }}" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            # Generate release notes from recent commits
+            echo "body<<EOF" >> $GITHUB_OUTPUT
+            echo "## Release ${{ steps.version.outputs.version }}" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "**Release Date:** ${{ steps.version.outputs.date }}" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "### What's Changed" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            git log --pretty=format:"- %s (%h)" HEAD~10..HEAD 2>/dev/null || echo "- See commit history for changes"
+            echo "" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Display release info
+        run: |
+          echo "========================================="
+          echo "Creating Release with the following info:"
+          echo "========================================="
+          echo "Tag: ${{ inputs.tag_name }}"
+          echo "Name: ${{ inputs.release_name || format('Release {0}', inputs.tag_name) }}"
+          echo "Pre-release: ${{ inputs.prerelease }}"
+          echo "Draft: ${{ inputs.draft }}"
+          echo "========================================="
+          echo ""
+          echo "Assets to be uploaded:"
+          ls -la release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag_name }}
+          name: ${{ inputs.release_name || format('Release {0}', inputs.tag_name) }}
+          body: ${{ steps.notes.outputs.body }}
+          draft: ${{ inputs.draft }}
+          prerelease: ${{ inputs.prerelease }}
+          generate_release_notes: ${{ inputs.release_notes == '' }}
+          files: release/*
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release Summary
+        run: |
+          echo "## ✅ Release Created Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ inputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Name:** ${{ inputs.release_name || format('Release {0}', inputs.tag_name) }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Pre-release:** ${{ inputs.prerelease }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Draft:** ${{ inputs.draft }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Uploaded Assets" >> $GITHUB_STEP_SUMMARY
+          ls -la release/ >> $GITHUB_STEP_SUMMARY
