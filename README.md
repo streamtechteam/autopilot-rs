@@ -97,11 +97,11 @@ autopilot-rs stop
 
 ## Condition Types
 
-AutoPilot supports 12 condition types for flexible automation:
+AutoPilot supports 15 condition types for flexible automation. For complete documentation on each condition type, see [docs/CONDITIONS.md](docs/CONDITIONS.md).
 
-### WiFi
+### Basic Condition Examples
 
-Run when connected to a specific network:
+WiFi - Run when connected to a specific network:
 
 ```jsonc
 {
@@ -110,9 +110,7 @@ Run when connected to a specific network:
 }
 ```
 
-### Bluetooth
-
-Run when a device is connected:
+Bluetooth - Run when a device is connected:
 
 ```jsonc
 {
@@ -124,9 +122,7 @@ Run when a device is connected:
 }
 ```
 
-### Command
-
-Run a shell command and check the result:
+Command - Run a shell command and check the result:
 
 ```jsonc
 {
@@ -138,22 +134,7 @@ Run a shell command and check the result:
 }
 ```
 
-Or check command output:
-
-```jsonc
-{
-  "type": "command",
-  "condition": {
-    "command": "date +%A",
-    "target_output": "Monday",
-    "check_exit_code": false
-  }
-}
-```
-
-### Variable
-
-Check environment variables:
+Variable - Check environment variables:
 
 ```jsonc
 {
@@ -165,9 +146,7 @@ Check environment variables:
 }
 ```
 
-### Power
-
-Check battery status or charging:
+Power - Check battery status or charging:
 
 ```jsonc
 {
@@ -178,102 +157,9 @@ Check battery status or charging:
 }
 ```
 
-Or battery level:
+### Other Conditions
 
-```jsonc
-{
-  "type": "power",
-  "condition": {
-    "threshold": 20,
-    "operator": "less"
-  }
-}
-```
-
-### Resource
-
-Check CPU or memory usage:
-
-```jsonc
-{
-  "type": "resource",
-  "condition": {
-    "resource_type": "cpu",
-    "threshold": 20,
-    "operator": "less"
-  }
-}
-```
-
-### Internet
-
-Check internet connectivity:
-
-```jsonc
-{
-  "type": "internet",
-  "condition": {
-    "host": "8.8.8.8",
-    "timeout": 2
-  }
-}
-```
-
-### Process
-
-Check if a process is running:
-
-```jsonc
-{
-  "type": "process",
-  "condition": {
-    "process_name": "firefox",
-    "should_be_running": true
-  }
-}
-```
-
-### Disk Space
-
-Check available disk space:
-
-```jsonc
-{
-  "type": "diskspace",
-  "condition": {
-    "path": "/",
-    "min_free_gb": 10
-  }
-}
-```
-
-### File
-
-Check file existence or state:
-
-```jsonc
-{
-  "type": "file",
-  "condition": {
-    "path": "/tmp/ready.flag",
-    "check_type": "exists"
-  }
-}
-```
-
-### External Device
-
-Check for USB/external drives:
-
-```jsonc
-{
-  "type": "externaldevice",
-  "condition": {
-    "device_identifier": "My USB Drive",
-    "check_by_name": true
-  }
-}
-```
+For more other condition types like Screen, OR, AND, and others, please refer to the complete documentation in [docs/CONDITIONS.md](docs/CONDITIONS.md).
 
 ### Multiple Conditions
 
@@ -532,7 +418,6 @@ autopilot-rs serve --verbose
 | WiFi detection      | ✅    | ✅    | ✅      |
 | Bluetooth detection | ✅    | ✅    | ✅      |
 | Command execution   | ✅    | ✅    | ✅      |
-| Output matching     | ✅    | ✅    | ✅      |
 | Variables           | ✅    | ✅    | ✅      |
 | Power/Battery       | ✅    | ✅    | ✅      |
 | Resource (CPU/RAM)  | ✅    | ✅    | ✅      |
@@ -541,8 +426,11 @@ autopilot-rs serve --verbose
 | Disk space          | ✅    | ✅    | ✅      |
 | File monitoring     | ✅    | ✅    | ✅      |
 | External devices    | ✅    | ✅    | ✅      |
+| Screen/Monitor      | ✅    | ✅    | ✅      |
+| OR logic            | ✅    | ✅    | ✅      |
+| AND logic           | ✅    | ✅    | ✅      |
 
-All 12 condition types work on all platforms.
+All 14 condition types work on all platforms.
 
 ## Documentation
 
@@ -564,10 +452,9 @@ MIT
 - [ ] Plugin system for custom conditions
 - [ ] REST API for job management
 - [ ] Web dashboard
-- [ ] Distributed execution (multiple machines)
 - [ ] Performance optimizations
 - [ ] Metrics and monitoring
-- [x] 12 condition types (WiFi, Bluetooth, Command, Variable, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, And)
+- [x] 14 condition types (WiFi, Bluetooth, Command, Variable, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, Screen, And, Or)
 
 ## FAQ
 
@@ -587,7 +474,7 @@ A: Mostly. Dependencies are minimal. Check docs for platform-specific requiremen
 A: Yes, but AutoPilot is designed to replace constant cron tasks with condition-based execution.
 
 **Q: How many condition types are supported?**  
-A: 12 condition types: WiFi, Bluetooth, Command, Variable, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, and And (composite).
+A: 14 condition types: WiFi, Bluetooth, Command, Variable, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, Screen, And, and Or.
 
 ---
 

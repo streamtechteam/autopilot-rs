@@ -535,7 +535,180 @@ _Check by mount point:_
 
 ---
 
-### 12. And Condition (Composite)
+### 12. Screen Condition
+
+**Purpose:** Check screen/monitor configuration (number of screens, active screen, screen names).
+
+**Schema:**
+
+```jsonc
+{
+  "type": "screen",
+  "condition": {
+    "screen_count": 2, // Optional: Expected number of connected screens
+    "active_screen_name": "HDMI-1", // Optional: Name of the active/primary screen
+    "screen_names": ["eDP-1", "HDMI-1"] // Optional: List of expected screen names
+  }
+}
+```
+
+**Examples:**
+
+_Check for dual monitor setup:_
+
+```jsonc
+{
+  "type": "screen",
+  "condition": {
+    "screen_count": 2
+  }
+}
+```
+
+_Check for specific active screen:_
+
+```jsonc
+{
+  "type": "screen",
+  "condition": {
+    "active_screen_name": "HDMI-1"
+  }
+}
+```
+
+_Check for specific screen names:_
+
+```jsonc
+{
+  "type": "screen",
+  "condition": {
+    "screen_names": ["eDP-1", "HDMI-1", "DP-1"]
+  }
+}
+```
+
+_Combine multiple screen checks:_
+
+```jsonc
+{
+  "type": "screen",
+  "condition": {
+    "screen_count": 2,
+    "active_screen_name": "HDMI-1",
+    "screen_names": ["eDP-1", "HDMI-1"]
+  }
+}
+```
+
+**Platform Support:**
+
+- **Linux:** Uses `display_info` crate with X11/Wayland support
+- **macOS:** Uses native display APIs
+- **Windows:** Uses Win32 display APIs
+
+**Important Notes:**
+
+- All fields are **optional**, but **at least one** must be specified
+- The condition passes only if **all specified checks** are met (AND logic)
+- Screen names are platform-specific (e.g., "HDMI-1", "eDP-1" on Linux)
+- If `screen_names` is specified, all listed screens must be present
+
+**Use Cases:**
+
+- Run tasks only when docked (multiple monitors)
+- Adjust display settings when external monitor is connected
+- Trigger presentations mode when projector is detected
+- Run specific layouts based on monitor configuration
+
+---
+
+### 13. OR Condition (Composite)
+
+**Purpose:** Combine multiple conditions with OR logic (at least one must pass).
+
+**Schema:**
+
+```jsonc
+{
+  "type": "or",
+  "condition": {
+    "conditions": [
+      // Array of conditions - at least one must pass
+      { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
+      { "type": "bluetooth", "condition": { "device": "MyPhone" } }
+    ]
+  }
+}
+```
+
+**Examples:**
+
+_Run on either home or office WiFi:_
+
+```jsonc
+{
+  "type": "or",
+  "condition": {
+    "conditions": [
+      { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
+      { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } }
+    ]
+  }
+}
+```
+
+_Run when on WiFi OR charging:_
+
+```jsonc
+{
+  "type": "or",
+  "condition": {
+    "conditions": [
+      { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
+      { "type": "power", "condition": { "check_charging": true } }
+    ]
+  }
+}
+```
+
+_Complex nested OR:_
+
+```jsonc
+{
+  "type": "or",
+  "condition": {
+    "conditions": [
+      { "type": "bluetooth", "condition": { "device": "Headphones" } },
+      { 
+        "type": "and",
+        "condition": {
+          "conditions": [
+            { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
+            { "type": "power", "condition": { "check_charging": true } }
+          ]
+        }
+      }
+    ]
+  }
+}
+```
+
+This runs if **either**:
+- Headphones are connected, **OR**
+- Both home WiFi AND charging are true
+
+**Platform Support:** All platforms
+
+**Use Cases:**
+
+- Run tasks in multiple network environments
+- Trigger based on alternative conditions
+- Combine with AND for complex logic
+- Fallback scenarios (try primary, then secondary condition)
+
+---
+
+### 14. And Condition (Composite)
 
 **Purpose:** Combine multiple conditions with AND logic (all must pass).
 
@@ -546,12 +719,30 @@ _Check by mount point:_
   "type": "and",
   "condition": {
     "conditions": [
+      // Array of conditions - all must pass
       { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
       { "type": "bluetooth", "condition": { "device": "MyPhone" } }
     ]
   }
 }
 ```
+
+**Examples:**
+
+```jsonc
+{
+  "type": "and",
+  "condition": {
+    "conditions": [
+      { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
+      { "type": "power", "condition": { "check_charging": true } },
+      { "type": "screen", "condition": { "screen_count": 2 } }
+    ]
+  }
+}
+```
+
+**Platform Support:** All platforms
 
 **Use Cases:**
 
@@ -563,7 +754,7 @@ _Check by mount point:_
 
 ## Multiple Conditions (AND Logic)
 
-When a job has multiple conditions in the `conditions` array, **all conditions must be true** for the job to execute:
+When a job has multiple conditions in the `conditions` array at the job level, **all conditions must be true** for the job to execute:
 
 ```jsonc
 {
@@ -587,6 +778,37 @@ In this example, the job runs **only if**:
 
 - You're connected to "HomeNetwork" WiFi **AND**
 - Your phone is connected via Bluetooth
+
+## OR vs AND Logic
+
+- **Job-level conditions array:** Always AND logic (all must pass)
+- **`"type": "or"` condition:** OR logic (at least one must pass)
+- **`"type": "and"` condition:** AND logic (all must pass, useful for nesting)
+
+**Example combining both:**
+
+```jsonc
+{
+  "conditions": [
+    {
+      "type": "or",
+      "condition": {
+        "conditions": [
+          { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
+          { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } }
+        ]
+      }
+    },
+    {
+      "type": "power",
+      "condition": { "check_charging": true }
+    }
+  ]
+}
+```
+
+This runs if:
+- (Home WiFi **OR** Office WiFi) **AND** Charging
 
 ---
 
@@ -622,6 +844,31 @@ In this example, the job runs **only if**:
 ---
 
 ## Common Patterns
+
+### Only When Docked (Multiple Monitors)
+
+```jsonc
+{
+  "type": "screen",
+  "condition": {
+    "screen_count": 2
+  }
+}
+```
+
+### Only on Home OR Office WiFi
+
+```jsonc
+{
+  "type": "or",
+  "condition": {
+    "conditions": [
+      { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
+      { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } }
+    ]
+  }
+}
+```
 
 ### Only When at Home
 
@@ -712,13 +959,12 @@ Error executing condition command 'bad syntax': (error details)
 | diskspace      | `path`, `min_free_gb`, `max_used_gb`             | All      |
 | file           | `path`, `check_type`, `time_threshold`, `size_threshold` | All      |
 | externaldevice | `device_identifier`, `check_by_name`             | All      |
+| screen         | `screen_count`, `active_screen_name`, `screen_names` | All      |
+| or             | `conditions` (array of conditions)               | All      |
 | and            | `conditions` (array of conditions)               | All      |
 
 ---
 
 ## See Also
 
-- [Job Configuration Guide](./JOBS.md)
-- [Tasks Documentation](./TASKS.md)
-- [Troubleshooting Guide](./TROUBLESHOOTING.md)
 - [Example Jobs](../templates/)
