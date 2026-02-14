@@ -21,13 +21,13 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_name: autopilot-rs-linux-latest
-            asset_name: autopilot-rs-linux
+            asset_name: autopilot-rs.linux
           - os: windows-latest
             artifact_name: autopilot-rs-windows
-            asset_name: autopilot-rs-windows.exe
+            asset_name: autopilot-rs.windows.exe
           - os: macos-latest
             artifact_name: autopilot-rs-macos
-            asset_name: autopilot-rs-macos
+            asset_name: autopilot-rs.macos
 
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libsystemd-dev
+          sudo apt-get install -y libsystemd-dev libxcb1-dev libxcb1 libxau6 libxau-dev libxrandr2 libxrandr-dev
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
@@ -73,7 +73,7 @@ jobs:
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
           source $HOME/.cargo/env
-          dnf install -y gcc systemd-devel
+          dnf install -y gcc systemd-devel libxcb-devel libxcb libXau libXau-devel libXrandr libXrandr-devel
 
       - name: Build
         run: |
@@ -111,7 +111,7 @@ jobs:
           # Copy previous binaries
           cp autopilot-rs-linux-latest/autopilot-rs-linux release/
           cp autopilot-rs-windows/autopilot-rs-windows.exe release/
-          
+
           # Copy new installers
           cp autopilot-rs-msi/*.msi release/
           cp autopilot-rs-arch/*.pkg.tar.zst release/
@@ -190,8 +190,8 @@ jobs:
         with:
           name: autopilot-rs-deb
           path: ${{ steps.find_deb.outputs.deb_path }}
-  
-  
+
+
   build-arch:
     name: Build Arch Package
     runs-on: ubuntu-latest
@@ -200,18 +200,18 @@ jobs:
     steps:
       - name: Install system dependencies
         run: |
-          pacman -Syu --noconfirm base-devel rust cargo git sudo systemd-libs
+          pacman -Syu --noconfirm base-devel rust cargo git sudo systemd-libs libxcb libxrandr libx11 libxau
       - uses: actions/checkout@v4
       - name: Build Package
         run: |
           # Create builduser
           useradd -m builduser
           echo "builduser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-          
+
           # Fix permissions so builduser can read the workspace
           chown -R builduser:builduser .
-          
-          # Run makepkg. 
+
+          # Run makepkg.
           # --nodeps is used here because we already installed dependencies above
           sudo -u builduser makepkg -sc --noconfirm
       - name: Upload Arch Artifact
