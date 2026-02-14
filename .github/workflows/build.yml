@@ -135,7 +135,7 @@ jobs:
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           source $HOME/.cargo/env
-          dnf install -y gcc systemd-devel rpm-build cargo
+          dnf install -y gcc systemd-devel rpm-build cargo libxcb-devel libxcb libXau libXau-devel libXrandr libXrandr-devel
 
       - name: Build RPM
         run: |
