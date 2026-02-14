@@ -26,15 +26,15 @@ strum = { version = "0.27.2", features = ["derive"] }
 duct_sh = "1.0.0"
 display-info = "0.5"
 
-[target.'cfg(target_os = "linux")'.dependencies]
-systemd = "0.10.1"
-systemd-journal-logger = "2.2.2"
+# [target.'cfg(target_os = "linux")'.dependencies]
+# systemd = "0.10.1"
+# systemd-journal-logger = "2.2.2"
 
-[target.'cfg(unix)'.dependencies]
-syslog = "7.0.0"
+# [target.'cfg(unix)'.dependencies]
+# syslog = "7.0.0"
 
-[target.'cfg(target_os = "windows")'.dependencies]
-winlog2 = "0.3.2"
+# [target.'cfg(target_os = "windows")'.dependencies]
+# winlog2 = "0.3.2"
 
 [package.metadata.rpm]
 package = "autopilot-rs"
