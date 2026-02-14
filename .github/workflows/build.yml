@@ -21,13 +21,13 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_name: autopilot-rs-linux-latest
-            asset_name: autopilot-rs.linux
+            asset_name: autopilot-rs-linux
           - os: windows-latest
             artifact_name: autopilot-rs-windows
-            asset_name: autopilot-rs.windows.exe
+            asset_name: autopilot-rs-windows.exe
           - os: macos-latest
             artifact_name: autopilot-rs-macos
-            asset_name: autopilot-rs.macos
+            asset_name: autopilot-rs-macos
 
     steps:
       - uses: actions/checkout@v4
