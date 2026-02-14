@@ -100,7 +100,7 @@ autopilot-rs stop
 
 ## Condition Types
 
-AutoPilot supports 15 condition types for flexible automation. For complete documentation on each condition type, see [docs/CONDITIONS.md](docs/CONDITIONS.md).
+AutoPilot supports 14 condition types for flexible automation. For complete documentation on each condition type, see [docs/CONDITIONS.md](docs/CONDITIONS.md).
 
 ### Basic Condition Examples
 
