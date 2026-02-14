@@ -35,7 +35,7 @@ AutoPilot checks: Are you on office WiFi? Are your headphones connected? If both
 ## Installation
 
 ### Release 
-  Download latest released version from [GitHub Releases](https://github.com/autopilot-rs/autopilot-rs/releases)
+  Download latest released version from [GitHub Releases](https://github.com/streamtechteam/autopilot-rs/releases)
 
 ### macOS
 
