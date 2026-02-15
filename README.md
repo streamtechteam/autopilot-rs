@@ -440,6 +440,11 @@ All 14 condition types work on all platforms.
 - **[CONDITIONS.md](docs/CONDITIONS.md)** - Detailed condition reference (12 types)
 - **[PLUGIN-SYSTEM.md](PLUGIN-SYSTEM.md)** - Extend AutoPilot with custom plugins (coming soon)
 
+### AI powered docs 
+
+* https://deepwiki.com/streamtechteam/auto_pilot_rs
+* https://github.com/copilot and start chat with `#@streamtechteam/auto_pilot_rs`
+
 ## Contributing
 
 1. Check existing issues
