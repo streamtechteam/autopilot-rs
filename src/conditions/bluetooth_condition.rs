@@ -174,3 +174,44 @@ pub struct BluetoothConditionScheme {
     #[serde(default)]
     pub match_by_mac: Option<bool>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bluetooth_condition_creation() {
+        let condition = BluetoothCondition::new("TestDevice".to_string());
+        assert_eq!(condition.device, "TestDevice");
+        assert!(!condition.match_by_mac);
+    }
+
+    #[test]
+    fn test_bluetooth_condition_with_mac() {
+        let condition = BluetoothCondition::with_mac("AA:BB:CC:DD:EE:FF".to_string());
+        assert_eq!(condition.device, "AA:BB:CC:DD:EE:FF");
+        assert!(condition.match_by_mac);
+    }
+
+    #[test]
+    fn test_bluetooth_condition_from_scheme() {
+        let scheme = BluetoothConditionScheme {
+            device: "TestDevice".to_string(),
+            match_by_mac: Some(true),
+        };
+        let condition = BluetoothCondition::from_scheme(scheme);
+        assert_eq!(condition.device, "TestDevice");
+        assert!(condition.match_by_mac);
+    }
+
+    #[test]
+    fn test_bluetooth_condition_from_scheme_default() {
+        let scheme = BluetoothConditionScheme {
+            device: "TestDevice".to_string(),
+            match_by_mac: None,
+        };
+        let condition = BluetoothCondition::from_scheme(scheme);
+        assert_eq!(condition.device, "TestDevice");
+        assert!(!condition.match_by_mac);
+    }
+}

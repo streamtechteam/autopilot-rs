@@ -178,3 +178,60 @@ pub struct JobScheme {
     conditions: Vec<ConditionScheme>,
     tasks: Vec<TaskScheme>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::conditions::AlwaysTrueCondition;
+    use crate::task::Task;
+
+    #[test]
+    fn test_job_creation() {
+        let conditions: Vec<Box<dyn Condition>> = vec![Box::new(AlwaysTrueCondition {})];
+        let tasks: Vec<Task> = vec![Task::new("echo test".to_string())];
+        
+        let job = Job::new(
+            "test_id".to_string(),
+            "test_name".to_string(),
+            "test_description".to_string(),
+            Some("1000".to_string()),
+            None,
+            conditions,
+            tasks,
+        );
+        
+        assert_eq!(job.id, "test_id");
+        assert_eq!(job.name, "test_name");
+        assert_eq!(job.description, "test_description");
+        assert_eq!(job.check_interval, Some("1000".to_string()));
+        assert!(job.conditions.len() == 1);
+        assert!(job.tasks.len() == 1);
+    }
+
+    #[test]
+    fn test_job_from_scheme() {
+        let condition_scheme = ConditionScheme::AlwaysTrue(crate::conditions::AlwaysTrueConditionScheme::default());
+        let task_scheme = crate::task::TaskScheme {
+            command: "echo test".to_string(),
+        };
+        
+        let job_scheme = JobScheme {
+            id: "test_id".to_string(),
+            name: Some("test_name".to_string()),
+            description: Some("test_description".to_string()),
+            when: None,
+            check_interval: Some("1000".to_string()),
+            conditions: vec![condition_scheme],
+            tasks: vec![task_scheme],
+        };
+        
+        let job = Job::from_scheme(job_scheme);
+        
+        assert_eq!(job.id, "test_id");
+        assert_eq!(job.name, "test_name");
+        assert_eq!(job.description, "test_description");
+        assert_eq!(job.check_interval, Some("1000".to_string()));
+        assert!(job.conditions.len() == 1);
+        assert!(job.tasks.len() == 1);
+    }
+}

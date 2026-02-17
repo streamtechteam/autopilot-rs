@@ -113,3 +113,49 @@ pub struct OrConditionScheme {
     #[serde(default)]
     conditions: Vec<ConditionScheme>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::conditions::AlwaysTrueCondition;
+
+    #[test]
+    fn test_or_condition_all_false() {
+        let conditions: Vec<Box<dyn Condition>> = vec![
+            Box::new(crate::conditions::AlwaysFalseCondition {}),
+            Box::new(crate::conditions::AlwaysFalseCondition {}),
+            Box::new(crate::conditions::AlwaysFalseCondition {}),
+        ];
+        let or_condition = OrCondition::new(conditions);
+        assert!(!or_condition.check());
+    }
+
+    #[test]
+    fn test_or_condition_one_true() {
+        let conditions: Vec<Box<dyn Condition>> = vec![
+            Box::new(crate::conditions::AlwaysFalseCondition {}),
+            Box::new(AlwaysTrueCondition {}),
+            Box::new(crate::conditions::AlwaysFalseCondition {}),
+        ];
+        let or_condition = OrCondition::new(conditions);
+        assert!(or_condition.check());
+    }
+
+    #[test]
+    fn test_or_condition_all_true() {
+        let conditions: Vec<Box<dyn Condition>> = vec![
+            Box::new(AlwaysTrueCondition {}),
+            Box::new(AlwaysTrueCondition {}),
+            Box::new(AlwaysTrueCondition {}),
+        ];
+        let or_condition = OrCondition::new(conditions);
+        assert!(or_condition.check());
+    }
+
+    #[test]
+    fn test_or_condition_empty() {
+        let conditions: Vec<Box<dyn Condition>> = vec![];
+        let or_condition = OrCondition::new(conditions);
+        assert!(!or_condition.check());
+    }
+}

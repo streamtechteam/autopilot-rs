@@ -134,3 +134,50 @@ pub struct CommandConditionScheme {
     #[serde(default)]
     pub target_output: Option<String>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_command_condition_creation() {
+        let condition = CommandCondition::new("echo hello".to_string());
+        assert_eq!(condition.command, "echo hello");
+        assert!(condition.check_exit_code);
+        assert_eq!(condition.target_output, None);
+    }
+
+    #[test]
+    fn test_command_condition_with_output() {
+        let condition = CommandCondition::with_output("echo hello".to_string(), "hello".to_string());
+        assert_eq!(condition.command, "echo hello");
+        assert!(!condition.check_exit_code);
+        assert_eq!(condition.target_output, Some("hello".to_string()));
+    }
+
+    #[test]
+    fn test_command_condition_from_scheme_default() {
+        let scheme = CommandConditionScheme {
+            command: "echo test".to_string(),
+            check_exit_code: None,
+            target_output: None,
+        };
+        let condition = CommandCondition::from_scheme(scheme);
+        assert_eq!(condition.command, "echo test");
+        assert!(condition.check_exit_code); // Default is true
+        assert_eq!(condition.target_output, None);
+    }
+
+    #[test]
+    fn test_command_condition_from_scheme_with_values() {
+        let scheme = CommandConditionScheme {
+            command: "echo test".to_string(),
+            check_exit_code: Some(false),
+            target_output: Some("test".to_string()),
+        };
+        let condition = CommandCondition::from_scheme(scheme);
+        assert_eq!(condition.command, "echo test");
+        assert!(!condition.check_exit_code);
+        assert_eq!(condition.target_output, Some("test".to_string()));
+    }
+}

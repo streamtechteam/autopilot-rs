@@ -126,3 +126,50 @@ pub struct DiskSpaceConditionScheme {
     #[serde(default)]
     pub max_used_gb: Option<f64>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_disk_space_condition_creation() {
+        let condition = DiskSpaceCondition::new("/home".to_string(), 10.0, Some(50.0));
+        assert_eq!(condition.path, "/home");
+        assert_eq!(condition.min_free_gb, 10.0);
+        assert_eq!(condition.max_used_gb, Some(50.0));
+    }
+
+    #[test]
+    fn test_disk_space_condition_no_max_used() {
+        let condition = DiskSpaceCondition::new("/home".to_string(), 10.0, None);
+        assert_eq!(condition.path, "/home");
+        assert_eq!(condition.min_free_gb, 10.0);
+        assert_eq!(condition.max_used_gb, None);
+    }
+
+    #[test]
+    fn test_disk_space_condition_from_scheme() {
+        let scheme = DiskSpaceConditionScheme {
+            path: "/home".to_string(),
+            min_free_gb: 10.0,
+            max_used_gb: Some(50.0),
+        };
+        let condition = DiskSpaceCondition::from_scheme(scheme);
+        assert_eq!(condition.path, "/home");
+        assert_eq!(condition.min_free_gb, 10.0);
+        assert_eq!(condition.max_used_gb, Some(50.0));
+    }
+
+    #[test]
+    fn test_disk_space_condition_from_scheme_no_max() {
+        let scheme = DiskSpaceConditionScheme {
+            path: "/home".to_string(),
+            min_free_gb: 10.0,
+            max_used_gb: None,
+        };
+        let condition = DiskSpaceCondition::from_scheme(scheme);
+        assert_eq!(condition.path, "/home");
+        assert_eq!(condition.min_free_gb, 10.0);
+        assert_eq!(condition.max_used_gb, None);
+    }
+}

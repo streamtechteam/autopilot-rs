@@ -113,3 +113,38 @@ pub struct AndConditionScheme {
     #[serde(default)]
     conditions: Vec<ConditionScheme>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::conditions::AlwaysTrueCondition;
+
+    #[test]
+    fn test_and_condition_all_true() {
+        let conditions: Vec<Box<dyn Condition>> = vec![
+            Box::new(AlwaysTrueCondition {}),
+            Box::new(AlwaysTrueCondition {}),
+            Box::new(AlwaysTrueCondition {}),
+        ];
+        let and_condition = AndCondition::new(conditions);
+        assert!(and_condition.check());
+    }
+
+    #[test]
+    fn test_and_condition_one_false() {
+        let conditions: Vec<Box<dyn Condition>> = vec![
+            Box::new(AlwaysTrueCondition {}),
+            Box::new(crate::conditions::AlwaysFalseCondition {}),
+            Box::new(AlwaysTrueCondition {}),
+        ];
+        let and_condition = AndCondition::new(conditions);
+        assert!(!and_condition.check());
+    }
+
+    #[test]
+    fn test_and_condition_empty() {
+        let conditions: Vec<Box<dyn Condition>> = vec![];
+        let and_condition = AndCondition::new(conditions);
+        assert!(and_condition.check());
+    }
+}
