@@ -4,7 +4,6 @@ use strum::{EnumIter, IntoEnumIterator};
 
 use crate::error::AutoPilotError;
 
-pub mod and_condition;
 pub mod bluetooth_condition;
 pub mod command_condition;
 pub mod custom_condition;
@@ -14,7 +13,7 @@ pub mod external_device_condition;
 pub mod fail_condition;
 pub mod file_condition;
 pub mod internet_condition;
-pub mod or_condition;
+pub mod logical_condition;
 pub mod power_condition;
 pub mod process_condition;
 pub mod resource_condition;
@@ -69,8 +68,7 @@ pub enum ConditionScheme {
     /// External device condition: checks for connected USB/external drives
     ExternalDevice(external_device_condition::ExternalDeviceConditionScheme),
     Fail(fail_condition::FailCondition),
-    And(and_condition::AndConditionScheme),
-    Or(or_condition::OrConditionScheme),
+    Logical(logical_condition::LogicalConditionScheme),
     Screen(screen_condition::ScreenConditionScheme),
 }
 
@@ -112,11 +110,8 @@ impl ConditionScheme {
                 external_device_condition::ExternalDeviceCondition::from_scheme(scheme.clone()),
             ),
             ConditionScheme::Fail(scheme) => Box::new(scheme.clone()),
-            ConditionScheme::And(scheme) => {
-                Box::new(and_condition::AndCondition::from_scheme(scheme.clone()))
-            }
-            ConditionScheme::Or(scheme) => {
-                Box::new(or_condition::OrCondition::from_scheme(scheme.clone()))
+            ConditionScheme::Logical(scheme) => {
+                Box::new(logical_condition::LogicalCondition::from_scheme(scheme.clone()))
             }
             ConditionScheme::Screen(scheme) => Box::new(
                 screen_condition::ScreenCondition::from_scheme(scheme.clone()),
