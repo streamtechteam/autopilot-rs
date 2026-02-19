@@ -90,6 +90,7 @@ dependencies = [
  "flexi_logger",
  "futures",
  "log",
+ "rayon",
  "serde",
  "serde_json",
  "strum",

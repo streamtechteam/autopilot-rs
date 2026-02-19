@@ -25,6 +25,7 @@ dialoguer = "0.12.0"
 strum = { version = "0.27.2", features = ["derive"] }
 duct_sh = "1.0.0"
 display-info = "0.5"
+rayon = "1.11.0"
 
 # [target.'cfg(target_os = "linux")'.dependencies]
 # systemd = "0.10.1"

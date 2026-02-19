@@ -1,3 +1,10 @@
+use duct::cmd;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use std::ops::Deref;
+use std::process::Command;
+
+use crate::cross_platform::TERMINAL_EDITORS;
+
 pub fn get_shell_name() -> String {
     #[cfg(target_os = "windows")]
     {
@@ -18,4 +25,32 @@ pub fn get_shell_name() -> String {
     {
         "sh".to_string();
     }
+}
+
+pub fn get_supported_editors() -> Vec<&'static str> {
+    TERMINAL_EDITORS
+        .par_iter() // Parallel iteration
+        .copied()
+        .filter(|&editor| {
+            #[cfg(target_os = "windows")]
+            {
+                match duct_sh::sh_dangerous(format!("where {}", editor))
+                    .stdout_null()
+                    .stderr_null()
+                    .run()
+                {
+                    Ok(_) => return true,
+                    Err(_) => return false,
+                }
+            }
+            match duct_sh::sh_dangerous(format!("which {}", editor))
+                .stdout_null()
+                .stderr_null()
+                .run()
+            {
+                Ok(_) => return true,
+                Err(_) => return false,
+            }
+        })
+        .collect()
 }

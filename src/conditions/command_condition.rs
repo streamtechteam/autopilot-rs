@@ -1,9 +1,10 @@
-
-use dialoguer::{Confirm, Input, theme::ColorfulTheme};
+use dialoguer::{Confirm, Editor, Input, Select, theme::ColorfulTheme};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    autopilot::AutoPilot,
     conditions::{Condition, ConditionScheme},
+    cross_platform::get::get_supported_editors,
     error::AutoPilotError,
 };
 
@@ -65,22 +66,58 @@ impl Condition for CommandCondition {
     }
 
     fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        let command = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter command to execute:")
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+        // let command = Editor::with_theme(&ColorfulTheme::default())
+        //     .with_prompt("Enter command to execute:")
+        //     .interact_text()
+        //     .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+        let mut supported_editors = get_supported_editors();
+        supported_editors.insert(0, "Inline");
+        let supported_editors = supported_editors;
+
+        let desired_editor = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Choose your desired editor:")
+            .default(0)
+            .items(&supported_editors)
+            .interact()
+            .map_err(|err| AutoPilotError::Dialoguer(err))?;
+
+        let desired_editor = supported_editors[desired_editor];
+        let command;
+        if desired_editor == "Inline" {
+            command = Input::with_theme(&ColorfulTheme::default())
+                .with_prompt("Enter command to execute:")
+                .interact_text()
+                .map_err(|err| {
+                    AutoPilotError::InvalidJob(format!("Failed to get command: {}", err))
+                })?;
+        } else {
+            command = Editor::new()
+                .executable(desired_editor)
+                .edit("")
+                .map_err(|err| AutoPilotError::Dialoguer(err))?
+                .ok_or_else(|| AutoPilotError::Command("Command not provided".to_string()))?;
+        }
 
         let check_exit_code = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("Check command exit code (success/failure)?")
+            .with_prompt("Check command exit code (success/failure, otherwise check by output)?")
             .interact_opt()
             .map_err(|err| AutoPilotError::Condition(err.to_string()))?
             .unwrap_or(true);
 
         let target_output = if !check_exit_code {
-            let output = Input::with_theme(&ColorfulTheme::default())
-                .with_prompt("Enter expected output to match (optional, if you check exit code):")
-                .interact_text()
-                .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+            let output;
+            if desired_editor == "Inline" {
+                output = Input::with_theme(&ColorfulTheme::default())
+                    .with_prompt("Enter expected output to match:")
+                    .interact_text()
+                    .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+            } else {
+                output = Editor::new()
+                    .executable(desired_editor)
+                    .edit("")
+                    .map_err(|err| AutoPilotError::Dialoguer(err))?
+                    .ok_or_else(|| AutoPilotError::Condition("output not provided".to_string()))?;
+            }
             Some(output)
         } else {
             None

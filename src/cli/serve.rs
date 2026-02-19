@@ -9,29 +9,6 @@ use tokio::{self, signal};
 pub async fn serve(verbose: bool) {
     let mut auto_pilot = AutoPilot::new().await;
     auto_pilot.start(verbose);
-    match check_if_running() {
-        true => {
-            error!("there is already an instance of Autopilot running");
-            return;
-        }
-        _ => {}
-    }
-
-    let scheduler = &auto_pilot.scheduler;
-    if let Err(e) = set_status_initial() {
-        error!("Failed to initialize status: {}", e);
-        return;
-    }
-
-    info!("{}", "Autopilot served!".green());
-    // Get jobs from JSON files and run them
-    let jobs = get_jobs(false);
-    for job in jobs {
-        let scheduler = scheduler.clone();
-        tokio::task::spawn(async move {
-            job.run(&scheduler, false).await;
-        });
-    }
 
     // Keep the daemon running until Ctrl+C is pressed
     // Handle SIGTERM signal

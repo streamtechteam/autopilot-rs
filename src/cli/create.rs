@@ -1,10 +1,12 @@
 use chrono::{NaiveDate, NaiveTime};
 use colored::Colorize;
+use dialoguer::Editor;
 use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
 use std::path::PathBuf;
 use strum::IntoEnumIterator;
 
 use crate::conditions::{Condition, ConditionScheme};
+use crate::cross_platform::get::get_supported_editors;
 use crate::error::AutoPilotError;
 use crate::job::set::add_job;
 use crate::task::TaskScheme;
@@ -75,7 +77,9 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
                     })?;
 
                 let _date = NaiveDate::parse_from_str(&date_input, "%Y/%m/%d").map_err(|_| {
-                    AutoPilotError::InvalidJob("Invalid date format. Please use YYYY/MM/DD".to_string())
+                    AutoPilotError::InvalidJob(
+                        "Invalid date format. Please use YYYY/MM/DD".to_string(),
+                    )
                 })?;
 
                 let time_input: String = Input::with_theme(&ColorfulTheme::default())
@@ -123,7 +127,10 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
                     .with_prompt("Enter cron expression (e.g., 0 30 9 * * * for 9:30 AM daily):")
                     .interact_text()
                     .map_err(|err| {
-                        AutoPilotError::InvalidJob(format!("Failed to get cron expression: {}", err))
+                        AutoPilotError::InvalidJob(format!(
+                            "Failed to get cron expression: {}",
+                            err
+                        ))
                     })?;
 
                 // Basic validation, actual validation is done during job creation
@@ -206,12 +213,33 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
             }
             break;
         }
+        let mut supported_editors = get_supported_editors();
+        supported_editors.insert(0, "Inline");
+        let supported_editors = supported_editors;
 
-        let command: String = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter command to execute:")
-            .interact_text()
-            .map_err(|err| AutoPilotError::InvalidJob(format!("Failed to get command: {}", err)))?;
+        let desired_editor = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Choose your desired editor:")
+            .default(0)
+            .items(&supported_editors)
+            .interact()
+            .map_err(|err| AutoPilotError::Dialoguer(err))?;
 
+        let desired_editor = supported_editors[desired_editor];
+        let command;
+        if desired_editor == "Inline" {
+            command = Input::with_theme(&ColorfulTheme::default())
+                .with_prompt("Enter command to execute:")
+                .interact_text()
+                .map_err(|err| {
+                    AutoPilotError::InvalidJob(format!("Failed to get command: {}", err))
+                })?;
+        } else {
+            command = Editor::new()
+                .executable(desired_editor)
+                .edit("")
+                .map_err(|err| AutoPilotError::Dialoguer(err))?
+                .ok_or_else(|| AutoPilotError::Command("Command not provided".to_string()))?;
+        }
         tasks.push(TaskScheme { command });
     }
 

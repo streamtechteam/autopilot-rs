@@ -1,4 +1,3 @@
-
 use serde::{Deserialize, Serialize};
 use strum::{EnumIter, IntoEnumIterator};
 
@@ -14,6 +13,7 @@ pub mod external_device_condition;
 pub mod fail_condition;
 pub mod file_condition;
 pub mod internet_condition;
+pub mod nor_condition;
 pub mod or_condition;
 pub mod power_condition;
 pub mod process_condition;
@@ -71,6 +71,8 @@ pub enum ConditionScheme {
     Fail(fail_condition::FailCondition),
     And(and_condition::AndConditionScheme),
     Or(or_condition::OrConditionScheme),
+    Nor(nor_condition::NorConditionScheme),
+
     Screen(screen_condition::ScreenConditionScheme),
 }
 
@@ -117,6 +119,9 @@ impl ConditionScheme {
             }
             ConditionScheme::Or(scheme) => {
                 Box::new(or_condition::OrCondition::from_scheme(scheme.clone()))
+            }
+            ConditionScheme::Nor(scheme) => {
+                Box::new(nor_condition::NorCondition::from_scheme(scheme.clone()))
             }
             ConditionScheme::Screen(scheme) => Box::new(
                 screen_condition::ScreenCondition::from_scheme(scheme.clone()),
