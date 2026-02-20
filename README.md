@@ -162,7 +162,7 @@ Power - Check battery status or charging:
 
 ### Other Conditions
 
-For more other condition types like Screen, OR, AND, and others, please refer to the complete documentation in [docs/CONDITIONS.md](docs/CONDITIONS.md).
+For more other condition types like Screen, Logical, and others, please refer to the complete documentation in [docs/CONDITIONS.md](docs/CONDITIONS.md).
 
 ### Multiple Conditions
 
@@ -430,10 +430,9 @@ autopilot-rs serve --verbose
 | File monitoring     | ✅    | ✅    | ✅      |
 | External devices    | ✅    | ✅    | ✅      |
 | Screen/Monitor      | ✅    | ✅    | ✅      |
-| OR logic            | ✅    | ✅    | ✅      |
-| AND logic           | ✅    | ✅    | ✅      |
+| Logical             | ✅    | ✅    | ✅      |
 
-All 14 condition types work on all platforms.
+All 13 condition types work on all platforms.
 
 ## Documentation
 
@@ -462,7 +461,7 @@ MIT
 - [ ] Web dashboard
 - [ ] Performance optimizations
 - [ ] Metrics and monitoring
-- [x] 14 condition types (WiFi, Bluetooth, Command, Variable, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, Screen, And, Or)
+- [x] 13 condition types (WiFi, Bluetooth, Command, Variable, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, Screen, Logical)
 
 ## FAQ
 
