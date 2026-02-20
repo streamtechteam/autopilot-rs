@@ -15,30 +15,306 @@
         "conditions": {
             "type": "array",
             "items": {
-                "type": "object",
-                "properties": {
-                    "type": {
-                        "type": "string"
-                    },
-                    "condition": {
+                "oneOf": [
+                    {
                         "type": "object",
                         "properties": {
-                            "command": {
-                                "type": "string"
+                            "type": {
+                                "const": "command"
                             },
-                            "target": {
-                                "type": "string"
+                            "condition": {
+                                "type": "object",
+                                "properties": {
+                                    "command": {
+                                        "type": "string"
+                                    },
+                                    "check_exit_code": {
+                                        "type": "boolean"
+                                    },
+                                    "target_output": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": ["command"]
                             }
                         },
-                        "required": [
-                            "command",
-                            "target"
-                        ]
+                        "required": ["type", "condition"]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "const": "variable"
+                            },
+                            "condition": {
+                                "type": "object",
+                                "properties": {
+                                    "variable": {
+                                        "type": "string"
+                                    },
+                                    "target": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": ["variable", "target"]
+                            }
+                        },
+                        "required": ["type", "condition"]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "const": "bluetooth"
+                            },
+                            "condition": {
+                                "type": "object",
+                                "properties": {
+                                    "device": {
+                                        "type": "string"
+                                    },
+                                    "match_by_mac": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": ["device"]
+                            }
+                        },
+                        "required": ["type", "condition"]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "const": "wifi"
+                            },
+                            "condition": {
+                                "type": "object",
+                                "properties": {
+                                    "ssid": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": ["ssid"]
+                            }
+                        },
+                        "required": ["type", "condition"]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "const": "power"
+                            },
+                            "condition": {
+                                "type": "object",
+                                "properties": {
+                                    "check_charging": {
+                                        "type": "boolean"
+                                    },
+                                    "threshold": {
+                                        "type": "number"
+                                    },
+                                    "operator": {
+                                        "type": "string",
+                                        "enum": ["greater", "less"]
+                                    }
+                                }
+                            }
+                        },
+                        "required": ["type", "condition"]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "const": "resource"
+                            },
+                            "condition": {
+                                "type": "object",
+                                "properties": {
+                                    "resource_type": {
+                                        "type": "string",
+                                        "enum": ["cpu", "memory"]
+                                    },
+                                    "threshold": {
+                                        "type": "number"
+                                    },
+                                    "operator": {
+                                        "type": "string",
+                                        "enum": ["greater", "less"]
+                                    }
+                                },
+                                "required": ["resource_type", "threshold"]
+                            }
+                        },
+                        "required": ["type", "condition"]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "const": "internet"
+                            },
+                            "condition": {
+                                "type": "object",
+                                "properties": {
+                                    "host": {
+                                        "type": "string"
+                                    },
+                                    "timeout": {
+                                        "type": "number"
+                                    }
+                                }
+                            }
+                        },
+                        "required": ["type", "condition"]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "const": "process"
+                            },
+                            "condition": {
+                                "type": "object",
+                                "properties": {
+                                    "process_name": {
+                                        "type": "string"
+                                    },
+                                    "should_be_running": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": ["process_name"]
+                            }
+                        },
+                        "required": ["type", "condition"]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "const": "diskspace"
+                            },
+                            "condition": {
+                                "type": "object",
+                                "properties": {
+                                    "path": {
+                                        "type": "string"
+                                    },
+                                    "min_free_gb": {
+                                        "type": "number"
+                                    },
+                                    "max_used_gb": {
+                                        "type": "number"
+                                    }
+                                },
+                                "required": ["path", "min_free_gb"]
+                            }
+                        },
+                        "required": ["type", "condition"]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "const": "file"
+                            },
+                            "condition": {
+                                "type": "object",
+                                "properties": {
+                                    "path": {
+                                        "type": "string"
+                                    },
+                                    "check_type": {
+                                        "type": "string",
+                                        "enum": ["exists", "modified_recently", "size_changed"]
+                                    },
+                                    "time_threshold": {
+                                        "type": "number"
+                                    },
+                                    "size_threshold": {
+                                        "type": "number"
+                                    }
+                                },
+                                "required": ["path", "check_type"]
+                            }
+                        },
+                        "required": ["type", "condition"]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "const": "externaldevice"
+                            },
+                            "condition": {
+                                "type": "object",
+                                "properties": {
+                                    "device_identifier": {
+                                        "type": "string"
+                                    },
+                                    "check_by_name": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": ["device_identifier"]
+                            }
+                        },
+                        "required": ["type", "condition"]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "const": "screen"
+                            },
+                            "condition": {
+                                "type": "object",
+                                "properties": {
+                                    "screen_count": {
+                                        "type": "number"
+                                    },
+                                    "active_screen_name": {
+                                        "type": "string"
+                                    },
+                                    "screen_names": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "required": ["type", "condition"]
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "const": "logical"
+                            },
+                            "condition": {
+                                "type": "object",
+                                "properties": {
+                                    "operator": {
+                                        "type": "string",
+                                        "enum": ["and", "or", "nor"]
+                                    },
+                                    "conditions": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/definitions/conditionItem"
+                                        }
+                                    }
+                                },
+                                "required": ["operator", "conditions"]
+                            }
+                        },
+                        "required": ["type", "condition"]
                     }
-                },
-                "required": [
-                    "type",
-                    "condition"
                 ]
             }
         },
@@ -82,5 +358,308 @@
         "name",
         "conditions",
         "tasks"
-    ]
+    ],
+    "definitions": {
+        "conditionItem": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "const": "command"
+                        },
+                        "condition": {
+                            "type": "object",
+                            "properties": {
+                                "command": {
+                                    "type": "string"
+                                },
+                                "check_exit_code": {
+                                    "type": "boolean"
+                                },
+                                "target_output": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": ["command"]
+                        }
+                    },
+                    "required": ["type", "condition"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "const": "variable"
+                        },
+                        "condition": {
+                            "type": "object",
+                            "properties": {
+                                "variable": {
+                                    "type": "string"
+                                },
+                                "target": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": ["variable", "target"]
+                        }
+                    },
+                    "required": ["type", "condition"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "const": "bluetooth"
+                        },
+                        "condition": {
+                            "type": "object",
+                            "properties": {
+                                "device": {
+                                    "type": "string"
+                                },
+                                "match_by_mac": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "required": ["device"]
+                        }
+                    },
+                    "required": ["type", "condition"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "const": "wifi"
+                        },
+                        "condition": {
+                            "type": "object",
+                            "properties": {
+                                "ssid": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": ["ssid"]
+                        }
+                    },
+                    "required": ["type", "condition"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "const": "power"
+                        },
+                        "condition": {
+                            "type": "object",
+                            "properties": {
+                                "check_charging": {
+                                    "type": "boolean"
+                                },
+                                "threshold": {
+                                    "type": "number"
+                                },
+                                "operator": {
+                                    "type": "string",
+                                    "enum": ["greater", "less"]
+                                }
+                            }
+                        }
+                    },
+                    "required": ["type", "condition"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "const": "resource"
+                        },
+                        "condition": {
+                            "type": "object",
+                            "properties": {
+                                "resource_type": {
+                                    "type": "string",
+                                    "enum": ["cpu", "memory"]
+                                },
+                                "threshold": {
+                                    "type": "number"
+                                },
+                                "operator": {
+                                    "type": "string",
+                                    "enum": ["greater", "less"]
+                                }
+                            },
+                            "required": ["resource_type", "threshold"]
+                        }
+                    },
+                    "required": ["type", "condition"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "const": "internet"
+                        },
+                        "condition": {
+                            "type": "object",
+                            "properties": {
+                                "host": {
+                                    "type": "string"
+                                },
+                                "timeout": {
+                                    "type": "number"
+                                }
+                            }
+                        }
+                    },
+                    "required": ["type", "condition"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "const": "process"
+                        },
+                        "condition": {
+                            "type": "object",
+                            "properties": {
+                                "process_name": {
+                                    "type": "string"
+                                },
+                                "should_be_running": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "required": ["process_name"]
+                        }
+                    },
+                    "required": ["type", "condition"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "const": "diskspace"
+                        },
+                        "condition": {
+                            "type": "object",
+                            "properties": {
+                                "path": {
+                                    "type": "string"
+                                },
+                                "min_free_gb": {
+                                    "type": "number"
+                                },
+                                "max_used_gb": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": ["path", "min_free_gb"]
+                        }
+                    },
+                    "required": ["type", "condition"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "const": "file"
+                        },
+                        "condition": {
+                            "type": "object",
+                            "properties": {
+                                "path": {
+                                    "type": "string"
+                                },
+                                "check_type": {
+                                    "type": "string",
+                                    "enum": ["exists", "modified_recently", "size_changed"]
+                                },
+                                "time_threshold": {
+                                    "type": "number"
+                                },
+                                "size_threshold": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": ["path", "check_type"]
+                        }
+                    },
+                    "required": ["type", "condition"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "const": "externaldevice"
+                        },
+                        "condition": {
+                            "type": "object",
+                            "properties": {
+                            "device_identifier": {
+                                "type": "string"
+                            },
+                            "check_by_name": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": ["device_identifier"]
+                    }
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "const": "screen"
+                        },
+                        "condition": {
+                            "type": "object",
+                            "properties": {
+                                "screen_count": {
+                                    "type": "number"
+                                },
+                                "active_screen_name": {
+                                    "type": "string"
+                                },
+                                "screen_names": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": ["type", "condition"]
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "const": "logical"
+                        },
+                        "condition": {
+                            "type": "object",
+                            "properties": {
+                                "operator": {
+                                    "type": "string",
+                                    "enum": ["and", "or", "nor"]
+                                },
+                                "conditions": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/conditionItem"
+                                    }
+                                }
+                            },
+                            "required": ["operator", "conditions"]
+                        }
+                    },
+                    "required": ["type", "condition"]
+                }
+            ]
+        }
+    }
 }
