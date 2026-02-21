@@ -1,5 +1,5 @@
 <!--![autopilot-rs](assets/logo.png)-->
-<img src="assets/logo.png" alt="Alt Text" width="700">
+<img src="assets/logo.png" alt="Alt Text" width="500">
 
 # AutoPilot-rs
 
