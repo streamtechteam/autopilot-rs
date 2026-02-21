@@ -59,10 +59,10 @@ impl AutoPilot {
         match check_if_running() {
             true => {
                 error!("there is already an instance of Autopilot running");
-                return true;
+                true
             }
             _ => {
-                return false;
+                false
             }
         }
     }

@@ -127,7 +127,7 @@ impl Condition for LogicalCondition {
             let selected_index = Select::with_theme(&ColorfulTheme::default())
                 .with_prompt("Choose a condition type:")
                 .items(
-                    &condition_names
+                    condition_names
                         .iter()
                         .map(|s| s.as_str())
                         .collect::<Vec<_>>(),

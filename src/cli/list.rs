@@ -43,7 +43,7 @@ struct JobListApp {
 
 impl JobListApp {
     fn new() -> Result<Self, AutoPilotError> {
-        set_status_initial().map_err(|e| AutoPilotError::Unknown(e))?;
+        set_status_initial().map_err(AutoPilotError::Unknown)?;
         let status_log = get_status_log();
         let jobs = status_log.statuses;
 
@@ -70,7 +70,7 @@ impl JobListApp {
             remove_job(Some(job.id.clone()), None)?;
             self.status_message = Some(format!("✓ Deleted job {}", job.id));
             // Refresh job list
-            set_status_initial().map_err(|e| AutoPilotError::Unknown(e))?;
+            set_status_initial().map_err(AutoPilotError::Unknown)?;
             self.jobs = get_status_log().statuses;
             // Adjust selection
             if self.jobs.is_empty() {
@@ -92,14 +92,13 @@ impl JobListApp {
             terminal.draw(|f| self.ui(f))?;
 
             // Poll for events with timeout for responsive UI
-            if event::poll(Duration::from_millis(100))? {
-                if let Event::Key(key) = event::read()? {
+            if event::poll(Duration::from_millis(100))?
+                && let Event::Key(key) = event::read()? {
                     if key.kind != KeyEventKind::Press {
                         continue;
                     }
                     self.handle_key(key.code);
                 }
-            }
 
             if self.exit {
                 break;

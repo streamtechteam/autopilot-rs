@@ -98,7 +98,7 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
                     time: time_input,
                 }))
             }
-            1 | 2 | 3 | 4 => {
+            1..=4 => {
                 // Daily, Weekly, Monthly, Yearly (all use TimeScheme)
                 let time_input: String = Input::with_theme(&ColorfulTheme::default())
                     .with_prompt("Enter time of day (HH:MM):")
@@ -168,7 +168,7 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
         let selected_index = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Choose a condition type:")
             .items(
-                &condition_names
+                condition_names
                     .iter()
                     .map(|s| s.as_str())
                     .collect::<Vec<_>>(),
@@ -207,7 +207,7 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
             })?
             .unwrap_or(false)
         {
-            if tasks.len() == 0 {
+            if tasks.is_empty() {
                 println!("{}", "You must add at least one task.".red());
                 continue;
             }
@@ -222,7 +222,7 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
             .default(0)
             .items(&supported_editors)
             .interact()
-            .map_err(|err| AutoPilotError::Dialoguer(err))?;
+            .map_err(AutoPilotError::Dialoguer)?;
 
         let desired_editor = supported_editors[desired_editor];
         let command;
@@ -237,7 +237,7 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
             command = Editor::new()
                 .executable(desired_editor)
                 .edit("")
-                .map_err(|err| AutoPilotError::Dialoguer(err))?
+                .map_err(AutoPilotError::Dialoguer)?
                 .ok_or_else(|| AutoPilotError::Command("Command not provided".to_string()))?;
         }
         tasks.push(TaskScheme { command });
@@ -262,13 +262,13 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
     }else {
         None
     };
-    let job_file_path = add_job(
+    
+    add_job(
         Some(name),
         Some(description),
         when,
         check_interval,
         conditions,
         tasks,
-    );
-    job_file_path
+    )
 }

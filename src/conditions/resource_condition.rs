@@ -84,7 +84,7 @@ impl Condition for ResourceCondition {
         let resource_types = ["CPU", "Memory (RAM)"];
         let selected_type = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Select resource type to monitor:")
-            .items(&resource_types)
+            .items(resource_types)
             .default(0)
             .interact_opt()
             .map_err(|err| AutoPilotError::Condition(err.to_string()))?
@@ -100,7 +100,7 @@ impl Condition for ResourceCondition {
         let operators = ["Greater than (>)", "Less than (<)"];
         let selected_op = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Select comparison operator:")
-            .items(&operators)
+            .items(operators)
             .default(0)
             .interact_opt()
             .map_err(|err| AutoPilotError::Condition(err.to_string()))?

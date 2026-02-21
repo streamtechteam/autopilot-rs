@@ -23,5 +23,5 @@ pub fn check_if_running() -> bool {
             .map(|value| value.parse().expect("You shouldnt have seen this"))
             .collect(),
     };
-    if pids.len() > 1 { true } else { false }
+    pids.len() > 1
 }

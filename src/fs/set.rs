@@ -26,23 +26,21 @@ pub fn set_autopilot_path(config_path: Option<String>) -> Result<()> {
             CONFIG_PATH
                 .set(config_path.unwrap())
                 .expect("couldnt set CONFIG_PATH");
+        } else if cfg!(target_os = "windows") {
+            CONFIG_PATH
+                .set(format!(
+                    "{}/AppData/Roaming/auto-pilot",
+                    home_path.display()
+                ))
+                .expect("couldnt set CONFIG_PATH");
         } else {
-            if cfg!(target_os = "windows") {
-                CONFIG_PATH
-                    .set(format!(
-                        "{}/AppData/Roaming/auto-pilot",
-                        home_path.display()
-                    ))
-                    .expect("couldnt set CONFIG_PATH");
-            } else {
-                CONFIG_PATH
-                    .set(format!("{}/.config/auto-pilot", home_path.display()))
-                    .expect("couldnt set CONFIG_PATH");
-            };
+            CONFIG_PATH
+                .set(format!("{}/.config/auto-pilot", home_path.display()))
+                .expect("couldnt set CONFIG_PATH");
         };
     }
 
-    fs::create_dir_all(&get_autopilot_path()).map_err(|e| {
+    fs::create_dir_all(get_autopilot_path()).map_err(|e| {
         AutoPilotError::DirectoryInit(format!("Failed to create auto_pilot directory: {}", e))
     })
 }

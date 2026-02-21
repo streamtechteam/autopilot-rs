@@ -34,7 +34,7 @@ where
     match &when {
         When::Once(value) => {
             let target_time = value.parse().map_err(|err| {
-                AutoPilotError::Time(format!("Failed to parse time : {}", err.to_string()))
+                AutoPilotError::Time(format!("Failed to parse time : {}", err))
             })?;
             let now = chrono::Local::now();
             if target_time <= now {

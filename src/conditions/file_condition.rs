@@ -113,7 +113,7 @@ impl Condition for FileCondition {
         let check_types = ["File/Directory Exists", "Modified Recently", "Size Changed"];
         let selected_type = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Select check type:")
-            .items(&check_types)
+            .items(check_types)
             .default(0)
             .interact_opt()
             .map_err(|err| AutoPilotError::Condition(err.to_string()))?

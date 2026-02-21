@@ -1,7 +1,4 @@
-use duct::cmd;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use std::ops::Deref;
-use std::process::Command;
 
 use crate::cross_platform::TERMINAL_EDITORS;
 
@@ -48,8 +45,8 @@ pub fn get_supported_editors() -> Vec<&'static str> {
                 .stderr_null()
                 .run()
             {
-                Ok(_) => return true,
-                Err(_) => return false,
+                Ok(_) => true,
+                Err(_) => false,
             }
         })
         .collect()

@@ -120,11 +120,10 @@ pub fn sync_condition(
     match DisplayInfo::all() {
         Ok(displays) => {
             // Check count
-            if let Some(count) = expected_count {
-                if (displays.len() as u16) != count {
+            if let Some(count) = expected_count
+                && (displays.len() as u16) != count {
                     return false;
                 }
-            }
 
             // Check active screen name (primary display)
             if let Some(target_active) = expected_active_name {

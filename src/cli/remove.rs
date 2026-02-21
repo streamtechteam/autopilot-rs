@@ -65,7 +65,7 @@ pub fn remove_interactive() -> Result<PathBuf, AutoPilotError> {
             .default(0)
             .items(&options)
             .interact()
-            .map_err(|err| AutoPilotError::Dialoguer(err))?;
+            .map_err(AutoPilotError::Dialoguer)?;
         confirm = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "Are you sure you want to remove {} ?",
@@ -73,7 +73,7 @@ pub fn remove_interactive() -> Result<PathBuf, AutoPilotError> {
             ))
             .default(false)
             .interact()
-            .map_err(|err| AutoPilotError::Dialoguer(err))?;
+            .map_err(AutoPilotError::Dialoguer)?;
         if confirm {
             break;
         }

@@ -68,9 +68,8 @@ pub async fn handle_cli() {
             status();
         }
         None => {
-            return;
         }
-    };
+    }
 }
 
 fn handle_dir(config_path: Option<String>) {

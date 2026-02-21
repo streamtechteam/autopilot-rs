@@ -60,7 +60,7 @@ impl Condition for InternetCondition {
         {
             // Linux ping: -c is count, -W is timeout in seconds
             duct_sh::sh_dangerous(
-                vec!["ping", "-c", "1", "-W", &timeout_str, &self.host]
+                ["ping", "-c", "1", "-W", &timeout_str, &self.host]
                     .join(" ")
                     .to_string(),
             )

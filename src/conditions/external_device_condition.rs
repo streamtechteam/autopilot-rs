@@ -4,7 +4,7 @@ use crate::{
 };
 use dialoguer::{Confirm, Input, theme::ColorfulTheme};
 use serde::{Deserialize, Serialize};
-use sysinfo::{Disks, System};
+use sysinfo::Disks;
 
 /// Represents an external device (USB/mount) condition
 #[derive(Clone)]

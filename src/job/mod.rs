@@ -139,12 +139,9 @@ impl Job {
                 break;
             }
         } else if self.when.is_some() {
-            let _result = add_job(self, &scheduler, run_job).await;
-            match _result {
-                Err(error) => {
-                    error!("{} : {}", self.name, error);
-                }
-                Ok(_) => {}
+            let _result = add_job(self, scheduler, run_job).await;
+            if let Err(error) = _result {
+                error!("{} : {}", self.name, error);
             }
         };
 

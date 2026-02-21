@@ -71,18 +71,16 @@ pub struct DesktopEnvConditionScheme {
 /// Detects the current Desktop Environment using a robust fallback chain.
 fn get_current_de() -> Option<String> {
     // 1. XDG_CURRENT_DESKTOP (Most standard on modern Linux)
-    if let Ok(val) = env::var("XDG_CURRENT_DESKTOP") {
-        if !val.is_empty() {
+    if let Ok(val) = env::var("XDG_CURRENT_DESKTOP")
+        && !val.is_empty() {
             return Some(val);
         }
-    }
 
     // 2. DESKTOP_SESSION (Common fallback)
-    if let Ok(val) = env::var("DESKTOP_SESSION") {
-        if !val.is_empty() {
+    if let Ok(val) = env::var("DESKTOP_SESSION")
+        && !val.is_empty() {
             return Some(val);
         }
-    }
 
     // 3. GNOME Specific
     if env::var("GNOME_DESKTOP_SESSION_ID").is_ok() {

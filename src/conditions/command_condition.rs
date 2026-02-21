@@ -2,7 +2,6 @@ use dialoguer::{Confirm, Editor, Input, Select, theme::ColorfulTheme};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    autopilot::AutoPilot,
     conditions::{Condition, ConditionScheme},
     cross_platform::get::get_supported_editors,
     error::AutoPilotError,
@@ -79,7 +78,7 @@ impl Condition for CommandCondition {
             .default(0)
             .items(&supported_editors)
             .interact()
-            .map_err(|err| AutoPilotError::Dialoguer(err))?;
+            .map_err(AutoPilotError::Dialoguer)?;
 
         let desired_editor = supported_editors[desired_editor];
         let command;
@@ -94,7 +93,7 @@ impl Condition for CommandCondition {
             command = Editor::new()
                 .executable(desired_editor)
                 .edit("")
-                .map_err(|err| AutoPilotError::Dialoguer(err))?
+                .map_err(AutoPilotError::Dialoguer)?
                 .ok_or_else(|| AutoPilotError::Command("Command not provided".to_string()))?;
         }
 
@@ -115,7 +114,7 @@ impl Condition for CommandCondition {
                 output = Editor::new()
                     .executable(desired_editor)
                     .edit("")
-                    .map_err(|err| AutoPilotError::Dialoguer(err))?
+                    .map_err(AutoPilotError::Dialoguer)?
                     .ok_or_else(|| AutoPilotError::Condition("output not provided".to_string()))?;
             }
             Some(output)

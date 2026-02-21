@@ -3,7 +3,6 @@ use crate::{
     error::AutoPilotError,
 };
 use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
-use duct::cmd;
 use serde::{Deserialize, Serialize};
 
 /// Represents a power/battery condition
@@ -62,14 +61,12 @@ impl Condition for PowerCondition {
             } else if let Some(threshold) = self.threshold {
                 if let Ok(capacity) =
                     std::fs::read_to_string("/sys/class/power_supply/BAT0/capacity")
-                {
-                    if let Ok(val) = capacity.trim().parse::<f32>() {
+                    && let Ok(val) = capacity.trim().parse::<f32>() {
                         return match self.operator.as_deref() {
                             Some("less") | Some("<") => val < threshold,
                             _ => val > threshold,
                         };
                     }
-                }
                 false
             } else {
                 false
@@ -177,7 +174,7 @@ impl Condition for PowerCondition {
             let operators = ["Greater than (>)", "Less than (<)"];
             let selected_op = Select::with_theme(&ColorfulTheme::default())
                 .with_prompt("Select comparison operator:")
-                .items(&operators)
+                .items(operators)
                 .default(0)
                 .interact_opt()
                 .map_err(|err| AutoPilotError::Condition(err.to_string()))?
