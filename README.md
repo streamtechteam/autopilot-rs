@@ -1,6 +1,6 @@
+![autopilot-rs](assets/logo.png)
 # AutoPilot-rs
 
-![autopilot-rs](assets/logo.png)
 
 
 
