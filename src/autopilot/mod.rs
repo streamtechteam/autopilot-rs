@@ -23,6 +23,28 @@ impl AutoPilot {
             jobs: Vec::new(),
         }
     }
+    pub async fn reload_config(&mut self) {
+        info!("{}", "Reloading Autopilot...".yellow());
+
+        let new_jobs = get_jobs(false);
+
+        // Stop all existing jobs
+        self.scheduler
+            .shutdown()
+            .await
+            .expect("Failed to shutdown scheduler");
+
+        // Recreate scheduler
+        self.scheduler = init_time_check().await.expect("Failed to reinit cron");
+
+        // Update jobs
+        self.jobs = new_jobs;
+
+        // Reload all jobs
+        self.run_jobs();
+
+        info!("{}", "Autopilot reloaded successfully!".green())
+    }
     pub fn start(&mut self, verbose: bool) {
         Self::prepare_logging(verbose);
         if Self::check_instance() {

@@ -1,8 +1,6 @@
 use crate::{
-    autopilot::AutoPilot, cli::status::check_if_running, job::get::get_jobs,
-    status::set::set_status_initial,
+    autopilot::AutoPilot, status::set::set_status_initial,
 };
-use colored::Colorize;
 use log::{error, info, warn};
 use tokio::{self, signal};
 
@@ -53,7 +51,7 @@ pub async fn serve(verbose: bool) {
             if let Err(e) = set_status_initial() {
                 error!("Failed to initialize status: {}", e);
             }
-
+            auto_pilot.reload_config().await;
             // std::process::exit(0);
             // serve().await;
         });
