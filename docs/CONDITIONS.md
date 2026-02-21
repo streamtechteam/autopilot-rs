@@ -622,18 +622,19 @@ _Combine multiple screen checks:_
 
 ---
 
-### 13. OR Condition (Composite)
+### 13. Logical Condition (Composite)
 
-**Purpose:** Combine multiple conditions with OR logic (at least one must pass).
+**Purpose:** Combine multiple conditions with various logical operators (AND, OR, NOR).
 
 **Schema:**
 
 ```jsonc
 {
-  "type": "or",
+  "type": "logical",
   "condition": {
+    "operator": "and", // Required: "and", "or", or "nor"
     "conditions": [
-      // Array of conditions - at least one must pass
+      // Array of conditions to combine with the specified operator
       { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
       { "type": "bluetooth", "condition": { "device": "MyPhone" } }
     ]
@@ -643,12 +644,13 @@ _Combine multiple screen checks:_
 
 **Examples:**
 
-_Run on either home or office WiFi:_
+_OR logic (at least one must pass):_
 
 ```jsonc
 {
-  "type": "or",
+  "type": "logical",
   "condition": {
+    "operator": "or",
     "conditions": [
       { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
       { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } }
@@ -657,12 +659,13 @@ _Run on either home or office WiFi:_
 }
 ```
 
-_Run when on WiFi OR charging:_
+_AND logic (all must pass):_
 
 ```jsonc
 {
-  "type": "or",
+  "type": "logical",
   "condition": {
+    "operator": "and",
     "conditions": [
       { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
       { "type": "power", "condition": { "check_charging": true } }
@@ -671,86 +674,39 @@ _Run when on WiFi OR charging:_
 }
 ```
 
-_Complex nested OR:_
+_NOR logic (none must pass):_
 
 ```jsonc
 {
-  "type": "or",
+  "type": "logical",
   "condition": {
+    "operator": "nor",
     "conditions": [
-      { "type": "bluetooth", "condition": { "device": "Headphones" } },
-      { 
-        "type": "and",
-        "condition": {
-          "conditions": [
-            { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
-            { "type": "power", "condition": { "check_charging": true } }
-          ]
-        }
-      }
+      { "type": "process", "condition": { "process_name": "chrome" } },
+      { "type": "process", "condition": { "process_name": "firefox" } }
     ]
   }
 }
 ```
 
-This runs if **either**:
-- Headphones are connected, **OR**
-- Both home WiFi AND charging are true
+**Available Operators:**
+
+- `and`: All conditions must be true
+- `or`: At least one condition must be true  
+- `nor`: None of the conditions must be true (NOT OR)
 
 **Platform Support:** All platforms
 
 **Use Cases:**
 
-- Run tasks in multiple network environments
-- Trigger based on alternative conditions
-- Combine with AND for complex logic
-- Fallback scenarios (try primary, then secondary condition)
-
----
-
-### 14. And Condition (Composite)
-
-**Purpose:** Combine multiple conditions with AND logic (all must pass).
-
-**Schema:**
-
-```jsonc
-{
-  "type": "and",
-  "condition": {
-    "conditions": [
-      // Array of conditions - all must pass
-      { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
-      { "type": "bluetooth", "condition": { "device": "MyPhone" } }
-    ]
-  }
-}
-```
-
-**Examples:**
-
-```jsonc
-{
-  "type": "and",
-  "condition": {
-    "conditions": [
-      { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
-      { "type": "power", "condition": { "check_charging": true } },
-      { "type": "screen", "condition": { "screen_count": 2 } }
-    ]
-  }
-}
-```
-
-**Platform Support:** All platforms
-
-**Use Cases:**
-
-- Complex multi-factor conditions
+- Run tasks in multiple network environments (OR)
+- Complex multi-factor conditions (AND)
+- Negated condition combinations (NOR)
+- Fallback scenarios (OR)
 - Nested condition logic
 - Reusable condition groups
 
----
+
 
 ## Multiple Conditions (AND Logic)
 
