@@ -1,6 +1,6 @@
 # AutoPilot-rs
 
-[![autopilot-rs](https://img.youtube.com/vi/pRkjfip1s5M/0.jpg)](https://www.youtube.com/watch?v=pRkjfip1s5M)
+![autopilot-rs](assets/logo.png)
 
 
 
