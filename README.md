@@ -1,5 +1,6 @@
 <!--![autopilot-rs](assets/logo.png)-->
-<img src="assets/logo.png" alt="Alt Text" width="300">
+<img src="assets/logo.png" alt="Alt Text" width="700">
+
 # AutoPilot-rs
 
 A cross-platform automation tool that runs tasks when conditions are met. Write once, run on Linux, macOS, and Windows.
