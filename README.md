@@ -1,8 +1,6 @@
-![autopilot-rs](assets/logo.png)
+<!--![autopilot-rs](assets/logo.png)-->
+<img src="assets/logo.png" alt="Alt Text" width="300">
 # AutoPilot-rs
-
-
-
 
 A cross-platform automation tool that runs tasks when conditions are met. Write once, run on Linux, macOS, and Windows.
 
@@ -16,17 +14,17 @@ Define a job, set conditions, list tasks. AutoPilot does the rest.
   "name": "Setup my workday",
   "when": {
     "time": "08:00:00",
-    "date": "2026/02/02"
+    "date": "2026/02/02",
   },
   "conditions": [
     { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } },
-    { "type": "bluetooth", "condition": { "device": "My Headphones" } }
+    { "type": "bluetooth", "condition": { "device": "My Headphones" } },
   ],
   "tasks": [
     { "command": "open /Applications/Slack.app" },
     { "command": "open /Applications/VSCode.app" },
-    { "command": "notify-send 'Good morning!'" }
-  ]
+    { "command": "notify-send 'Good morning!'" },
+  ],
 }
 ```
 
@@ -34,8 +32,9 @@ AutoPilot checks: Are you on office WiFi? Are your headphones connected? If both
 
 ## Installation
 
-### Release 
-  Download latest released version from [GitHub Releases](https://github.com/streamtechteam/autopilot-rs/releases)
+### Release
+
+Download latest released version from [GitHub Releases](https://github.com/streamtechteam/autopilot-rs/releases)
 
 ### macOS
 
@@ -64,19 +63,20 @@ cargo build --release
 ## Quick Start
 
 ### 1. Create a Job
+
 ```bash
 autopilot-rs create
 ```
-Or manually create a JSON file in `~/.autopilot-rs/jobs/my-job.jsonc`
 
+Or manually create a JSON file in `~/.autopilot-rs/jobs/my-job.jsonc`
 
 ### 2. Start the Daemon
 
 ```bash
 autopilot-rs serve
 ```
-AutoPilot runs in the background, checking conditions and running tasks.
 
+AutoPilot runs in the background, checking conditions and running tasks.
 
 ### 3. List Jobs
 
@@ -109,7 +109,7 @@ WiFi - Run when connected to a specific network:
 ```jsonc
 {
   "type": "wifi",
-  "condition": { "ssid": "HomeNetwork" }
+  "condition": { "ssid": "HomeNetwork" },
 }
 ```
 
@@ -120,8 +120,8 @@ Bluetooth - Run when a device is connected:
   "type": "bluetooth",
   "condition": {
     "device": "My Headphones",
-    "match_by_mac": false
-  }
+    "match_by_mac": false,
+  },
 }
 ```
 
@@ -132,8 +132,8 @@ Command - Run a shell command and check the result:
   "type": "command",
   "condition": {
     "command": "test -f /tmp/trigger-file",
-    "check_exit_code": true
-  }
+    "check_exit_code": true,
+  },
 }
 ```
 
@@ -144,8 +144,8 @@ Variable - Check environment variables:
   "type": "variable",
   "condition": {
     "variable": "USER",
-    "target": "alice"
-  }
+    "target": "alice",
+  },
 }
 ```
 
@@ -155,8 +155,8 @@ Power - Check battery status or charging:
 {
   "type": "power",
   "condition": {
-    "check_charging": true
-  }
+    "check_charging": true,
+  },
 }
 ```
 
@@ -173,8 +173,8 @@ All conditions must be true (AND logic):
   "conditions": [
     { "type": "wifi", "condition": { "ssid": "Office" } },
     { "type": "bluetooth", "condition": { "device": "My Headphones" } },
-    { "type": "power", "condition": { "check_charging": true } }
-  ]
+    { "type": "power", "condition": { "check_charging": true } },
+  ],
 }
 ```
 
@@ -189,7 +189,7 @@ If any condition fails, the task doesn't run.
   "description": "What this job does",
   "when": {
     "time": "08:00:00",
-    "date": "2026/02/02"
+    "date": "2026/02/02",
   },
   // check conditions every 1000 milliseconds (1 second)
   "check_interval": "1000",
@@ -199,8 +199,8 @@ If any condition fails, the task doesn't run.
   "tasks": [
     // One or more tasks
     { "command": "echo 'Hello'" },
-    { "command": "touch /tmp/file" }
-  ]
+    { "command": "touch /tmp/file" },
+  ],
 }
 ```
 
@@ -218,7 +218,7 @@ Each task is a shell command:
 
 ```jsonc
 {
-  "command": "ls -la /home"
+  "command": "ls -la /home",
 }
 ```
 
@@ -226,7 +226,7 @@ Or multi-step with pipes:
 
 ```jsonc
 {
-  "command": "cat /var/log/system.log | grep ERROR | wc -l"
+  "command": "cat /var/log/system.log | grep ERROR | wc -l",
 }
 ```
 
@@ -269,7 +269,7 @@ AutoPilot reads from `~/.auto_pilot/`:
   "id": "sync-home-wifi",
   "name": "Sync files when on home network",
   "conditions": [{ "type": "wifi", "condition": { "ssid": "HomeNetwork" } }],
-  "tasks": [{ "command": "rsync -av ~/Documents /mnt/nas" }]
+  "tasks": [{ "command": "rsync -av ~/Documents /mnt/nas" }],
 }
 ```
 
@@ -281,17 +281,17 @@ AutoPilot reads from `~/.auto_pilot/`:
   "name": "Morning setup",
   "when": {
     "time": "08:00:00",
-    "date": "2026/02/02"
+    "date": "2026/02/02",
   },
   "conditions": [
     { "type": "bluetooth", "condition": { "device": "Headphones" } },
-    { "type": "wifi", "condition": { "ssid": "HomeNetwork" } }
+    { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
   ],
   "tasks": [
     { "command": "brew update" },
     { "command": "notify-send 'Good morning!'" },
-    { "command": "open /Applications/Mail.app" }
-  ]
+    { "command": "open /Applications/Mail.app" },
+  ],
 }
 ```
 
@@ -302,12 +302,12 @@ AutoPilot reads from `~/.auto_pilot/`:
   "id": "headphones-connected",
   "name": "Play sound when headphones connect",
   "conditions": [
-    { "type": "bluetooth", "condition": { "device": "Sony Headphones" } }
+    { "type": "bluetooth", "condition": { "device": "Sony Headphones" } },
   ],
   "tasks": [
     { "command": "pactl set-default-sink 'Sony Headphones'" },
-    { "command": "speaker-test -t sine -f 1000 -l 1" }
-  ]
+    { "command": "speaker-test -t sine -f 1000 -l 1" },
+  ],
 }
 ```
 
@@ -323,17 +323,15 @@ AutoPilot reads from `~/.auto_pilot/`:
       "condition": {
         "resource_type": "cpu",
         "threshold": 20,
-        "operator": "less"
-      }
+        "operator": "less",
+      },
     },
     {
       "type": "power",
-      "condition": { "check_charging": true }
-    }
+      "condition": { "check_charging": true },
+    },
   ],
-  "tasks": [
-    { "command": "backup.sh" }
-  ]
+  "tasks": [{ "command": "backup.sh" }],
 }
 ```
 
@@ -348,14 +346,14 @@ AutoPilot reads from `~/.auto_pilot/`:
       "type": "file",
       "condition": {
         "path": "/tmp/ready-to-process",
-        "check_type": "exists"
-      }
-    }
+        "check_type": "exists",
+      },
+    },
   ],
   "tasks": [
     { "command": "process_data.sh" },
-    { "command": "rm /tmp/ready-to-process" }
-  ]
+    { "command": "rm /tmp/ready-to-process" },
+  ],
 }
 ```
 
@@ -439,10 +437,10 @@ All 13 condition types work on all platforms.
 - **[CONDITIONS.md](docs/CONDITIONS.md)** - Detailed condition reference (12 types)
 - **[PLUGIN-SYSTEM.md](PLUGIN-SYSTEM.md)** - Extend AutoPilot with custom plugins (coming soon)
 
-### AI powered docs 
+### AI powered docs
 
-* https://deepwiki.com/streamtechteam/auto_pilot_rs
-* https://github.com/copilot and start chat with `#@streamtechteam/auto_pilot_rs`
+- https://deepwiki.com/streamtechteam/auto_pilot_rs
+- https://github.com/copilot and start chat with `#@streamtechteam/auto_pilot_rs`
 
 ## Contributing
 
