@@ -1,1 +1,3 @@
-(docs/CONDITIONS.md, json_schema/schema.json)
+/target
+/build
+/dist
