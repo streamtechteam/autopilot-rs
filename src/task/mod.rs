@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use tokio::task::JoinHandle;
 
 pub mod runner;
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -11,8 +12,14 @@ impl Task {
     pub fn new(command: String) -> Self {
         Task { command }
     }
-    pub fn run(&self) {
-        runner::sync_run(self);
+    pub fn run(&self) -> JoinHandle<()> {
+        let command = self.command.clone();
+        tokio::task::spawn(async move {
+            runner::async_run(command).await;
+        })
+    }
+    pub fn run_sync(&self) {
+        runner::sync_run(self.command.clone());
     }
 }
 

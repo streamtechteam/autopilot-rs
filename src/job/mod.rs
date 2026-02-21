@@ -1,14 +1,16 @@
 use std::{thread::sleep, time::Duration};
 
 use colored::Colorize;
+use futures::future::join_all;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
+use tokio::task::JoinHandle;
 use tokio_cron_scheduler::JobScheduler;
 
 use crate::{
     conditions::{Condition, ConditionScheme},
     status::{JobStatusEnum, set::set_state_item},
-    task::{self, TaskScheme},
+    task::{self, Task, TaskScheme},
     time::{When, add::add_job},
 };
 
@@ -101,9 +103,10 @@ impl Job {
                     result = result && condition_result;
                 }
                 if result {
-                    for task in &self.tasks {
-                        task.run();
-                    }
+                    // for task in &self.tasks {
+                    //     task.run();
+                    // }
+                    run_tasks(self.tasks.clone()).await;
                     if let Err(e) = set_state_item(self.id.clone(), JobStatusEnum::Success) {
                         error!("Failed to set state item: {}", e);
                     }
@@ -136,9 +139,6 @@ impl Job {
                 break;
             }
         } else if self.when.is_some() {
-            // Since add_job is async, we need to spawn it as a task
-            // let scheduler_clone = scheduler.clone();
-            // let job_clone = self.clone();
             let _result = add_job(self, &scheduler, run_job).await;
             match _result {
                 Err(error) => {
@@ -154,17 +154,23 @@ impl Job {
     }
 }
 
-pub fn run_job(job: Job) {
+pub async fn run_job(job: Job) {
     let mut result = true;
     for condition in &job.conditions {
         let condition_result = condition.check();
         result = result && condition_result;
     }
     if result {
-        for task in &job.tasks {
-            task.run();
-        }
+        run_tasks(job.tasks).await;
     }
+}
+
+pub async fn run_tasks(tasks: Vec<Task>) {
+    let mut handles: Vec<JoinHandle<()>> = vec![];
+    for task in &tasks {
+        handles.push(task.run());
+    }
+    join_all(handles).await;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
