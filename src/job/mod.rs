@@ -144,10 +144,6 @@ impl Job {
                 error!("{} : {}", self.name, error);
             }
         };
-
-        // if let Err(e) = set_state_item(self.id.clone(), JobStatusEnum::) {
-        //     error!("Failed to set state item: {}", e);
-        // }
     }
 }
 

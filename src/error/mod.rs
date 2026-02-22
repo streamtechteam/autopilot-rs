@@ -46,6 +46,9 @@ pub enum AutoPilotError {
 
     #[error("Time error: {0}")]
     Time(String),
+
+    #[error("Autopilot error: {0}")]
+    Autopilot(String),
 }
 
 // Type alias for convenience

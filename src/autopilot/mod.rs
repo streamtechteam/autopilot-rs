@@ -1,5 +1,7 @@
 use colored::Colorize;
-use log::{error, info};
+use futures::future::join_all;
+use log::{error, info, warn};
+use tokio::task::JoinHandle;
 use tokio_cron_scheduler::JobScheduler;
 
 use crate::{
@@ -11,78 +13,102 @@ use crate::{
     time::init::init_time_check,
 };
 
+// #[derive(Clone)]
 pub struct AutoPilot {
+    pub started: bool,
     pub scheduler: JobScheduler,
     pub jobs: Vec<Job>,
+    pub jobs_handles: Vec<JoinHandle<()>>,
 }
 
 impl AutoPilot {
     pub async fn new() -> Self {
         Self {
+            started: false,
             scheduler: init_time_check().await.expect("failed to init cron"),
             jobs: Vec::new(),
+            jobs_handles: Vec::new(),
         }
     }
-    pub async fn reload_config(&mut self) {
+
+    pub fn init(&mut self, verbose: bool) -> Result<(), AutoPilotError> {
+        Self::prepare_logging(verbose);
+        if Self::check_instance() {
+            return Err(AutoPilotError::Autopilot(
+                "Instance already running".to_string(),
+            ));
+        }
+        Self::init_status().expect("failed to init status");
+        self.load_jobs();
+        Ok(())
+    }
+    pub async fn reload(&mut self) {
+        self.stop_jobs().await.expect("failed to stop jobs");
         info!("{}", "Reloading Autopilot...".yellow());
+        Self::init_status().expect("failed to init status");
+        self.load_jobs();
 
-        let new_jobs = get_jobs(false);
-
-        // Stop all existing jobs
-        self.scheduler
-            .shutdown()
-            .await
-            .expect("Failed to shutdown scheduler");
-
-        // Recreate scheduler
-        self.scheduler = init_time_check().await.expect("Failed to reinit cron");
-
-        // Update jobs
-        self.jobs = new_jobs;
-
-        // Reload all jobs
-        self.run_jobs();
+        self.start(false);
 
         info!("{}", "Autopilot reloaded successfully!".green())
     }
     pub fn start(&mut self, verbose: bool) {
-        Self::prepare_logging(verbose);
+        // Self::prepare_logging(verbose);
         if Self::check_instance() {
             return;
         }
-        Self::init_status().expect("failed to init status");
-        self.load_jobs();
+        // Self::init_status().expect("failed to init status");
+        // self.load_jobs();
+        self.jobs_handles = self.run_jobs();
+        // dbg!(&self.jobs_handles);
         info!("{}", "Autopilot served!".green());
-        self.run_jobs();
     }
-    fn check_instance() -> bool {
+    pub fn check_instance() -> bool {
         match check_if_running() {
             true => {
                 error!("there is already an instance of Autopilot running");
                 true
             }
-            _ => {
-                false
-            }
+            _ => false,
         }
     }
-    fn init_status() -> Result<(), AutoPilotError> {
+    pub fn init_status() -> Result<(), AutoPilotError> {
         if let Err(e) = set_status_initial() {
             error!("Failed to initialize status: {}", e);
             return Err(AutoPilotError::State(e));
         }
         Ok(())
     }
-    fn run_jobs(&mut self) {
+    pub fn run_jobs(&mut self) -> Vec<JoinHandle<()>> {
+        let mut handles = vec![];
         for job in self.jobs.clone() {
             let scheduler = self.scheduler.clone();
-            tokio::task::spawn(async move {
+            handles.push(tokio::task::spawn(async move {
                 job.run(&scheduler, false).await;
-            });
+            }))
         }
+
+        handles
     }
-    fn load_jobs(&mut self) {
+    pub fn load_jobs(&mut self) {
         self.jobs = get_jobs(false);
+    }
+
+    /// Stop all jobs (graceful shutdown of scheduler)
+    pub async fn stop_jobs(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        warn!("Stopping jobs...");
+        // dbg!(&self.jobs_handles);
+        self.jobs_handles.iter().for_each(|handle| {
+            // info!("Aborting job handle");
+            handle.abort();
+        });
+        self.scheduler.shutdown().await?;
+        self.jobs = vec![];
+        self.jobs_handles = vec![];
+
+        // self.load_jobs();
+        // Optionally clear jobs vector or reset state
+        Ok(())
     }
     // fn add_job(&mut self, job: Job) {
     //     self.jobs.push(job);

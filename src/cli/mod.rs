@@ -31,7 +31,10 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Serve AutoPilot-rs
-    Serve,
+    Serve {
+        #[arg(long, default_value_t = false)]
+        api: bool,
+    },
     /// Stop AutoPilot-rs
     Stop,
     /// Create a new Job
@@ -48,8 +51,8 @@ pub async fn handle_cli() {
     let cli = Cli::parse();
     handle_dir(cli.config_path.clone());
     match &cli.command {
-        Some(Commands::Serve) => {
-            serve(cli.verbose).await;
+        Some(Commands::Serve { api }) => {
+            serve(cli.verbose, *api).await;
         }
         Some(Commands::Create) => {
             create();
@@ -67,8 +70,7 @@ pub async fn handle_cli() {
         Some(Commands::Status) => {
             status();
         }
-        None => {
-        }
+        None => {}
     }
 }
 

@@ -28,6 +28,7 @@ display-info = "0.5"
 rayon = "1.11.0"
 ratatui = "0.30.0"
 crossterm = "0.29.0"
+axum = "0.8.8"
 
 # [target.'cfg(target_os = "linux")'.dependencies]
 # systemd = "0.10.1"
