@@ -16,9 +16,9 @@ pub async fn start_api(state: AppState) -> JoinHandle<()> {
         .route("/start", post(jobs_start))
         .route("/stop", post(jobs_stop))
         .route("/reload", post(jobs_reload))
-        .route("/jobs", get(jobs_list))
-        .route("/jobs", post(jobs_create))
-        .route("/jobs/{id}", get(jobs_getbyid))
+        // .route("/jobs", get(jobs_list))
+        // .route("/jobs", post(jobs_create))
+        // .route("/jobs/{id}", get(jobs_getbyid))
         .with_state(state.clone());
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
