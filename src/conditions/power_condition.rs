@@ -101,7 +101,7 @@ impl Condition for PowerCondition {
         {
             if self.check_charging {
                 // 2 = AC, 1 = Battery
-                if let Ok(output) = cmd(
+                if let Ok(output) = duct::cmd(
                     "powershell",
                     vec![
                         "-Command",
@@ -114,7 +114,7 @@ impl Condition for PowerCondition {
                 }
                 false
             } else if let Some(threshold) = self.threshold {
-                if let Ok(output) = cmd(
+                if let Ok(output) = duct::cmd(
                     "powershell",
                     vec![
                         "-Command",
