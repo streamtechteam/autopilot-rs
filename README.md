@@ -1,6 +1,6 @@
 <!--![autopilot-rs](assets/logo.png)-->
 <img src="assets/logo.png" alt="Alt Text" width="500">
-
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/streamtechteam/autopilot-rs)
 # AutoPilot-rs
 
 A cross-platform automation tool that runs tasks when conditions are met. Write once, run on Linux, macOS, and Windows.
