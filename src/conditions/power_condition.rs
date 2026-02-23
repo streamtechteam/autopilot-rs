@@ -61,12 +61,13 @@ impl Condition for PowerCondition {
             } else if let Some(threshold) = self.threshold {
                 if let Ok(capacity) =
                     std::fs::read_to_string("/sys/class/power_supply/BAT0/capacity")
-                    && let Ok(val) = capacity.trim().parse::<f32>() {
-                        return match self.operator.as_deref() {
-                            Some("less") | Some("<") => val < threshold,
-                            _ => val > threshold,
-                        };
-                    }
+                    && let Ok(val) = capacity.trim().parse::<f32>()
+                {
+                    return match self.operator.as_deref() {
+                        Some("less") | Some("<") => val < threshold,
+                        _ => val > threshold,
+                    };
+                }
                 false
             } else {
                 false
@@ -75,7 +76,7 @@ impl Condition for PowerCondition {
 
         #[cfg(target_os = "macos")]
         {
-            if let Ok(output) = cmd("pmset", vec!["-g", "batt"]).read() {
+            if let Ok(output) = duct::cmd("pmset", vec!["-g", "batt"]).read() {
                 if self.check_charging {
                     return output.contains("AC Power");
                 } else if let Some(threshold) = self.threshold {
