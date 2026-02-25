@@ -1,14 +1,15 @@
-use std::{thread::sleep, time::Duration};
+use std::{sync::Arc, thread::sleep, time::Duration};
 
 use colored::Colorize;
 use futures::future::join_all;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
-use tokio::task::JoinHandle;
+use tokio::{sync::RwLock, task::JoinHandle};
 use tokio_cron_scheduler::JobScheduler;
 
 use crate::{
     conditions::{Condition, ConditionScheme},
+    error::AutoPilotError,
     status::{JobStatusEnum, set::set_state_item},
     task::{self, Task, TaskScheme},
     time::{When, add::add_job},
@@ -42,7 +43,7 @@ impl Job {
         Job {
             id,
             name,
-            status: JobStatusEnum::Pending,
+            status: JobStatusEnum::Unknown,
             description,
             when,
             check_interval,
@@ -86,11 +87,11 @@ impl Job {
         self.conditions.push(condition);
     }
 
-    pub async fn run(&self, scheduler: &JobScheduler, quiet: bool) {
+    pub async fn run(&mut self, scheduler: &JobScheduler, quiet: bool) {
         if !quiet {
             info!("{} : {}", "Running job".yellow(), self.name);
         }
-
+        self.status = JobStatusEnum::Running;
         if let Err(e) = set_state_item(self.id.clone(), JobStatusEnum::Running) {
             error!("Failed to set state item: {}", e);
         }
@@ -103,11 +104,10 @@ impl Job {
                     result = result && condition_result;
                 }
                 if result {
-                    // for task in &self.tasks {
-                    //     task.run();
-                    // }
                     run_tasks(self.tasks.clone()).await;
-                    if let Err(e) = set_state_item(self.id.clone(), JobStatusEnum::Success) {
+                    self.status = JobStatusEnum::Completed;
+                    // dbg!(self.status.clone());
+                    if let Err(e) = set_state_item(self.id.clone(), JobStatusEnum::Completed) {
                         error!("Failed to set state item: {}", e);
                     }
                     if !quiet {
@@ -130,6 +130,7 @@ impl Job {
                     sleep(Duration::from_millis(interval_ms));
                     continue;
                 }
+                self.status = JobStatusEnum::Unsatisfied;
                 if let Err(e) = set_state_item(self.id.clone(), JobStatusEnum::Unsatisfied) {
                     error!("Failed to set state item: {}", e);
                 }
@@ -139,6 +140,7 @@ impl Job {
                 break;
             }
         } else if self.when.is_some() {
+            self.status = JobStatusEnum::Scheduled;
             let _result = add_job(self, scheduler, run_job).await;
             if let Err(error) = _result {
                 error!("{} : {}", self.name, error);
@@ -148,32 +150,55 @@ impl Job {
 }
 
 pub async fn run_job(job: Job) {
+    if let Err(e) = set_state_item(job.id.clone(), JobStatusEnum::Running) {
+        error!("Failed to set state item: {}", e);
+    }
     let mut result = true;
     for condition in &job.conditions {
         let condition_result = condition.check();
         result = result && condition_result;
     }
     if result {
-        run_tasks(job.tasks).await;
+        run_tasks(job.tasks.clone()).await;
+        if let Err(e) = set_state_item(job.id, JobStatusEnum::Completed) {
+            error!("Failed to set state item: {}", e);
+        }
+    } else if !result {
+        if let Err(e) = set_state_item(job.id.clone(), JobStatusEnum::Unsatisfied) {
+            error!("Failed to set state item: {}", e);
+        }
     }
 }
 
 pub async fn run_tasks(tasks: Vec<Task>) {
-    let mut handles: Vec<JoinHandle<()>> = vec![];
+    let mut handles: Vec<JoinHandle<Result<(), AutoPilotError>>> = vec![];
     for task in &tasks {
         handles.push(task.run());
     }
-    join_all(handles).await;
+    join_all(handles)
+        .await
+        .iter()
+        .for_each(|handle| match handle {
+            Ok(handle) => match handle {
+                Ok(_) => {}
+                Err(err) => {
+                    error!("{}", err)
+                }
+            },
+            Err(err) => {
+                error!("Failed to join handles : {}", err);
+            }
+        });
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct JobScheme {
-    id: String,
-    name: Option<String>,
-    description: Option<String>,
-    when: Option<When>,
-    check_interval: Option<String>,
-    conditions: Vec<ConditionScheme>,
-    tasks: Vec<TaskScheme>,
+    pub id: String,
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub when: Option<When>,
+    pub check_interval: Option<String>,
+    pub conditions: Vec<ConditionScheme>,
+    pub tasks: Vec<TaskScheme>,
 }
