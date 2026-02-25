@@ -64,13 +64,7 @@ impl AutoPilot {
         info!("{}", "Autopilot served!".green());
     }
     pub fn check_instance() -> bool {
-        match check_if_running() {
-            true => {
-                error!("there is already an instance of Autopilot running");
-                true
-            }
-            _ => false,
-        }
+        check_if_running()
     }
     pub fn init_status() -> Result<(), AutoPilotError> {
         if let Err(e) = set_status_initial() {
@@ -81,7 +75,7 @@ impl AutoPilot {
     }
     pub fn run_jobs(&mut self) -> Vec<JoinHandle<()>> {
         let mut handles = vec![];
-        for job in self.jobs.clone() {
+        for mut job in self.jobs.clone() {
             let scheduler = self.scheduler.clone();
             handles.push(tokio::task::spawn(async move {
                 job.run(&scheduler, false).await;
