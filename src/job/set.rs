@@ -1,5 +1,6 @@
 use std::{collections::HashMap, path::PathBuf};
 
+use serde_json::de;
 
 use crate::{
     conditions::ConditionScheme,
@@ -92,6 +93,7 @@ pub fn remove_job(id: Option<String>, file_name: Option<String>) -> Result<(), A
         .map_err(|e| AutoPilotError::InvalidJob(format!("Failed to remove job file: {}", e)))?;
     }
     if id.is_some() && file_name.is_none() {
+        let mut deleted = false;
         let jobs_path = get_jobs_paths();
         let _path_id_hashmap: HashMap<PathBuf, String> = HashMap::new();
         for path in jobs_path {
@@ -101,10 +103,17 @@ pub fn remove_job(id: Option<String>, file_name: Option<String>) -> Result<(), A
                         std::fs::remove_file(path).map_err(|e| {
                             AutoPilotError::InvalidJob(format!("Failed to remove job file: {}", e))
                         })?;
+                        deleted = true;
                     }
                 }
                 Err(e) => return Err(e),
             }
+        }
+
+        if deleted == false {
+            return Err(AutoPilotError::Job(
+                "Job associated with provided job id not found".to_string(),
+            ));
         }
     }
     Ok(())
