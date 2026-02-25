@@ -40,12 +40,14 @@ pub fn get_status_log() -> StatusLog {
     let status_log: StatusLog =
         match serde_json::from_str(utilities::jsonc_parser::jsonc_parse(&state_string).as_str()) {
             Ok(value) => value,
-            Err(_e) => {
+            Err(e) => {
                 // Use the index `i` directly instead of searching again
-                // println!(
-                //     "Failed to parse state file: \n Error: {}",
-                //     e.to_string().red()
-                // );
+
+                if log::log_enabled!(log::Level::Error) {
+                    error!("Failed to parse state file: \n Error: {}", e);
+                } else {
+                    eprintln!("Failed to parse state file: \n Error: {}", e);
+                }
                 if let Err(init_e) = set_status_initial() {
                     if log::log_enabled!(log::Level::Error) {
                         error!("Failed to initialize state: {}", init_e);
