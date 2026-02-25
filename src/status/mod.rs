@@ -28,15 +28,17 @@ pub enum JobStatusEnum {
     /// Job is actively executing
     Running,
     /// Job completed successfully
-    Success,
+    Completed,
     /// Job failed during execution
     Failed,
     /// Job was intentionally stopped
     Cancelled,
     /// Job is waiting for dependencies or conditions
     Waiting,
-    // Job didnt run due to conditions not being met
+    /// Job didnt run due to conditions not being met
     Unsatisfied,
     /// Status cannot be determined (default state)
     Unknown,
+    /// Job is scheduled but not yet started
+    Scheduled,
 }
