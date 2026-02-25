@@ -1,4 +1,8 @@
-use std::sync::{Arc, atomic::AtomicBool};
+use std::{
+    sync::{Arc, atomic::AtomicBool},
+    thread::sleep,
+    time::Duration,
+};
 
 use crate::{
     api::{routes::start_api, state::AppState},
@@ -10,21 +14,22 @@ use tokio::{self, signal, sync::RwLock};
 
 pub async fn serve(verbose: bool, api: bool) {
     // let mut auto_pilot = AutoPilot::new().await;
-    let mut auto_pilot = Arc::new(RwLock::new(AutoPilot::new().await));
-    auto_pilot
-        .write()
-        .await
-        .init(verbose)
-        .expect("failed to init autopilot");
+    let auto_pilot = Arc::new(RwLock::new(AutoPilot::new().await));
+    match auto_pilot.write().await.init(verbose) {
+        Err(err) => {
+            error!("Failed to initialize autopilot: {}", err);
+            std::process::exit(1);
+        }
+        Ok(_) => {}
+    }
     if !api {
         auto_pilot.write().await.start(verbose);
     }
     let state = AppState {
         auto_pilot: auto_pilot.clone(),
-        started: Arc::new(AtomicBool::new(!api)), // Jobs start OFF by default
+        started: Arc::new(AtomicBool::new(!api)),
     };
     start_api(state).await;
-
     // Keep the daemon running until Ctrl+C is pressed
     // Handle SIGTERM signal
     #[cfg(unix)]
