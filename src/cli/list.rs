@@ -19,7 +19,7 @@ pub fn list() {
 
 pub fn list_interactive() -> Result<(), AutoPilotError> {
     loop {
-        set_status_initial().expect("failed to reset status");
+        // set_status_initial().expect("failed to reset status");
         let status_log = get_status_log();
         let statuses = status_log.statuses.clone();
         let formated_jobs: Vec<String> = status_log
