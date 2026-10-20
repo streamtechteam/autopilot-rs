@@ -15,11 +15,31 @@
   ];
 
   env = {
+    LIBRARY_PATH = pkgs.lib.makeLibraryPath (
+      with pkgs;
+      [
+        openssl
+        libxcb
+        libX11
+        libXcursor
+        libXrandr
+        libXi
+        wayland
+        libxkbcommon
+        libGL
+        vulkan-loader
+      ]
+    );
+
     LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (
       with pkgs;
       [
         openssl
         libxcb
+        libX11
+        libXcursor
+        libXrandr
+        libXi
         wayland
         libxkbcommon
         libGL
