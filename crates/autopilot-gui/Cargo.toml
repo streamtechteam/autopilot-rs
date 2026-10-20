@@ -1,0 +1,20 @@
+[package]
+name = "autopilot-gui"
+description = "egui-based GUI for AutoPilot-rs"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+name = "autopilot_gui"
+
+[[bin]]
+name = "autopilot-gui"
+path = "src/main.rs"
+
+[dependencies]
+egui.workspace = true
+eframe.workspace = true
+egui_extras.workspace = true

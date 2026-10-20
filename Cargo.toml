@@ -1,66 +1,48 @@
-[package]
-name = "autopilot-rs"
+[workspace]
+resolver = "2"
+members = [
+    "crates/autopilot-core",
+    "crates/autopilot-api",
+    "crates/autopilot-gui",
+    "crates/autopilot-cli",
+]
+
+[workspace.package]
 version = "0.1.0-beta.1"
 edition = "2024"
-description = "A cross-platform automation tool that runs tasks when conditions are met"
 license = "MIT"
+repository = "https://github.com/streamtechteam/autopilot_rs"
 authors = ["Taha"]
-repository = "https://github.com/streamtechteam/auto_pilot_rs"
 
-[dependencies]
+[workspace.dependencies]
 chrono = { version = "0.4.42", features = ["serde"] }
 clap = { version = "4.5.56", features = ["cargo", "derive"] }
 colored = "3.0.0"
+crossterm = "0.29.0"
+dialoguer = "0.12.0"
+display-info = "0.5"
 duct = "1.1.1"
+duct_sh = "1.0.0"
+eframe = "0.33.3"
+egui = "0.33.3"
+egui_extras = "0.33.3"
+axum = "0.8.8"
 flexi_logger = "0.31.7"
 futures = "0.3.31"
 log = "0.4.28"
+once_cell = "1.21.4"
+rayon = "1.11.0"
+ratatui = "0.30.0"
+regex = "1.12.3"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
+strum = { version = "0.27.2", features = ["derive"] }
+sysinfo = "0.33.1"
 thiserror = "2.0.10"
 tokio = { version = "1.48.0", features = ["full"] }
 tokio-cron-scheduler = "0.15.1"
-sysinfo = "0.33.1"
-dialoguer = "0.12.0"
-strum = { version = "0.27.2", features = ["derive"] }
-duct_sh = "1.0.0"
-display-info = "0.5"
-rayon = "1.11.0"
-ratatui = "0.30.0"
-crossterm = "0.29.0"
-axum = "0.8.8"
-egui = "0.33.3"
-eframe = "0.33.3"
-egui_extras = "0.33.3"
-once_cell = "1.21.4"
-regex = "1.12.3"
 walkdir = "2.5.0"
 
-# [target.'cfg(target_os = "linux")'.dependencies]
-# systemd = "0.10.1"
-# systemd-journal-logger = "2.2.2"
-
-# [target.'cfg(unix)'.dependencies]
-# syslog = "7.0.0"
-
-# [target.'cfg(target_os = "windows")'.dependencies]
-# winlog2 = "0.3.2"
-
-[package.metadata.rpm]
-package = "autopilot-rs"
-
-[package.metadata.rpm.cargo]
-buildflags = ["--release"]
-
-[package.metadata.rpm.targets]
-autopilot-rs = { path = "/usr/bin/autopilot-rs" }
-
-[package.metadata.deb]
-maintainer = "Taha"
-copyright = "2026, Taha"
-extended-description = "AutoPilot-rs runs automation jobs based on conditions like WiFi, Bluetooth, battery, CPU usage, and more."
-section = "utils"
-priority = "optional"
-assets = [
-    ["target/release/autopilot-rs", "usr/bin/", "755"]
-]
+autopilot-core = { path = "crates/autopilot-core" }
+autopilot-api = { path = "crates/autopilot-api" }
+autopilot-gui = { path = "crates/autopilot-gui" }
