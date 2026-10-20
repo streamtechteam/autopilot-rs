@@ -1,3 +1,6 @@
 /target
 /build
 /dist
+.direnv
+.devenv
+devenv.lock
