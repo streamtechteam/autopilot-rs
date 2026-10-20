@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-pub mod get;
-pub mod set;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct StatusLog {

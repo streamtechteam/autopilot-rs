@@ -2,17 +2,12 @@ use axum::{
     Router,
     routing::{delete, get, post, put},
 };
-use autopilot_core::{error::AutoPilotError};
+use autopilot_core::{error::AutoPilotError, port};
 use colored::Colorize;
 use log::info;
 use tokio::task::JoinHandle;
 
-use crate::{
-    handlers::*,
-    state::AppState,
-};
-
-pub use autopilot_core::checks::PORT;
+use crate::{handlers::*, state::AppState};
 
 pub async fn start_api(state: AppState) -> Result<JoinHandle<()>, AutoPilotError> {
     let app = Router::new()
@@ -28,19 +23,11 @@ pub async fn start_api(state: AppState) -> Result<JoinHandle<()>, AutoPilotError
         .route("/jobs/{id}", delete(jobs_delete))
         .route("/jobs/{id}", put(jobs_update))
         .with_state(state.clone());
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", PORT))
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port()))
         .await
-        // .inspect_err(|err| {
-        //     // error!("Failed to bind API : {}", err);
-        //     info!(
-        //         "This is likely do to port {} not being available",
-        //         DEFAULT_PORT
-        //     );
-        //     // std::process::exit(1);
-        // })
         .map_err(|err| AutoPilotError::Api(err.to_string()))?;
 
-    info!("{}{}", "Api server started on 0.0.0.0:".green(), PORT);
+    info!("{}{}", "Api server started on 0.0.0.0:".green(), port());
     // Spawn API server
     let api_handle = tokio::spawn(async move {
         axum::serve(listener, app).await.expect("API server failed");

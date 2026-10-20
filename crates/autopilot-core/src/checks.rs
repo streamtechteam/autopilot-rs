@@ -1,7 +1,14 @@
 use std::io::{Read, Write};
 use std::net::TcpStream;
-pub static PORT: &str = "7883";
+
 pub static API_SERVICE_NAME: &str = "autopilot-api";
+pub const DEFAULT_PORT: &str = "7883";
+
+/// Port the API server listens on. Can be overridden with the `AUTOPILOT_PORT`
+/// environment variable.
+pub fn port() -> String {
+    std::env::var("AUTOPILOT_PORT").unwrap_or_else(|_| DEFAULT_PORT.to_string())
+}
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct HealthResponse {
@@ -11,14 +18,14 @@ pub struct HealthResponse {
 
 /// Checks whether the AutoPilot daemon is running by hitting its health endpoint.
 pub fn check_if_running() -> bool {
-    let mut stream = match TcpStream::connect(format!("localhost:{}", PORT)) {
+    let mut stream = match TcpStream::connect(format!("localhost:{}", port())) {
         Ok(stream) => stream,
         Err(_) => return false,
     };
 
     let request = format!(
         "GET /health HTTP/1.1\r\nHost: localhost:{}\r\nConnection: close\r\n\r\n",
-        PORT
+        port()
     );
 
     if stream.write_all(request.as_bytes()).is_err() {

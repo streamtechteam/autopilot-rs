@@ -101,49 +101,6 @@ impl Job {
             .set(self.id.clone(), None, JobStatusEnum::Running)
             .await;
 
-        // if self.when.is_none() {
-        //     loop {
-        //         let mut result = true;
-        //         for condition in &self.conditions {
-        //             let condition_result = condition.check();
-        //             result = result && condition_result;
-        //         }
-        //         if result {
-        //             run_tasks(self.tasks.clone()).await;
-        //             self.status = JobStatusEnum::Completed;
-        //             if !quiet {
-        //                 info!("{} : {}", "Job Completed".green(), self.name);
-        //             }
-        //             break;
-        //         } else if !result && self.check_interval.is_some() {
-        //             let interval_ms = match self
-        //                 .check_interval
-        //                 .as_ref()
-        //                 .expect("WTF you should NOT be seeing this")
-        //                 .parse::<u64>()
-        //             {
-        //                 Ok(ms) => ms,
-        //                 Err(_) => {
-        //                     error!("check_interval value is not valid, using 1000ms as default");
-        //                     1000
-        //                 }
-        //             };
-        //             // sleep(Duration::from_millis(interval_ms));
-        //             tokio::time::sleep(Duration::from_millis(interval_ms)).await;
-        //             // loop {
-        //             //     print!("FUCK");
-        //             // }
-        //             continue;
-        //         }
-        //         self.status = JobStatusEnum::Unsatisfied;
-        //         if let Err(e) = set_state_item(self.id.clone(), JobStatusEnum::Unsatisfied) {
-        //             error!("Failed to set state item: {}", e);
-        //         }
-        //         if !quiet {
-        //             info!("{} : {}", "Job Unsatisfied".yellow(), self.name);
-        //         }
-        //         break;
-        //     }
         if self.when.is_none() {
             loop {
                 let mut result = true;

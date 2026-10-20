@@ -6,8 +6,13 @@ use log::{error, warn};
 use tokio::{self, signal, sync::RwLock};
 
 pub async fn serve(verbose: bool, api: bool) {
-    // let mut auto_pilot = AutoPilot::new().await;
-    let auto_pilot = Arc::new(RwLock::new(AutoPilot::new().await));
+    let auto_pilot = match AutoPilot::new().await {
+        Ok(ap) => Arc::new(RwLock::new(ap)),
+        Err(err) => {
+            error!("Failed to initialize autopilot: {}", err);
+            std::process::exit(1);
+        }
+    };
     match auto_pilot.write().await.init(verbose).await {
         Err(err) => {
             error!("Failed to initialize autopilot: {}", err);
@@ -65,9 +70,9 @@ pub async fn serve(verbose: bool, api: bool) {
 
             sighup.recv().await;
             info!("Received SIGHUP, resetting status...");
-            auto_pilot.write().await.reload().await;
-            // std::process::exit(0);
-            // serve().await;
+            if let Err(e) = auto_pilot.write().await.reload().await {
+                error!("Failed to reload autopilot: {}", e);
+            }
         });
 
         // Handle SIGINT (Ctrl+C)

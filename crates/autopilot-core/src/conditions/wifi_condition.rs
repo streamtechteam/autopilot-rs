@@ -130,6 +130,7 @@ pub async fn async_condition(target_ssid: &str) -> bool {
 }
 
 /// Parse SSID from nmcli output (Linux with NetworkManager)
+#[cfg(target_os = "linux")]
 fn get_connected_wifi_linux(output: &str) -> Result<String, String> {
     for line in output.lines() {
         let parts: Vec<&str> = line.split(':').collect();
@@ -141,6 +142,7 @@ fn get_connected_wifi_linux(output: &str) -> Result<String, String> {
 }
 
 /// Parse SSID from networksetup output (macOS)
+#[cfg(target_os = "macos")]
 fn get_connected_wifi_macos(output: &str) -> Option<String> {
     // Output format: "Current Wi-Fi Network: SSID_NAME"
     if let Some(pos) = output.find(": ") {
@@ -150,6 +152,7 @@ fn get_connected_wifi_macos(output: &str) -> Option<String> {
 }
 
 /// Parse SSID from airport -I output (macOS)
+#[cfg(target_os = "macos")]
 fn get_connected_wifi_macos_airport(output: &str) -> Option<String> {
     for line in output.lines() {
         if line.trim().starts_with("SSID:") {
@@ -163,6 +166,7 @@ fn get_connected_wifi_macos_airport(output: &str) -> Option<String> {
 }
 
 /// Parse SSID from netsh output (Windows)
+#[cfg(target_os = "windows")]
 fn get_connected_wifi_windows(output: &str) -> Option<String> {
     for line in output.lines() {
         if line.contains("SSID") && line.contains(":") {
