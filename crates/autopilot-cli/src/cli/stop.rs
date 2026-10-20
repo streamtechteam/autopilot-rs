@@ -2,7 +2,7 @@ use autopilot_core::checks::port;
 use colored::Colorize;
 use core::result::Result::Ok;
 use log::info;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::net::TcpStream;
 
 use autopilot_core::language;
@@ -24,6 +24,12 @@ pub fn stop(quiet: bool) -> Result<(), std::io::Error> {
     if stream.write_all(request.as_bytes()).is_err() {
         eprintln!("Warning: failed to stop auto_pilot");
     }
+
+    // Wait for the daemon's response before dropping the socket. Dropping
+    // immediately sends a RST that can discard the shutdown request before
+    // the server processes it.
+    let mut response = String::new();
+    let _ = stream.read_to_string(&mut response);
 
     Ok(())
 }
