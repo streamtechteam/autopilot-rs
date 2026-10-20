@@ -55,9 +55,10 @@ pub fn sync_condition(target_ssid: &str) -> bool {
     {
         // Try nmcli (NetworkManager) first - most common on Linux
         if let Ok(output) = cmd("nmcli", vec!["-t", "-f", "active,ssid", "dev", "wifi"]).read()
-            && let Ok(ssid) = get_connected_wifi_linux(&output) {
-                return ssid == target_ssid;
-            }
+            && let Ok(ssid) = get_connected_wifi_linux(&output)
+        {
+            return ssid == target_ssid;
+        }
 
         // Fallback to iwgetid if nmcli fails
         if let Ok(output) = cmd("iwgetid", vec!["-r"]).read() {

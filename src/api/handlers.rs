@@ -103,9 +103,6 @@ pub async fn shutdown(
 
     warn!("Autopilot shutted down via API");
     std::process::exit(0);
-    // Ok(Json(
-    //     serde_json::json!({ "success": true, "message": "Autopilot shutted down" }),
-    // ))
 }
 
 pub async fn jobs_reload(
@@ -137,17 +134,6 @@ impl JobResponse {
     }
 }
 
-// impl From<&crate::job::Job> for JobResponse {
-//     fn from(job: &crate::job::Job, sm: StateManager) -> Self {
-//         JobResponse {
-//             id: job.id.clone(),
-//             loaded: job.loaded,
-//             name: job.name.clone(),
-//             description: job.description.clone(),
-//             status: format!("{:?}", job.status),
-//         }
-//     }
-// }
 impl From<&crate::status::JobStatusStruct> for JobResponse {
     fn from(job: &crate::status::JobStatusStruct) -> Self {
         JobResponse {
@@ -161,36 +147,11 @@ impl From<&crate::status::JobStatusStruct> for JobResponse {
     }
 }
 
-// GET /jobs - List all jobs
-// pub async fn jobs_list(
-//     State(state): State<AppState>,
-// ) -> Result<Json<Vec<JobResponse>>, StatusCode> {
-//     let ap = state.auto_pilot.read().await;
-//     // error!("api : {:p}", state.auto_pilot.as_ref());
-//     // dbg!(
-//     //     &ap.jobs
-//     //         .iter()
-//     //         .map(|job| job.status.clone())
-//     //         .collect::<Vec<JobStatusEnum>>()
-//     // );
-//     // let jobs: Vec<JobResponse> = ap.jobs.iter().map(JobResponse::from).collect();
-//     let jobs: Vec<JobResponse> = get_status_log()
-//         .statuses
-//         .iter()
-//         .map(JobResponse::from)
-//         .collect();
-//     // let jobs: Vec<JobResponse> = get_jobs(true).iter().map(JobResponse::from).collect();
-//     // let live_jobs =
-//     Ok(Json(jobs))
-// }
-
 pub async fn jobs_list(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<JobResponse>>, StatusCode> {
     let ap = state.auto_pilot.read().await;
 
-    // ۱. تبدیل live_jobs به HashMap با کلیدِ id
-    // این‌ها اولویت بالاتری دارن (نسخه‌های زنده)
     let live_map: HashMap<String, JobResponse> = ap
         .status_manager
         .get_status_log()
@@ -203,21 +164,18 @@ pub async fn jobs_list(
         })
         .collect();
 
-    // ۲. تبدیل jobs (مثلاً دیتابیس) به HashMap
     let mut db_map = HashMap::new();
     for j in get_jobs(true) {
         let resp = JobResponse::from_job_and_sm(&j, ap.status_manager.clone()).await;
         db_map.insert(resp.id.clone(), resp);
     }
 
-    // ۳. شروع با لیست دیتابیس
     let mut merged = db_map;
 
     for (id, live_job) in live_map {
         merged.insert(id, live_job);
     }
 
-    // ۵. تبدیل نهایی HashMap به Vec برای ارسال به کاربر
     let result: Vec<JobResponse> = merged.into_values().collect();
 
     Ok(Json(result))
@@ -286,12 +244,10 @@ pub async fn jobs_update(
     Path(id): Path<String>,
     Json(payload): Json<JobScheme>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    // First delete the old job
     if let Err(_) = remove_job(Some(id.clone()), None) {
         return Err(StatusCode::NOT_FOUND);
     }
 
-    // Then create the new one
     match add_job(
         Some(format!("{}_updated", id)),
         payload.description.clone(),
