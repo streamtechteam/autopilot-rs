@@ -172,8 +172,8 @@ pub async fn jobs_list(
     for job in &jobs {
         let status = status_by_id
             .get(job.id.as_str())
-            .map(|status| format!("{:?}", status))
-            .unwrap_or_else(|| format!("{:?}", JobStatusEnum::Unknown));
+            .map(|status| format!("Some({:?})", status))
+            .unwrap_or_else(|| "None".to_string());
         let resp = JobResponse {
             id: job.id.clone(),
             name: job.name.clone(),
