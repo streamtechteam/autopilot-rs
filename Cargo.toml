@@ -47,3 +47,6 @@ autopilot-core = { path = "crates/autopilot-core" }
 autopilot-api = { path = "crates/autopilot-api" }
 autopilot-gui = { path = "crates/autopilot-gui" }
 
+[profile.release]
+lto = "thin"
+codegen-units = 1

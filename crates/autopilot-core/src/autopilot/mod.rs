@@ -23,17 +23,6 @@ pub struct AutoPilot {
 
 impl AutoPilot {
     pub async fn new() -> Result<Self, AutoPilotError> {
-        let status_manager = StateManager::new();
-        // Initialise entries for existing jobs
-        let jobs = tokio::task::spawn_blocking(|| get_jobs(true))
-            .await
-            .map_err(|e| AutoPilotError::JobExecution(format!("Failed to load jobs: {}", e)))?;
-        for job in jobs {
-            status_manager
-                .set(job.id, Some(job.name), JobStatusEnum::Unknown)
-                .await;
-        }
-
         let scheduler = init_time_check().await?;
 
         Ok(Self {
@@ -41,7 +30,7 @@ impl AutoPilot {
             scheduler,
             jobs: Vec::new(),
             jobs_handles: Vec::new(),
-            status_manager: status_manager,
+            status_manager: StateManager::new(),
         })
     }
 
