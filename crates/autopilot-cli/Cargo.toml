@@ -31,7 +31,7 @@ buildflags = ["--release"]
 autopilot-rs = { path = "/usr/bin/autopilot-rs" }
 
 [package.metadata.deb]
-maintainer = "Taha"
+maintainer = "Taha Moosavi"
 copyright = "2026, Taha"
 extended-description = "AutoPilot-rs runs automation jobs based on conditions like WiFi, Bluetooth, battery, CPU usage, and more."
 section = "utils"
