@@ -76,7 +76,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Build
-        run: cargo build --release
+        run: cargo build --release -p autopilot-rs
 
       - name: Prepare Artifact
         shell: bash
@@ -111,7 +111,7 @@ jobs:
       - name: Build
         run: |
           source $HOME/.cargo/env
-          cargo build --release
+          cargo build --release -p autopilot-rs
 
       - name: Prepare Compatible Binary
         run: |
@@ -142,6 +142,7 @@ jobs:
           dnf install -y gcc rpm-build cargo libxcb-devel libxcb libXau libXau-devel libXrandr libXrandr-devel
 
       - name: Build RPM
+        working-directory: crates/autopilot-cli
         run: |
           source $HOME/.cargo/env
           cargo install cargo-rpm || true
@@ -150,7 +151,7 @@ jobs:
       - name: Find RPM
         id: find_rpm
         run: |
-          RPM_PATH=$(find target/release/rpmbuild/RPMS -name "*.rpm" | head -1)
+          RPM_PATH=$(find . -path '*rpmbuild/RPMS*' -name "*.rpm" | head -1)
           echo "rpm_path=$RPM_PATH" >> $GITHUB_OUTPUT
           echo "rpm_name=$(basename "$RPM_PATH")" >> $GITHUB_OUTPUT
 
@@ -180,7 +181,7 @@ jobs:
         run: cargo install cargo-deb
 
       - name: Build DEB
-        run: cargo deb
+        run: cargo deb -p autopilot-rs
 
       - name: Find DEB
         id: find_deb
@@ -230,13 +231,16 @@ jobs:
         run: cargo install cargo-wix
 
       - name: Build and Package MSI
+        working-directory: crates/autopilot-cli
         run: cargo wix
 
       - name: Upload MSI
         uses: actions/upload-artifact@v4
         with:
           name: autopilot-rs-msi
-          path: target/wix/*.msi
+          path: |
+            target/wix/*.msi
+            crates/autopilot-cli/target/wix/*.msi
 
   build-dmg:
     name: Build macOS DMG
@@ -245,7 +249,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build Binary
-        run: cargo build --release
+        run: cargo build --release -p autopilot-rs
       - name: Install create-dmg
         run: brew install create-dmg
       - name: Create DMG
