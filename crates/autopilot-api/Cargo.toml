@@ -1,0 +1,17 @@
+[package]
+name = "autopilot-api"
+description = "HTTP API server for AutoPilot-rs"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+axum.workspace = true
+autopilot-core.workspace = true
+colored.workspace = true
+log.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true

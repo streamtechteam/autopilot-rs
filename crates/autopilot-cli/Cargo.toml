@@ -1,0 +1,41 @@
+[package]
+name = "autopilot-rs"
+description = "A cross-platform automation tool that runs tasks when conditions are met"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+autopilot-core.workspace = true
+autopilot-api.workspace = true
+autopilot-gui.workspace = true
+chrono.workspace = true
+clap.workspace = true
+colored.workspace = true
+crossterm.workspace = true
+dialoguer.workspace = true
+log.workspace = true
+serde_json.workspace = true
+strum.workspace = true
+tokio.workspace = true
+
+[package.metadata.rpm]
+package = "autopilot-rs"
+
+[package.metadata.rpm.cargo]
+buildflags = ["--release"]
+
+[package.metadata.rpm.targets]
+autopilot-rs = { path = "/usr/bin/autopilot-rs" }
+
+[package.metadata.deb]
+maintainer = "Taha"
+copyright = "2026, Taha"
+extended-description = "AutoPilot-rs runs automation jobs based on conditions like WiFi, Bluetooth, battery, CPU usage, and more."
+section = "utils"
+priority = "optional"
+assets = [
+    ["target/release/autopilot-rs", "usr/bin/", "755"]
+]

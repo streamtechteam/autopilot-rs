@@ -1,0 +1,30 @@
+[package]
+name = "autopilot-core"
+description = "Core library for AutoPilot: conditions, jobs, tasks and status"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+chrono.workspace = true
+colored.workspace = true
+dialoguer.workspace = true
+display-info.workspace = true
+duct.workspace = true
+duct_sh.workspace = true
+flexi_logger.workspace = true
+futures.workspace = true
+log.workspace = true
+once_cell.workspace = true
+rayon.workspace = true
+regex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+strum.workspace = true
+sysinfo.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-cron-scheduler.workspace = true
+walkdir.workspace = true

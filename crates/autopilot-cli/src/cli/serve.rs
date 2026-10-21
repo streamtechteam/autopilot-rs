@@ -1,0 +1,97 @@
+use std::sync::{Arc, atomic::AtomicBool};
+
+use autopilot_api::{routes::start_api, state::AppState};
+use autopilot_core::autopilot::AutoPilot;
+use log::{error, warn};
+use tokio::{self, signal, sync::RwLock};
+
+pub async fn serve(verbose: bool, api: bool) {
+    // let mut auto_pilot = AutoPilot::new().await;
+    let auto_pilot = Arc::new(RwLock::new(AutoPilot::new().await));
+    match auto_pilot.write().await.init(verbose).await {
+        Err(err) => {
+            error!("Failed to initialize autopilot: {}", err);
+            std::process::exit(1);
+        }
+        Ok(_) => {}
+    }
+    if !api {
+        auto_pilot.write().await.start(verbose);
+    }
+    let state = AppState {
+        auto_pilot: auto_pilot.clone(),
+        started: Arc::new(AtomicBool::new(!api)),
+    };
+    match start_api(state).await {
+        Ok(_) => {}
+        Err(err) => {
+            error!("Failed to start api : {}", err)
+        }
+    }
+    // Keep the daemon running until Ctrl+C is pressed
+    // Handle SIGTERM signal
+    #[cfg(unix)]
+    {
+        use tokio::signal::unix::{SignalKind, signal};
+
+        // Handle SIGTERM
+        let mut sigterm = match signal(SignalKind::terminate()) {
+            Ok(sig) => sig,
+            Err(e) => {
+                error!("Failed to create SIGTERM listener: {}", e);
+                std::process::exit(1);
+            }
+        };
+
+        let sigterm_handle = tokio::spawn(async move {
+            use log::info;
+
+            sigterm.recv().await;
+            info!("Received SIGTERM, resetting status...");
+            warn!("{}", autopilot_core::language::en_us::AUTOPILOT_SHUTDOWN);
+            std::process::exit(0);
+        });
+
+        let mut sighup = match signal(SignalKind::hangup()) {
+            Ok(sig) => sig,
+            Err(e) => {
+                error!("Failed to create SIGHUP listener: {}", e);
+                std::process::exit(1);
+            }
+        };
+
+        let sighup_handle = tokio::spawn(async move {
+            use log::info;
+
+            sighup.recv().await;
+            info!("Received SIGHUP, resetting status...");
+            auto_pilot.write().await.reload().await;
+            // std::process::exit(0);
+            // serve().await;
+        });
+
+        // Handle SIGINT (Ctrl+C)
+        let sigint_handle = tokio::spawn(async {
+            if let Err(e) = signal::ctrl_c().await {
+                error!("Failed to listen for ctrl+c: {}", e);
+                std::process::exit(1);
+            }
+            warn!("{}", autopilot_core::language::en_us::AUTOPILOT_SHUTDOWN);
+            std::process::exit(0);
+        });
+        // Wait for either signal handler to potentially terminate the process
+        // In normal operation, handle_cli() would run indefinitely if it's a service
+        tokio::try_join!(sigterm_handle, sigint_handle, sighup_handle).ok();
+    }
+
+    #[cfg(windows)]
+    {
+        // Handle Windows (only Ctrl+C)
+        if let Err(e) = signal::ctrl_c().await {
+            error!("Failed to listen for ctrl+c: {}", e);
+            std::process::exit(1);
+        }
+        warn!("{}", autopilot_core::language::en_us::AUTOPILOT_SHUTDOWN);
+        std::process::exit(0);
+    }
+}
