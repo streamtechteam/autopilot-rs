@@ -2,7 +2,7 @@ use crate::{
     conditions::{Condition, ConditionScheme},
     error::AutoPilotError,
 };
-use dialoguer::{Input, theme::ColorfulTheme};
+use dialoguer::{Confirm, Input, theme::ColorfulTheme};
 use serde::{Deserialize, Serialize};
 use sysinfo::Disks;
 
@@ -80,31 +80,53 @@ impl Condition for DiskSpaceCondition {
 
     fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
         let path = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter path to check disk space (e.g., /, C:\\, /home):")
+            .with_prompt("Disk mount point (e.g. /, /home, C:)")
+            .validate_with(|input: &String| {
+                if input.trim().is_empty() {
+                    Err("Enter a disk or mount point")
+                } else {
+                    Ok(())
+                }
+            })
             .interact_text()
             .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
+        let path = path.trim().to_string();
 
         let min_free_gb: f64 = Input::<f64>::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter minimum free space required in GB:")
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-        // .parse()
-        // .map_err(|_| AutoPilotError::Condition("Invalid number format".to_string()))?;
-
-        let max_used_gb_input: f64 = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter maximum used space allowed in GB (leave empty for no limit):")
-            .default(0.)
-            // .allow_empty(true)
+            .with_prompt("Required free space (GB; fails below this)")
+            .validate_with(|input: &f64| {
+                if !input.is_finite() || *input < 0.0 {
+                    Err("Enter 0 or more")
+                } else {
+                    Ok(())
+                }
+            })
             .interact_text()
             .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
 
-        let max_used_gb = if max_used_gb_input == 0.0 {
-            None
-        } else {
+        let limit_used = Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt("Also limit used space?")
+            .default(false)
+            .interact_opt()
+            .map_err(|err| AutoPilotError::Condition(err.to_string()))?
+            .unwrap_or(false);
+
+        let max_used_gb = if limit_used {
             Some(
-                max_used_gb_input, // .parse()
-                                   // .map_err(|_| AutoPilotError::Condition("Invalid number format".to_string()))?,
+                Input::<f64>::with_theme(&ColorfulTheme::default())
+                    .with_prompt("Max used space (GB; fails above this)")
+                    .validate_with(|input: &f64| {
+                        if !input.is_finite() || *input < 0.0 {
+                            Err("Enter 0 or more")
+                        } else {
+                            Ok(())
+                        }
+                    })
+                    .interact_text()
+                    .map_err(|err| AutoPilotError::Condition(err.to_string()))?,
             )
+        } else {
+            None
         };
 
         Ok(ConditionScheme::DiskSpace(DiskSpaceConditionScheme {
