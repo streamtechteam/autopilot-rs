@@ -231,6 +231,7 @@ jobs:
         run: cargo install cargo-wix
 
       - name: Build and Package MSI
+        working-directory: crates/autopilot-cli
         run: cargo wix -p autopilot-rs
 
       - name: Upload MSI
