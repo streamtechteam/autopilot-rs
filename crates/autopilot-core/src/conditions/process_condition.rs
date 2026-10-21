@@ -4,6 +4,7 @@ use crate::{
 };
 use dialoguer::{Confirm, Input, theme::ColorfulTheme};
 use serde::{Deserialize, Serialize};
+#[cfg(not(target_os = "linux"))]
 use sysinfo::{ProcessRefreshKind, RefreshKind, System};
 
 /// Represents a process monitor condition
@@ -31,20 +32,46 @@ impl ProcessCondition {
     }
 }
 
+#[cfg(target_os = "linux")]
+fn is_process_running(name: &str) -> bool {
+    use std::fs;
+
+    let Ok(entries) = fs::read_dir("/proc") else {
+        return false;
+    };
+
+    for entry in entries.flatten() {
+        let file_name = entry.file_name();
+        let Some(pid) = file_name.to_str().and_then(|s| s.parse::<u32>().ok()) else {
+            continue;
+        };
+        let Ok(comm) = fs::read_to_string(format!("/proc/{pid}/comm")) else {
+            continue;
+        };
+        let proc_name = comm.trim_end().to_lowercase();
+        if proc_name.contains(name) || name.contains(&proc_name) {
+            return true;
+        }
+    }
+
+    false
+}
+
+#[cfg(not(target_os = "linux"))]
+fn is_process_running(name: &str) -> bool {
+    let sys = System::new_with_specifics(
+        RefreshKind::nothing().with_processes(ProcessRefreshKind::nothing()),
+    );
+
+    sys.processes().values().any(|process| {
+        let proc_name = process.name().to_string_lossy().to_lowercase();
+        proc_name.contains(name) || name.contains(&proc_name)
+    })
+}
+
 impl Condition for ProcessCondition {
     fn check(&self) -> bool {
-        let sys = System::new_with_specifics(
-            RefreshKind::nothing().with_processes(ProcessRefreshKind::nothing()),
-        );
-
-        let mut found = false;
-        for process in sys.processes().values() {
-            let proc_name = process.name().to_string_lossy().to_lowercase();
-            if proc_name.contains(&self.process_name) || self.process_name.contains(&proc_name) {
-                found = true;
-                break;
-            }
-        }
+        let found = is_process_running(&self.process_name);
 
         if self.should_be_running {
             found
