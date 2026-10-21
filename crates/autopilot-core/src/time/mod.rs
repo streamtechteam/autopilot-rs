@@ -20,10 +20,6 @@ pub enum When {
     Cron(String),
 }
 
-// pub struct When {
-//     type: WhenTypes,
-// }
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DateTimeScheme {
     pub date: String,

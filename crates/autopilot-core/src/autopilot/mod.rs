@@ -22,7 +22,7 @@ pub struct AutoPilot {
 }
 
 impl AutoPilot {
-    pub async fn new() -> Self {
+    pub async fn new() -> Result<Self, AutoPilotError> {
         let status_manager = StateManager::new();
         // Initialise entries for existing jobs
         for job in get_jobs(true) {
@@ -31,13 +31,15 @@ impl AutoPilot {
                 .await;
         }
 
-        Self {
+        let scheduler = init_time_check().await?;
+
+        Ok(Self {
             started: false,
-            scheduler: init_time_check().await.expect("failed to init cron"),
+            scheduler,
             jobs: Vec::new(),
             jobs_handles: Vec::new(),
             status_manager: status_manager,
-        }
+        })
     }
 
     pub async fn init(&mut self, verbose: bool) -> Result<(), AutoPilotError> {
@@ -47,19 +49,20 @@ impl AutoPilot {
                 "Instance already running".to_string(),
             ));
         }
-        self.init_status().await.expect("failed to init status");
+        self.init_status().await?;
         self.load_jobs();
         Ok(())
     }
-    pub async fn reload(&mut self) {
-        self.stop_jobs().await.expect("failed to stop jobs");
+    pub async fn reload(&mut self) -> Result<(), AutoPilotError> {
+        self.stop_jobs().await?;
         info!("{}", "Reloading Autopilot...".yellow());
-        self.init_status().await.expect("failed to init status");
+        self.init_status().await?;
         self.load_jobs();
 
         self.start(false);
 
-        info!("{}", "Autopilot reloaded successfully!".green())
+        info!("{}", "Autopilot reloaded successfully!".green());
+        Ok(())
     }
     pub fn start(&mut self, _: bool) {
         self.jobs_handles = self.run_jobs();
@@ -100,27 +103,24 @@ impl AutoPilot {
     }
 
     /// Stop all jobs (graceful shutdown of scheduler)
-    pub async fn stop_jobs(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn stop_jobs(&mut self) -> Result<(), AutoPilotError> {
         warn!("Stopping jobs...");
         self.jobs_handles.iter().for_each(|handle| {
             handle.abort();
         });
-        self.scheduler.shutdown().await?;
+        self.scheduler
+            .shutdown()
+            .await
+            .map_err(|e| AutoPilotError::JobExecution(e.to_string()))?;
         self.jobs = vec![];
         self.jobs_handles = vec![];
 
         Ok(())
     }
-    // fn add_job(&mut self, job: Job) {
-    //     self.jobs.push(job);
-    // }
-    // fn remove_job(&mut self, job: Job) {
-    //     // self.jobs.remove(self.jobs.iter().index)
-    // }
     pub fn prepare_logging(verbose: bool) {
         init_logging(verbose);
     }
-    pub async fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn shutdown(&mut self) -> Result<(), AutoPilotError> {
         self.stop_jobs().await
     }
 }

@@ -1,10 +1,5 @@
 pub mod get;
 
-struct TextEditor {
-    name: String,
-    support: Vec<String>,
-}
-
 pub static TERMINAL_EDITORS: &[&str] = &[
     // Classic/Vi-family
     "vi",

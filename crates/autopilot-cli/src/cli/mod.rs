@@ -64,7 +64,7 @@ pub async fn handle_cli() {
         }
 
         Some(Commands::Stop) => {
-            stop(false);
+            stop(false).ok();
         }
         Some(Commands::List) => {
             list();

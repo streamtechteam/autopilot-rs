@@ -1,6 +1,7 @@
 [package]
 name = "autopilot-api"
 description = "HTTP API server for AutoPilot-rs"
+publish = false
 edition.workspace = true
 license.workspace = true
 version.workspace = true

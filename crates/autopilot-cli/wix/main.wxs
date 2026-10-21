@@ -62,7 +62,7 @@
         Id='*'
         Name='autopilot-rs'
         UpgradeCode='F35B99C1-8ABE-4D4F-832E-EE6D9819FD31'
-        Manufacturer='Taha'
+        Manufacturer='Taha Moosavi'
         Language='1033'
         Codepage='1252'
         Version='$(var.Version)'>
@@ -70,7 +70,7 @@
         <Package Id='*'
             Keywords='Installer'
             Description='A cross-platform automation tool that runs tasks when conditions are met'
-            Manufacturer='Taha'
+            Manufacturer='Taha Moosavi'
             InstallerVersion='450'
             Languages='1033'
             Compressed='yes'

@@ -69,7 +69,6 @@ pub fn remove_job(id: Option<String>, file_name: Option<String>) -> Result<(), A
     }
 
     if file_name.is_some() {
-        // let jobs_path = get_jobs_paths();
         std::fs::remove_file(
             if file_name
                 .clone()

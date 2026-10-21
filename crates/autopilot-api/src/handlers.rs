@@ -6,7 +6,7 @@ use axum::{
     http::StatusCode,
 };
 use log::{info, warn};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use autopilot_core::{
     job::{JobScheme, get::get_jobs, set::{add_job, remove_job}},
@@ -17,10 +17,6 @@ pub use autopilot_core::checks::{API_SERVICE_NAME, HealthResponse};
 
 use crate::state::{AppState, ReloadResponse, StatusResponse};
 
-#[derive(Deserialize)]
-pub struct StartConfig {
-    verbose: Option<bool>,
-}
 #[derive(Serialize)]
 pub struct JobResponse {
     id: String,
@@ -47,7 +43,6 @@ pub async fn jobs_status(State(state): State<AppState>) -> Json<StatusResponse> 
 
 pub async fn jobs_start(
     State(state): State<AppState>,
-    // Json(payload): Json<Option<StartConfig>>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     // Prevent double-start
     if state.started.swap(true, Ordering::Relaxed) {
@@ -101,7 +96,13 @@ pub async fn jobs_reload(
 ) -> Result<Json<ReloadResponse>, StatusCode> {
     let mut ap = state.auto_pilot.write().await;
 
-    ap.reload().await;
+    if let Err(e) = ap.reload().await {
+        warn!("Reload failed: {}", e);
+        return Ok(Json(ReloadResponse {
+            message: format!("Reload failed: {}", e),
+            success: false,
+        }));
+    }
 
     // reload_config already calls run_jobs(), so ensure flag is set
     state.started.store(true, Ordering::Relaxed);

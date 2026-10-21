@@ -3,7 +3,6 @@ use strum::{EnumIter, IntoEnumIterator};
 
 use crate::error::AutoPilotError;
 
-// pub mod and_condition;
 pub mod bluetooth_condition;
 pub mod command_condition;
 pub mod custom_condition;
@@ -13,8 +12,6 @@ pub mod external_device_condition;
 pub mod fail_condition;
 pub mod file_condition;
 pub mod internet_condition;
-// pub mod nor_condition;
-// pub mod or_condition;
 pub mod logical_condition;
 pub mod power_condition;
 pub mod process_condition;
@@ -136,6 +133,4 @@ impl ConditionScheme {
             })
             .collect()
     }
-
-    // pub fn get_props(&self)
 }

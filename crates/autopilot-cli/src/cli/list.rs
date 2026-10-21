@@ -1,5 +1,3 @@
-// use log::info;
-
 use std::io::stdout;
 
 use colored::*;

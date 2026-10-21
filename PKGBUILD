@@ -10,19 +10,25 @@ provides=("$pkgname")
 conflicts=("$pkgname")
 depends=('systemd-libs' 'libxcb' 'libxrandr' 'libx11' 'libxau')
 makedepends=('rust' 'cargo' 'libxcb' 'libxrandr' 'libxau' 'libx11' 'git')
-source=("$pkgname-$pkgver.tar.gz::https://github.com/streamtechteam/auto_pilot_rs/archive/refs/tags/v$pkgver.tar.gz")
+source=("$pkgname-$pkgver.tar.gz::https://github.com/streamtechteam/autopilot-rs/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=("SKIP")
 
+prepare() {
+  cd "$srcdir/$pkgname-$pkgver"
+  # Make the source tree self-contained so cargo does not escape into an
+  # outer workspace (e.g. a CI checkout of the repository itself).
+  if ! grep -q '^\[workspace\]' Cargo.toml; then
+    printf '\n[workspace]\n' >> Cargo.toml
+  fi
+}
+
 build() {
-  # Build from the directory where PKGBUILD is located
-  cd "$startdir/src/$pkgname-$pkgver"
+  cd "$srcdir/$pkgname-$pkgver"
   cargo build --release --locked
 }
 
 package() {
-  # Reference the binary using the absolute start directory
-  install -Dm755 "$startdir/src/$pkgname-$pkgver/target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
+  install -Dm755 "$srcdir/$pkgname-$pkgver/target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
 
-  # If you have a license file, it's good practice to include it:
-  install -Dm644 "$startdir/src/$pkgname-$pkgver/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$srcdir/$pkgname-$pkgver/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

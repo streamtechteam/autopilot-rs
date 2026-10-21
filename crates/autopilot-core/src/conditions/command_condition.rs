@@ -65,10 +65,6 @@ impl Condition for CommandCondition {
     }
 
     fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        // let command = Editor::with_theme(&ColorfulTheme::default())
-        //     .with_prompt("Enter command to execute:")
-        //     .interact_text()
-        //     .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
         let mut supported_editors = get_supported_editors();
         supported_editors.insert(0, "Inline");
         let supported_editors = supported_editors;

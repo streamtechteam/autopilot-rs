@@ -64,14 +64,6 @@ pub fn get_jobs(quiet: bool) -> Vec<Job> {
         }
     }
 
-    // for (index, id) in jobs_ids.iter().enumerate() {
-    //     for _id in jobs_ids.iter().skip(index + 1) {
-    //         if _id == id {
-    //             error!("Error ! {}")
-    //         }
-    //     }
-    // }
-
     log_all_duplicates(jobs_ids);
     job_objects
 }
