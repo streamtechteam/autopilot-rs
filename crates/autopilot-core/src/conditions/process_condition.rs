@@ -4,7 +4,7 @@ use crate::{
 };
 use dialoguer::{Confirm, Input, theme::ColorfulTheme};
 use serde::{Deserialize, Serialize};
-use sysinfo::System;
+use sysinfo::{ProcessRefreshKind, RefreshKind, System};
 
 /// Represents a process monitor condition
 #[derive(Clone)]
@@ -33,8 +33,9 @@ impl ProcessCondition {
 
 impl Condition for ProcessCondition {
     fn check(&self) -> bool {
-        let mut sys = System::new_all();
-        sys.refresh_all();
+        let sys = System::new_with_specifics(
+            RefreshKind::nothing().with_processes(ProcessRefreshKind::nothing()),
+        );
 
         let mut found = false;
         for process in sys.processes().values() {

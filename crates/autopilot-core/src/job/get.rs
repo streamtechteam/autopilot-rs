@@ -16,13 +16,13 @@ use crate::{
 };
 
 pub fn get_jobs(quiet: bool) -> Vec<Job> {
-    let mut jobs_string: Vec<String> = vec![];
+    let mut job_files: Vec<(PathBuf, String)> = vec![];
     let mut job_objects: Vec<Job> = vec![];
     let mut jobs_ids: Vec<String> = vec![];
     let jobs_path = get_jobs_paths();
     for job in &jobs_path {
         match fs::read_to_string(job) {
-            Ok(content) => jobs_string.push(content),
+            Ok(content) => job_files.push((job.clone(), content)),
             Err(e) => {
                 if !quiet {
                     if log::log_enabled!(log::Level::Error) {
@@ -35,8 +35,8 @@ pub fn get_jobs(quiet: bool) -> Vec<Job> {
         }
     }
 
-    for (i, job_str) in jobs_string.iter().enumerate() {
-        match serde_json::from_str::<JobScheme>(jsonc_parse(job_str).as_str()) {
+    for (job_path, job_str) in &job_files {
+        match parse_job(job_str) {
             Ok(job_scheme) => {
                 let job_object = Job::from_scheme(job_scheme);
                 let id = job_object.id.clone();
@@ -48,15 +48,10 @@ pub fn get_jobs(quiet: bool) -> Vec<Job> {
                 job_objects.push(job_object);
             }
             Err(e) => {
-                // Use the index `i` directly instead of searching again
-                let job_path = &jobs_path
-                    .get(i)
-                    .and_then(|p| p.to_str())
-                    .unwrap_or("unknown");
                 if !quiet {
                     info!(
                         "Failed to parse job: \n Job path: {} \n Error: {}",
-                        job_path.green(),
+                        job_path.display().to_string().green(),
                         e.to_string().red()
                     );
                 }
@@ -64,15 +59,22 @@ pub fn get_jobs(quiet: bool) -> Vec<Job> {
         }
     }
 
-    log_all_duplicates(jobs_ids);
+    log_all_duplicates(&jobs_ids);
     job_objects
 }
 
-fn log_all_duplicates(jobs_ids: Vec<String>) {
+fn parse_job(content: &str) -> Result<JobScheme, serde_json::Error> {
+    match serde_json::from_str(content) {
+        Ok(scheme) => Ok(scheme),
+        Err(_) => serde_json::from_str(&jsonc_parse(content)),
+    }
+}
+
+fn log_all_duplicates(jobs_ids: &[String]) {
     let mut seen = HashSet::new();
     let mut dupes = HashSet::new();
 
-    for id in jobs_ids.clone() {
+    for id in jobs_ids {
         if !seen.insert(id.clone()) {
             // id was already seen → it’s a duplicate
             if dupes.insert(id.clone()) {
@@ -82,7 +84,7 @@ fn log_all_duplicates(jobs_ids: Vec<String>) {
                     "[WARNING] Duplicate job id found: ".yellow(),
                     id.red()
                 );
-                search_directory(Path::new(get_jobs_path().as_str()), &id).unwrap()
+                search_directory(Path::new(get_jobs_path().as_str()), id).unwrap()
             }
         }
     }
@@ -105,7 +107,11 @@ pub fn get_jobs_paths() -> Vec<PathBuf> {
         Ok(entries) => {
             for entry in entries {
                 match entry {
-                    Ok(job_entry) => jobs_path.push(job_entry.path()),
+                    Ok(job_entry) => {
+                        if job_entry.path().is_file() {
+                            jobs_path.push(job_entry.path());
+                        }
+                    }
                     Err(e) => {
                         if log::log_enabled!(log::Level::Error) {
                             error!("Failed to read directory entry: {}", e)
@@ -129,7 +135,7 @@ pub fn get_jobs_paths() -> Vec<PathBuf> {
 
 pub fn get_job(path: PathBuf) -> Result<Job, AutoPilotError> {
     match fs::read_to_string(&path) {
-        Ok(content) => match serde_json::from_str::<JobScheme>(jsonc_parse(&content).as_str()) {
+        Ok(content) => match parse_job(&content) {
             Ok(job_scheme) => Ok(Job::from_scheme(job_scheme)),
             Err(e) => Err(AutoPilotError::InvalidJob(format!(
                 "Failed to parse job file {}: {}",
