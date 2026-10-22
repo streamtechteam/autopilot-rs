@@ -22,7 +22,7 @@ pub fn list_interactive() -> Result<(), AutoPilotError> {
     loop {
         let jobs = get_jobs(true);
 
-        let formated_jobs: Vec<String> = get_jobs(true)
+        let formated_jobs: Vec<String> = jobs
             .iter()
             .map(|value| format!("{} - {}", value.id, value.name))
             .collect();

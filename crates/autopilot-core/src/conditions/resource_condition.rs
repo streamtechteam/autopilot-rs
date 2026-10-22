@@ -40,21 +40,23 @@ impl ResourceCondition {
 
 impl Condition for ResourceCondition {
     fn check(&self) -> bool {
-        let mut sys = System::new_with_specifics(
-            sysinfo::RefreshKind::nothing()
-                .with_cpu(CpuRefreshKind::everything())
-                .with_memory(MemoryRefreshKind::everything()),
-        );
-
-        // Wait a bit to get a measurement for CPU if needed
-        if self.resource_type == "cpu" {
-            std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-            sys.refresh_cpu_all();
-        }
-
         let current_value = match self.resource_type.as_str() {
-            "cpu" => sys.global_cpu_usage(),
+            "cpu" => {
+                let mut sys = System::new_with_specifics(
+                    sysinfo::RefreshKind::nothing().with_cpu(CpuRefreshKind::everything()),
+                );
+
+                // Wait a bit to get a measurement for CPU
+                std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+                sys.refresh_cpu_all();
+
+                sys.global_cpu_usage()
+            }
             "memory" | "ram" => {
+                let sys = System::new_with_specifics(
+                    sysinfo::RefreshKind::nothing().with_memory(MemoryRefreshKind::everything()),
+                );
+
                 let total = sys.total_memory();
                 if total == 0 {
                     0.0

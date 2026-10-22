@@ -1,3 +1,4 @@
+use tokio::process::Command;
 
 use crate::error::AutoPilotError;
 
@@ -13,6 +14,28 @@ pub fn sync_run(command: String) -> Result<(), AutoPilotError> {
 }
 
 pub async fn async_run(command: String) -> Result<(), AutoPilotError> {
-    sync_run(command)?;
+    let (shell, flag) = if cfg!(windows) {
+        ("cmd", "/C")
+    } else {
+        ("sh", "-c")
+    };
+
+    let status = Command::new(shell)
+        .arg(flag)
+        .arg(&command)
+        .kill_on_drop(true)
+        .status()
+        .await
+        .map_err(|e| {
+            AutoPilotError::JobExecution(format!("Failed to run task '{}': {}", command, e))
+        })?;
+
+    if !status.success() {
+        return Err(AutoPilotError::JobExecution(format!(
+            "Failed to run task '{}': exited with {}",
+            command, status
+        )));
+    }
+
     Ok(())
 }

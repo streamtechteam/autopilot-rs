@@ -113,14 +113,7 @@ impl Job {
                     result = result && condition_result;
                 }
                 if result {
-                    run_tasks(self.tasks.clone()).await;
-                    // self.status = JobStatusEnum::Completed;
-                    // dbg!(self.status.clone());
-                    // if let Err(e) =
-                    //     set_status_item(self.id.clone(), None, JobStatusEnum::Completed).await
-                    // {
-                    //     error!("Failed to set state item: {}", e);
-                    // }
+                    run_tasks(&self.tasks).await;
                     state_manager
                         .set(self.id.clone(), None, JobStatusEnum::Completed)
                         .await;
@@ -128,34 +121,13 @@ impl Job {
                         info!("{} : {}", "Job Completed".green(), self.name);
                     }
                     break;
-                    // ... set status, break
-                } else if self.check_interval.is_some() {
-                    // sleep, then continue the loop
-                    let interval_ms = match self
-                        .check_interval
-                        .as_ref()
-                        .expect("WTF you should NOT be seeing this")
-                        .parse::<u64>()
-                    {
-                        Ok(ms) => ms,
-                        Err(_) => {
-                            error!("check_interval value is not valid, using 1000ms as default");
-                            1000
-                        }
-                    };
-                    // sleep(Duration::from_millis(interval_ms));
-                    // tokio::time::sleep(Duration::from_millis(interval_ms)).await;
-                    // loop {
-                    //     print!("FUCK");
-                    // }
-                    // continue;
+                } else if let Some(interval) = &self.check_interval {
+                    let interval_ms = interval.parse::<u64>().unwrap_or_else(|_| {
+                        error!("check_interval value is not valid, using 1000ms as default");
+                        1000
+                    });
                     tokio::time::sleep(Duration::from_millis(interval_ms)).await;
-                    continue;
                 } else {
-                    // self.status = JobStatusEnum::Unsatisfied;
-                    // if let Err(e) = set_state_item(self.id.clone(), JobStatusEnum::Unsatisfied) {
-                    //     error!("Failed to set state item: {}", e);
-                    // }
                     state_manager
                         .set(self.id.clone(), None, JobStatusEnum::Unsatisfied)
                         .await;
@@ -178,74 +150,36 @@ impl Job {
     }
 }
 
-// pub async fn run_job(job: Job) {
-//     if let Err(e) = set_state_item(job.id.clone(), JobStatusEnum::Running) {
-//         error!("Failed to set state item: {}", e);
-//     }
-//     let mut result = true;
-//     for condition in &job.conditions {
-//         let condition_result = condition.check();
-//         result = result && condition_result;
-//     }
-//     if result {
-//         run_tasks(job.tasks.clone()).await;
-//         if let Err(e) = set_state_item(job.id, JobStatusEnum::Completed) {
-//             error!("Failed to set state item: {}", e);
-//         }
-//     } else if !result {
-//         if let Err(e) = set_state_item(job.id.clone(), JobStatusEnum::Unsatisfied) {
-//             error!("Failed to set state item: {}", e);
-//         }
-//     }
-// }
-
 pub async fn run_job(job: Job, state_manager: StateManager) {
-    // Set status to Running
-    // if let Err(e) = set_state_item(job.id.clone(), JobStatusEnum::Running) {
-    //     error!("Failed to set state item: {}", e);
-    // }
-    println!("nigga 0");
     state_manager
         .set(job.id.clone(), None, JobStatusEnum::Running)
         .await;
-    println!("nigga 1");
+
     // Offload every condition.check() to the blocking pool, run in parallel
     let mut condition_futures = Vec::new();
     for condition in job.conditions {
-        println!("nigga 2");
-
         let fut = tokio::task::spawn_blocking(move || condition.check());
         condition_futures.push(fut);
     }
-    println!("nigga 3");
 
     let results = futures::future::join_all(condition_futures).await;
-    // Check if all conditions passed
     let all_ok = results.into_iter().all(|res| res.unwrap_or(false));
 
     if all_ok {
-        println!("nigga 4");
-        run_tasks(job.tasks.clone()).await;
-        // if let Err(e) = set_state_item(job.id, JobStatusEnum::Completed) {
-        //     error!("Failed to set state item: {}", e);
-        // }
+        run_tasks(&job.tasks).await;
         state_manager
             .set(job.id.clone(), None, JobStatusEnum::Completed)
             .await;
     } else {
-        println!("nigga 5");
-        // if let Err(e) = set_state_item(job.id, JobStatusEnum::Unsatisfied) {
-        //     error!("Failed to set state item: {}", e);
-        // }
         state_manager
-            .set(job.id.clone(), None, JobStatusEnum::Unsatisfied)
+            .set(job.id, None, JobStatusEnum::Unsatisfied)
             .await;
     }
 }
 
-pub async fn run_tasks(tasks: Vec<Task>) {
+pub async fn run_tasks(tasks: &[Task]) {
     let mut handles: Vec<JoinHandle<Result<(), AutoPilotError>>> = vec![];
-    for task in &tasks {
+    for task in tasks {
         handles.push(task.run());
     }
     join_all(handles)

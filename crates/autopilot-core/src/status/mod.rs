@@ -1,69 +1,75 @@
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct StatusLog {
     pub time: String,
     pub statuses: Vec<JobStatusStruct>,
 }
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-
+struct Inner {
+    log: StatusLog,
+    index: HashMap<String, usize>,
+}
 
 #[derive(Clone)]
 pub struct StateManager {
-    inner: Arc<RwLock<StatusLog>>,
+    inner: Arc<RwLock<Inner>>,
 }
 
 impl StateManager {
     pub fn new() -> Self {
         Self {
-            inner: Arc::new(RwLock::new(StatusLog {
-                time: chrono::Local::now().to_string(),
-                statuses: Vec::new(),
+            inner: Arc::new(RwLock::new(Inner {
+                log: StatusLog {
+                    time: chrono::Local::now().to_string(),
+                    statuses: Vec::new(),
+                },
+                index: HashMap::new(),
             })),
         }
     }
 
     pub async fn set(&self, id: String, name: Option<String>, status: JobStatusEnum) {
-        let mut log = self.inner.write().await;
-        if let Some(entry) = log.statuses.iter_mut().find(|s| s.id == id) {
-            entry.status = status;
+        let mut inner = self.inner.write().await;
+        if let Some(&position) = inner.index.get(&id) {
+            inner.log.statuses[position].status = status;
         } else {
-            // Optionally insert a new entry
-            log.statuses.push(JobStatusStruct {
+            let position = inner.log.statuses.len();
+            inner.index.insert(id.clone(), position);
+            inner.log.statuses.push(JobStatusStruct {
                 id,
-                name: name.unwrap_or(String::new()), // you may want to pass name as well
+                name: name.unwrap_or_default(),
                 status,
             });
         }
     }
 
     pub async fn get_all(&self) -> Vec<JobStatusStruct> {
-        self.inner.read().await.statuses.clone()
+        self.inner.read().await.log.statuses.clone()
     }
+
     pub async fn get_status_log(&self) -> StatusLog {
-        let inner = self.inner.read().await;
-        StatusLog {
-            statuses: inner.statuses.clone(),
-            time: inner.time.clone(),
-        }
+        self.inner.read().await.log.clone()
     }
+
     pub async fn get_state_by_id(&self, id: String) -> Option<JobStatusEnum> {
-        match self.get_state_struct_by_id(id).await {
-            Some(state_struct) => return Some(state_struct.status),
-            None => return None,
-        }
+        let inner = self.inner.read().await;
+        let position = *inner.index.get(&id)?;
+        inner
+            .log
+            .statuses
+            .get(position)
+            .map(|state| state.status.clone())
     }
 
     pub async fn get_state_struct_by_id(&self, id: String) -> Option<JobStatusStruct> {
-        self.get_all()
-            .await
-            .iter()
-            .find(|state| state.id == id)
-            .map(|state| state.clone())
+        let inner = self.inner.read().await;
+        let position = *inner.index.get(&id)?;
+        inner.log.statuses.get(position).cloned()
     }
 }
 
@@ -99,4 +105,36 @@ pub enum JobStatusEnum {
     Unknown,
     /// Job is scheduled but not yet started
     Scheduled,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn set_updates_existing_entry_in_place() {
+        let manager = StateManager::new();
+        manager
+            .set("a".into(), Some("A".into()), JobStatusEnum::Pending)
+            .await;
+        manager
+            .set("b".into(), Some("B".into()), JobStatusEnum::Pending)
+            .await;
+        manager
+            .set("a".into(), Some("ignored".into()), JobStatusEnum::Running)
+            .await;
+
+        let all = manager.get_all().await;
+        assert_eq!(all.len(), 2);
+        assert_eq!(all[0].id, "a");
+        assert_eq!(all[0].name, "A");
+        assert!(matches!(all[0].status, JobStatusEnum::Running));
+        assert_eq!(all[1].id, "b");
+
+        assert!(matches!(
+            manager.get_state_by_id("a".into()).await,
+            Some(JobStatusEnum::Running)
+        ));
+        assert!(manager.get_state_by_id("missing".into()).await.is_none());
+    }
 }

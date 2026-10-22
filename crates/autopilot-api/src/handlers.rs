@@ -9,8 +9,12 @@ use log::{info, warn};
 use serde::Serialize;
 
 use autopilot_core::{
-    job::{JobScheme, get::get_jobs, set::{add_job, remove_job}},
-    status::StateManager,
+    job::{
+        JobScheme,
+        get::get_jobs,
+        set::{add_job, remove_job},
+    },
+    status::{JobStatusEnum, StateManager},
 };
 
 pub use autopilot_core::checks::{API_SERVICE_NAME, HealthResponse};
@@ -50,7 +54,9 @@ pub async fn jobs_start(
     }
 
     let mut ap = state.auto_pilot.write().await;
-    ap.load_jobs();
+    ap.load_jobs()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     ap.run_jobs();
 
     info!("Jobs started via API");
@@ -142,13 +148,14 @@ impl From<&autopilot_core::status::JobStatusStruct> for JobResponse {
 pub async fn jobs_list(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<JobResponse>>, StatusCode> {
-    let ap = state.auto_pilot.read().await;
-
-    let live_map: HashMap<String, JobResponse> = ap
-        .status_manager
-        .get_status_log()
+    let jobs = tokio::task::spawn_blocking(|| get_jobs(true))
         .await
-        .statuses
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let ap = state.auto_pilot.read().await;
+    let statuses = ap.status_manager.get_status_log().await.statuses;
+
+    let live_map: HashMap<String, JobResponse> = statuses
         .iter()
         .map(|j| {
             let resp = JobResponse::from(j);
@@ -156,9 +163,24 @@ pub async fn jobs_list(
         })
         .collect();
 
+    let status_by_id: HashMap<&str, &JobStatusEnum> = statuses
+        .iter()
+        .map(|status| (status.id.as_str(), &status.status))
+        .collect();
+
     let mut db_map = HashMap::new();
-    for j in get_jobs(true) {
-        let resp = JobResponse::from_job_and_sm(&j, ap.status_manager.clone()).await;
+    for job in &jobs {
+        let status = status_by_id
+            .get(job.id.as_str())
+            .map(|status| format!("Some({:?})", status))
+            .unwrap_or_else(|| "None".to_string());
+        let resp = JobResponse {
+            id: job.id.clone(),
+            name: job.name.clone(),
+            description: job.description.clone(),
+            loaded: job.loaded,
+            status,
+        };
         db_map.insert(resp.id.clone(), resp);
     }
 
@@ -177,14 +199,23 @@ pub async fn jobs_list(
 pub async fn jobs_create(
     Json(payload): Json<JobScheme>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    match add_job(
-        payload.name.clone(),
-        payload.description.clone(),
-        payload.when.clone(),
-        payload.check_interval.clone(),
-        payload.conditions.clone(),
-        payload.tasks.clone(),
-    ) {
+    let JobScheme {
+        name,
+        description,
+        when,
+        check_interval,
+        conditions,
+        tasks,
+        ..
+    } = payload;
+
+    let result = tokio::task::spawn_blocking(move || {
+        add_job(name, description, when, check_interval, conditions, tasks)
+    })
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    match result {
         Ok(path) => {
             info!("Created job via API: {:?}", path);
             Ok(Json(serde_json::json!({
@@ -216,7 +247,11 @@ pub async fn jobs_getbyid(
 
 /// DELETE /jobs/{id} - Delete job by ID
 pub async fn jobs_delete(Path(id): Path<String>) -> Result<Json<serde_json::Value>, StatusCode> {
-    match remove_job(Some(id), None) {
+    let result = tokio::task::spawn_blocking(move || remove_job(Some(id), None))
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    match result {
         Ok(()) => {
             info!("Deleted job via API");
             Ok(Json(
@@ -236,18 +271,34 @@ pub async fn jobs_update(
     Path(id): Path<String>,
     Json(payload): Json<JobScheme>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    if let Err(_) = remove_job(Some(id.clone()), None) {
-        return Err(StatusCode::NOT_FOUND);
-    }
+    let JobScheme {
+        description,
+        when,
+        check_interval,
+        conditions,
+        tasks,
+        ..
+    } = payload;
 
-    match add_job(
-        Some(format!("{}_updated", id)),
-        payload.description.clone(),
-        payload.when.clone(),
-        payload.check_interval.clone(),
-        payload.conditions.clone(),
-        payload.tasks.clone(),
-    ) {
+    let result = tokio::task::spawn_blocking(move || {
+        if remove_job(Some(id.clone()), None).is_err() {
+            return Err(StatusCode::NOT_FOUND);
+        }
+
+        add_job(
+            Some(format!("{}_updated", id)),
+            description,
+            when,
+            check_interval,
+            conditions,
+            tasks,
+        )
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+    })
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    match result {
         Ok(path) => {
             info!("Updated job via API: {:?}", path);
             Ok(Json(serde_json::json!({

@@ -23,14 +23,6 @@ pub struct AutoPilot {
 
 impl AutoPilot {
     pub async fn new() -> Result<Self, AutoPilotError> {
-        let status_manager = StateManager::new();
-        // Initialise entries for existing jobs
-        for job in get_jobs(true) {
-            status_manager
-                .set(job.id, Some(job.name), JobStatusEnum::Unknown)
-                .await;
-        }
-
         let scheduler = init_time_check().await?;
 
         Ok(Self {
@@ -38,7 +30,7 @@ impl AutoPilot {
             scheduler,
             jobs: Vec::new(),
             jobs_handles: Vec::new(),
-            status_manager: status_manager,
+            status_manager: StateManager::new(),
         })
     }
 
@@ -49,15 +41,15 @@ impl AutoPilot {
                 "Instance already running".to_string(),
             ));
         }
+        self.load_jobs().await?;
         self.init_status().await?;
-        self.load_jobs();
         Ok(())
     }
     pub async fn reload(&mut self) -> Result<(), AutoPilotError> {
         self.stop_jobs().await?;
         info!("{}", "Reloading Autopilot...".yellow());
+        self.load_jobs().await?;
         self.init_status().await?;
-        self.load_jobs();
 
         self.start(false);
 
@@ -72,11 +64,16 @@ impl AutoPilot {
         check_if_running()
     }
     pub async fn init_status(&mut self) -> Result<(), AutoPilotError> {
+        let entries: Vec<(String, String)> = self
+            .jobs
+            .iter()
+            .map(|job| (job.id.clone(), job.name.clone()))
+            .collect();
+
         let status_manager = StateManager::new();
-        // Initialise entries for existing jobs
-        for job in get_jobs(true) {
+        for (id, name) in entries {
             status_manager
-                .set(job.id, Some(job.name), JobStatusEnum::Unknown)
+                .set(id, Some(name), JobStatusEnum::Unknown)
                 .await;
         }
         self.status_manager = status_manager;
@@ -98,8 +95,11 @@ impl AutoPilot {
 
         handles
     }
-    pub fn load_jobs(&mut self) {
-        self.jobs = get_jobs(false);
+    pub async fn load_jobs(&mut self) -> Result<(), AutoPilotError> {
+        self.jobs = tokio::task::spawn_blocking(|| get_jobs(false))
+            .await
+            .map_err(|e| AutoPilotError::JobExecution(format!("Failed to load jobs: {}", e)))?;
+        Ok(())
     }
 
     /// Stop all jobs (graceful shutdown of scheduler)
