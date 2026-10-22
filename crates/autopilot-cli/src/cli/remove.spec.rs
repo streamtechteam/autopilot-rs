@@ -2,17 +2,30 @@ use super::*;
 
 #[test]
 fn formats_known_job_options() {
-    let path = std::path::Path::new("/tmp/job_123_Backup.jsonc");
+    let job = JobScheme {
+        id: "job_123_Backup".to_string(),
+        name: Some("Backup".to_string()),
+        description: None,
+        when: None,
+        check_interval: None,
+        conditions: Vec::new(),
+        tasks: Vec::new(),
+    };
 
-    assert_eq!(
-        format_job_option(Some("Backup"), path),
-        "Backup - job_123_Backup.jsonc"
-    );
+    assert_eq!(format_job_option(&job), "Backup - job_123_Backup");
 }
 
 #[test]
 fn formats_unknown_job_options() {
-    let path = std::path::Path::new("/tmp/broken.jsonc");
+    let job = JobScheme {
+        id: "broken".to_string(),
+        name: None,
+        description: None,
+        when: None,
+        check_interval: None,
+        conditions: Vec::new(),
+        tasks: Vec::new(),
+    };
 
-    assert_eq!(format_job_option(None, path), "Unknown - broken.jsonc");
+    assert_eq!(format_job_option(&job), "Unknown - broken");
 }

@@ -1,11 +1,9 @@
-use dialoguer::{Input, theme::ColorfulTheme};
 use display_info::DisplayInfo;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    conditions::{Condition, ConditionScheme},
-    error::AutoPilotError,
-};
+use crate::conditions::Condition;
+use crate::form::{ConditionConfig, FormError};
 
 #[derive(Clone)]
 pub struct ScreenCondition {
@@ -51,62 +49,6 @@ impl Condition for ScreenCondition {
 
     fn name(&self) -> &str {
         "Screen"
-    }
-
-    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        let screen_count_str: String = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter target screen count (optional, but at least 1 check is required):")
-            .allow_empty(true)
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        let screen_count = if screen_count_str.is_empty() {
-            None
-        } else {
-            match screen_count_str.parse::<u16>() {
-                Ok(n) => Some(n),
-                Err(_) => return Err(AutoPilotError::Condition("Invalid number".to_string())),
-            }
-        };
-
-        let active_screen: String = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter target active screen name (optional):")
-            .allow_empty(true)
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        let screen_names_str: String = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter target screen names (comma separated, optional):")
-            .allow_empty(true)
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        let screen_names = if screen_names_str.is_empty() {
-            None
-        } else {
-            Some(
-                screen_names_str
-                    .split(',')
-                    .map(|s| s.trim().to_string())
-                    .collect(),
-            )
-        };
-
-        if screen_count.is_none() && active_screen.is_empty() && screen_names.is_none() {
-            return Err(AutoPilotError::Condition(
-                "At least one screen condition check is required".to_string(),
-            ));
-        }
-
-        Ok(ConditionScheme::Screen(ScreenConditionScheme {
-            screen_count,
-            active_screen_name: if active_screen.is_empty() {
-                None
-            } else {
-                Some(active_screen)
-            },
-            screen_names,
-        }))
     }
 }
 
@@ -177,12 +119,54 @@ pub async fn async_condition(
     sync_condition(expected_count, &expected_active_name, &expected_names)
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "Screen condition")]
 pub struct ScreenConditionScheme {
+    #[serde(default)]
+    #[schemars(title = "Screen count", range(min = 0))]
     pub screen_count: Option<u16>,
+    #[serde(default)]
+    #[schemars(
+        title = "Active screen name",
+        extend(
+            "x-autopilot" = {
+                "widget": "dynamic-select",
+                "provider": "screens",
+                "allow_custom": true
+            }
+        )
+    )]
     pub active_screen_name: Option<String>,
+    #[serde(default)]
+    #[schemars(
+        title = "Screen names",
+        extend(
+            "x-autopilot" = {
+                "widget": "dynamic-select",
+                "provider": "screens",
+                "multiple": true,
+                "allow_custom": true
+            }
+        )
+    )]
     pub screen_names: Option<Vec<String>>,
+}
+
+impl ConditionConfig for ScreenConditionScheme {
+    fn validate(&self) -> Result<(), FormError> {
+        if self.screen_count.is_none()
+            && self.active_screen_name.is_none()
+            && self.screen_names.as_ref().is_none_or(Vec::is_empty)
+        {
+            return Err(FormError::InvalidValue {
+                field: "screen_count".to_string(),
+                message: "at least one screen check is required".to_string(),
+            });
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]

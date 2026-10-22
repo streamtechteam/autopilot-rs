@@ -1,10 +1,8 @@
-use crate::{
-    conditions::{Condition, ConditionScheme},
-    error::AutoPilotError,
-};
-use dialoguer::{Confirm, Input, theme::ColorfulTheme};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use sysinfo::Disks;
+
+use crate::conditions::Condition;
 
 /// Represents a disk space condition
 #[derive(Clone)]
@@ -77,74 +75,38 @@ impl Condition for DiskSpaceCondition {
     fn name(&self) -> &str {
         "Disk Space"
     }
-
-    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        let path = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Disk mount point (e.g. /, /home, C:)")
-            .validate_with(|input: &String| {
-                if input.trim().is_empty() {
-                    Err("Enter a disk or mount point")
-                } else {
-                    Ok(())
-                }
-            })
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-        let path = path.trim().to_string();
-
-        let min_free_gb: f64 = Input::<f64>::with_theme(&ColorfulTheme::default())
-            .with_prompt("Required free space (GB; fails below this)")
-            .validate_with(|input: &f64| {
-                if !input.is_finite() || *input < 0.0 {
-                    Err("Enter 0 or more")
-                } else {
-                    Ok(())
-                }
-            })
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        let limit_used = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("Also limit used space?")
-            .default(false)
-            .interact_opt()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?
-            .unwrap_or(false);
-
-        let max_used_gb = if limit_used {
-            Some(
-                Input::<f64>::with_theme(&ColorfulTheme::default())
-                    .with_prompt("Max used space (GB; fails above this)")
-                    .validate_with(|input: &f64| {
-                        if !input.is_finite() || *input < 0.0 {
-                            Err("Enter 0 or more")
-                        } else {
-                            Ok(())
-                        }
-                    })
-                    .interact_text()
-                    .map_err(|err| AutoPilotError::Condition(err.to_string()))?,
-            )
-        } else {
-            None
-        };
-
-        Ok(ConditionScheme::DiskSpace(DiskSpaceConditionScheme {
-            path,
-            min_free_gb,
-            max_used_gb,
-        }))
-    }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "Disk space condition")]
 pub struct DiskSpaceConditionScheme {
     #[serde(default)]
+    #[schemars(
+        title = "Mount point",
+        extend(
+            "x-autopilot" = {
+                "required": true,
+                "widget": "dynamic-select",
+                "provider": "disks",
+                "allow_custom": true
+            }
+        )
+    )]
     pub path: String,
     #[serde(default)]
+    #[schemars(
+        title = "Minimum free space",
+        range(min = 0.0),
+        extend("x-autopilot" = {"required": true, "unit": "GB"})
+    )]
     pub min_free_gb: f64,
     #[serde(default)]
+    #[schemars(
+        title = "Maximum used space",
+        range(min = 0.0),
+        extend("x-autopilot" = {"unit": "GB"})
+    )]
     pub max_used_gb: Option<f64>,
 }
 

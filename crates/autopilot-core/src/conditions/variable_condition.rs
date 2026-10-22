@@ -1,10 +1,7 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    conditions::{Condition, ConditionScheme},
-    error::AutoPilotError,
-};
-use dialoguer::{Input, theme::ColorfulTheme};
+use crate::conditions::Condition;
 #[derive(Clone)]
 pub struct VariableCondition {
     variable: String,
@@ -33,23 +30,6 @@ impl Condition for VariableCondition {
     fn name(&self) -> &str {
         "Variable"
     }
-
-    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        let variable = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter environment variable name (without $):")
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        let target = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter expected value:")
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        Ok(ConditionScheme::Variable(VariableConditionScheme {
-            variable,
-            target,
-        }))
-    }
 }
 
 pub fn sync_condition(var: &str, target: &str) -> bool {
@@ -62,12 +42,22 @@ pub async fn async_condition(var: &str, target: &str) -> bool {
     env_var == target
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "Variable condition")]
 pub struct VariableConditionScheme {
     #[serde(default)]
+    #[schemars(
+        title = "Variable",
+        description = "Environment variable name without $",
+        extend("x-autopilot" = {"required": true})
+    )]
     variable: String,
     #[serde(default)]
+    #[schemars(
+        title = "Expected value",
+        extend("x-autopilot" = {"required": true})
+    )]
     target: String,
 }
 

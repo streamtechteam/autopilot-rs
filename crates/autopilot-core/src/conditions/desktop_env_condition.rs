@@ -1,13 +1,10 @@
 use std::env;
 
 use log::error;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    conditions::{Condition, ConditionScheme},
-    error::AutoPilotError,
-};
-use dialoguer::{Input, theme::ColorfulTheme};
+use crate::conditions::Condition;
 #[derive(Clone)]
 pub struct DesktopEnvCondition {
     target: String,
@@ -34,17 +31,6 @@ impl Condition for DesktopEnvCondition {
     fn name(&self) -> &str {
         "Desktop Environment"
     }
-
-    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        let target = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter target Desktop Environment name:")
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        Ok(ConditionScheme::DesktopEnv(DesktopEnvConditionScheme {
-            target,
-        }))
-    }
 }
 
 pub fn sync_condition(target: &str) -> bool {
@@ -61,10 +47,16 @@ pub async fn async_condition(target: &str) -> bool {
     sync_condition(target)
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "Desktop environment condition")]
 pub struct DesktopEnvConditionScheme {
     #[serde(default)]
+    #[schemars(
+        title = "Desktop environment",
+        description = "For example GNOME, KDE, or SWAY",
+        extend("x-autopilot" = {"required": true})
+    )]
     target: String,
 }
 

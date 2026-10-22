@@ -13,3 +13,6 @@ clean:
 
 test:
     cargo test --workspace
+
+schema:
+    cargo run -q -p autopilot-core --example schema > json_schema/schema.json

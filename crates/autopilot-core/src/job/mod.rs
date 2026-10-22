@@ -3,6 +3,7 @@ use std::time::Duration;
 use colored::Colorize;
 use futures::future::join_all;
 use log::{error, info};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tokio::task::JoinHandle;
 use tokio_cron_scheduler::JobScheduler;
@@ -198,8 +199,9 @@ pub async fn run_tasks(tasks: &[Task]) {
         });
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "AutoPilot job file")]
 pub struct JobScheme {
     pub id: String,
     pub name: Option<String>,

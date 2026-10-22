@@ -1,20 +1,28 @@
 use super::*;
 
-fn job(id: &str, name: &str) -> Job {
-    Job::new(
-        id.to_string(),
-        name.to_string(),
-        String::new(),
-        None,
-        None,
-        vec![],
-        vec![],
-    )
+fn job(id: &str, name: &str) -> JobScheme {
+    JobScheme {
+        id: id.to_string(),
+        name: Some(name.to_string()),
+        description: None,
+        when: None,
+        check_interval: None,
+        conditions: Vec::new(),
+        tasks: Vec::new(),
+    }
 }
 
 #[test]
 fn formats_a_single_job() {
     assert_eq!(format_job(&job("job_1", "Backup")), "job_1 - Backup");
+}
+
+#[test]
+fn formats_a_nameless_job_with_its_id() {
+    let mut job = job("job_1", "Backup");
+    job.name = None;
+
+    assert_eq!(format_job(&job), "job_1 - job_1");
 }
 
 #[test]

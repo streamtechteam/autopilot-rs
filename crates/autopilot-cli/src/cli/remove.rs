@@ -1,21 +1,13 @@
-use std::path::PathBuf;
-
 use colored::Colorize;
 use dialoguer::{Confirm, Select, theme::ColorfulTheme};
 
-use autopilot_core::{
-    error::AutoPilotError,
-    fs::get_autopilot_path,
-    job::{
-        get::{get_job, get_jobs_paths},
-        set::remove_job,
-    },
-};
+use autopilot_core::{error::AutoPilotError, fs::get_autopilot_path, job::JobScheme};
+use autopilot_ui_api::{FileJobApi, JobApi};
 
-pub fn remove() {
-    match remove_interactive() {
-        Ok(job_file_path) => {
-            println!("Job removed successfully at: {}", job_file_path.display());
+pub async fn remove() {
+    match remove_interactive().await {
+        Ok(job_id) => {
+            println!("Job removed successfully: {}", job_id);
         }
         Err(e) => {
             eprintln!("Failed to remove job\n{}", e);
@@ -23,46 +15,25 @@ pub fn remove() {
     }
 }
 
-fn format_job_option(job_name: Option<&str>, path: &std::path::Path) -> String {
-    format!(
-        "{} - {}",
-        job_name.unwrap_or("Unknown"),
-        path.file_name()
-            .expect("Failed to get file name")
-            .to_str()
-            .expect(
-                "Failed to convert filename to String (filename may have unsupported characters)"
-            )
-    )
+fn format_job_option(job: &JobScheme) -> String {
+    format!("{} - {}", job.name.as_deref().unwrap_or("Unknown"), job.id)
 }
 
-pub fn remove_interactive() -> Result<PathBuf, AutoPilotError> {
+pub async fn remove_interactive() -> Result<String, AutoPilotError> {
     println!(
         "{}",
         "This subcommand is now deprecated\nPlease use autopilot list instead".red()
     );
-    let job_paths = get_jobs_paths();
-    let options: Vec<String> = job_paths
-        .iter()
-        .map(|value| {
-            // println!("Processing job: {}", value.display());
-            let job_name = match get_job(value.clone()) {
-                Ok(job) => Some(job.name),
-                Err(_) => None,
-            };
+    let api = FileJobApi::new()?;
+    let jobs = api.list_jobs().await?;
+    let options: Vec<String> = jobs.iter().map(format_job_option).collect();
 
-            format_job_option(job_name.as_deref(), value)
-        })
-        .collect();
-    let mut selection;
-    let mut confirm;
     if options.is_empty() {
-        // eprintln!("No jobs found");
-
         return Err(AutoPilotError::Job("No jobs exist to remove!".to_string()));
     }
-    loop {
-        selection = Select::with_theme(&ColorfulTheme::default())
+
+    let selection = loop {
+        let selection = Select::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "Select an option to remove (root: {})",
                 get_autopilot_path()
@@ -70,33 +41,31 @@ pub fn remove_interactive() -> Result<PathBuf, AutoPilotError> {
             .default(0)
             .items(&options)
             .interact()
-            .map_err(AutoPilotError::Dialoguer)?;
-        confirm = Confirm::with_theme(&ColorfulTheme::default())
+            .map_err(|err| AutoPilotError::InvalidJob(err.to_string()))?;
+        let confirm = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "Are you sure you want to remove {} ?",
                 options[selection]
             ))
             .default(false)
             .interact()
-            .map_err(AutoPilotError::Dialoguer)?;
+            .map_err(|err| AutoPilotError::InvalidJob(err.to_string()))?;
+
         if confirm {
-            break;
+            break selection;
         }
+    };
+
+    let job = &jobs[selection];
+    println!("Removing job");
+    if !api.delete_job(&job.id).await? {
+        return Err(AutoPilotError::Job(format!(
+            "Job '{}' no longer exists",
+            job.id
+        )));
     }
-    if confirm {
-        println!("Removing job");
-        remove_job(
-            None,
-            Some(
-                job_paths[selection]
-                    .clone()
-                    .to_str()
-                    .expect("Failed to convert path to string")
-                    .to_string(),
-            ),
-        )?;
-    }
-    Ok(job_paths[selection].clone())
+
+    Ok(job.id.clone())
 }
 
 #[cfg(test)]

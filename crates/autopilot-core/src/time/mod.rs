@@ -1,12 +1,14 @@
 use chrono::{DateTime, Local, NaiveDate, NaiveTime, ParseError, TimeZone, Timelike};
 use log::error;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub mod add;
 pub mod init;
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 #[serde(tag = "type", content = "trigger", rename_all = "lowercase")]
+#[schemars(title = "Schedule")]
 pub enum When {
     Once(DateTimeScheme),
     Daily(TimeScheme),
@@ -16,7 +18,7 @@ pub enum When {
     Cron(String),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct DateTimeScheme {
     pub date: String,
     pub time: String,
@@ -57,7 +59,7 @@ impl DateTimeScheme {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct TimeScheme {
     pub time: String,
 }

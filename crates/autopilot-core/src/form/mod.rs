@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
 use thiserror::Error;
 
+pub mod providers;
+
 pub const AUTOPILOT_HINT: &str = "x-autopilot";
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -204,13 +206,11 @@ impl FormSchema {
                     .and_then(Value::as_array)
                     .map(|items| items.len())
                     .unwrap_or(0);
-                if field.required || count > 0 {
-                    if count < min_items {
-                        return Err(FormError::InvalidValue {
-                            field: field.key.clone(),
-                            message: format!("at least {min_items} item(s) required"),
-                        });
-                    }
+                if (field.required || count > 0) && count < min_items {
+                    return Err(FormError::InvalidValue {
+                        field: field.key.clone(),
+                        message: format!("at least {min_items} item(s) required"),
+                    });
                 }
             }
         }
@@ -570,9 +570,13 @@ fn humanize(value: &str) -> String {
 }
 
 pub trait ConditionConfig: Clone + Serialize + DeserializeOwned + JsonSchema {
-    fn form_schema() -> FormSchema {
+    fn try_form_schema() -> Result<FormSchema, FormError> {
         let schema = SchemaGenerator::default().into_root_schema_for::<Self>();
-        FormSchema::from_json_schema(&schema).expect("condition schema should produce a valid form")
+        FormSchema::from_json_schema(&schema)
+    }
+
+    fn form_schema() -> FormSchema {
+        Self::try_form_schema().expect("condition schema should produce a valid form")
     }
 
     fn to_form_values(&self) -> Result<FormValues, FormError> {

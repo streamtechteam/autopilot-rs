@@ -485,7 +485,6 @@ version = "0.1.0-beta.1"
 dependencies = [
  "chrono",
  "colored",
- "dialoguer",
  "display-info",
  "duct",
  "duct_sh",
@@ -522,6 +521,7 @@ dependencies = [
  "autopilot-api",
  "autopilot-core",
  "autopilot-gui",
+ "autopilot-ui-api",
  "chrono",
  "clap",
  "colored",
@@ -530,6 +530,17 @@ dependencies = [
  "log",
  "serde_json",
  "strum",
+ "tokio",
+]
+
+[[package]]
+name = "autopilot-ui-api"
+version = "0.1.0-beta.1"
+dependencies = [
+ "async-trait",
+ "autopilot-core",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 

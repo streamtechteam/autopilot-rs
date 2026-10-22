@@ -29,9 +29,6 @@ pub enum AutoPilotError {
     #[error("Invalid job definition: {0}")]
     InvalidJob(String),
 
-    #[error("Dialoguer error: {0}")]
-    Dialoguer(#[from] dialoguer::Error),
-
     #[error("Signal handling error: {0}")]
     Signal(String),
 

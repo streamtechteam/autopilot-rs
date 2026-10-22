@@ -1,665 +1,980 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "AutoPilot jobfile Schema",
-    "type": "object",
-    "properties": {
-        "id": {
-            "type": "string"
-        },
-        "name": {
-            "type": "string"
-        },
-        "description": {
-            "type": "string"
-        },
-        "conditions": {
-            "type": "array",
-            "items": {
-                "oneOf": [
-                    {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "const": "command"
-                            },
-                            "condition": {
-                                "type": "object",
-                                "properties": {
-                                    "command": {
-                                        "type": "string"
-                                    },
-                                    "check_exit_code": {
-                                        "type": "boolean"
-                                    },
-                                    "target_output": {
-                                        "type": "string"
-                                    }
-                                },
-                                "required": ["command"]
-                            }
-                        },
-                        "required": ["type", "condition"]
-                    },
-                    {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "const": "variable"
-                            },
-                            "condition": {
-                                "type": "object",
-                                "properties": {
-                                    "variable": {
-                                        "type": "string"
-                                    },
-                                    "target": {
-                                        "type": "string"
-                                    }
-                                },
-                                "required": ["variable", "target"]
-                            }
-                        },
-                        "required": ["type", "condition"]
-                    },
-                    {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "const": "bluetooth"
-                            },
-                            "condition": {
-                                "type": "object",
-                                "properties": {
-                                    "device": {
-                                        "type": "string"
-                                    },
-                                    "match_by_mac": {
-                                        "type": "boolean"
-                                    }
-                                },
-                                "required": ["device"]
-                            }
-                        },
-                        "required": ["type", "condition"]
-                    },
-                    {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "const": "wifi"
-                            },
-                            "condition": {
-                                "type": "object",
-                                "properties": {
-                                    "ssid": {
-                                        "type": "string"
-                                    }
-                                },
-                                "required": ["ssid"]
-                            }
-                        },
-                        "required": ["type", "condition"]
-                    },
-                    {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "const": "power"
-                            },
-                            "condition": {
-                                "type": "object",
-                                "properties": {
-                                    "check_charging": {
-                                        "type": "boolean"
-                                    },
-                                    "threshold": {
-                                        "type": "number"
-                                    },
-                                    "operator": {
-                                        "type": "string",
-                                        "enum": ["greater", "less"]
-                                    }
-                                }
-                            }
-                        },
-                        "required": ["type", "condition"]
-                    },
-                    {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "const": "resource"
-                            },
-                            "condition": {
-                                "type": "object",
-                                "properties": {
-                                    "resource_type": {
-                                        "type": "string",
-                                        "enum": ["cpu", "memory"]
-                                    },
-                                    "threshold": {
-                                        "type": "number"
-                                    },
-                                    "operator": {
-                                        "type": "string",
-                                        "enum": ["greater", "less"]
-                                    }
-                                },
-                                "required": ["resource_type", "threshold"]
-                            }
-                        },
-                        "required": ["type", "condition"]
-                    },
-                    {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "const": "internet"
-                            },
-                            "condition": {
-                                "type": "object",
-                                "properties": {
-                                    "host": {
-                                        "type": "string"
-                                    },
-                                    "timeout": {
-                                        "type": "number"
-                                    }
-                                }
-                            }
-                        },
-                        "required": ["type", "condition"]
-                    },
-                    {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "const": "process"
-                            },
-                            "condition": {
-                                "type": "object",
-                                "properties": {
-                                    "process_name": {
-                                        "type": "string"
-                                    },
-                                    "should_be_running": {
-                                        "type": "boolean"
-                                    }
-                                },
-                                "required": ["process_name"]
-                            }
-                        },
-                        "required": ["type", "condition"]
-                    },
-                    {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "const": "diskspace"
-                            },
-                            "condition": {
-                                "type": "object",
-                                "properties": {
-                                    "path": {
-                                        "type": "string"
-                                    },
-                                    "min_free_gb": {
-                                        "type": "number"
-                                    },
-                                    "max_used_gb": {
-                                        "type": "number"
-                                    }
-                                },
-                                "required": ["path", "min_free_gb"]
-                            }
-                        },
-                        "required": ["type", "condition"]
-                    },
-                    {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "const": "file"
-                            },
-                            "condition": {
-                                "type": "object",
-                                "properties": {
-                                    "path": {
-                                        "type": "string"
-                                    },
-                                    "check_type": {
-                                        "type": "string",
-                                        "enum": ["exists", "modified_recently", "size_changed"]
-                                    },
-                                    "time_threshold": {
-                                        "type": "number"
-                                    },
-                                    "size_threshold": {
-                                        "type": "number"
-                                    }
-                                },
-                                "required": ["path", "check_type"]
-                            }
-                        },
-                        "required": ["type", "condition"]
-                    },
-                    {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "const": "externaldevice"
-                            },
-                            "condition": {
-                                "type": "object",
-                                "properties": {
-                                    "device_identifier": {
-                                        "type": "string"
-                                    },
-                                    "check_by_name": {
-                                        "type": "boolean"
-                                    }
-                                },
-                                "required": ["device_identifier"]
-                            }
-                        },
-                        "required": ["type", "condition"]
-                    },
-                    {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "const": "screen"
-                            },
-                            "condition": {
-                                "type": "object",
-                                "properties": {
-                                    "screen_count": {
-                                        "type": "number"
-                                    },
-                                    "active_screen_name": {
-                                        "type": "string"
-                                    },
-                                    "screen_names": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "required": ["type", "condition"]
-                    },
-                    {
-                        "type": "object",
-                        "properties": {
-                            "type": {
-                                "const": "logical"
-                            },
-                            "condition": {
-                                "type": "object",
-                                "properties": {
-                                    "operator": {
-                                        "type": "string",
-                                        "enum": ["and", "or", "nor"]
-                                    },
-                                    "conditions": {
-                                        "type": "array",
-                                        "items": {
-                                            "$ref": "#/definitions/conditionItem"
-                                        }
-                                    }
-                                },
-                                "required": ["operator", "conditions"]
-                            }
-                        },
-                        "required": ["type", "condition"]
-                    }
-                ]
-            }
-        },
-        "tasks": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "command": {
-                        "type": "string"
-                    }
-                },
-                "required": [
-                    "command"
-                ]
-            }
-        },
-        "when": {
-            "type": "object",
-            "properties": {
-                "time": {
-                    "type": "string"
-                },
-                "date": {
-                    "type": "string"
-                }
-            }
-        },
-        "check_interval": {
-            "type": "string"
-        },
-        "last_run_date": {
-            "type": "string"
-        },
-        "last_run_status": {
-            "type": "string"
-        }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AutoPilot job file",
+  "type": "object",
+  "properties": {
+    "check_interval": {
+      "type": [
+        "string",
+        "null"
+      ]
     },
-    "required": [
-        "id",
-        "name",
-        "conditions",
-        "tasks"
-    ],
-    "definitions": {
-        "conditionItem": {
-            "oneOf": [
-                {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "const": "command"
-                        },
-                        "condition": {
-                            "type": "object",
-                            "properties": {
-                                "command": {
-                                    "type": "string"
-                                },
-                                "check_exit_code": {
-                                    "type": "boolean"
-                                },
-                                "target_output": {
-                                    "type": "string"
-                                }
-                            },
-                            "required": ["command"]
-                        }
-                    },
-                    "required": ["type", "condition"]
-                },
-                {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "const": "variable"
-                        },
-                        "condition": {
-                            "type": "object",
-                            "properties": {
-                                "variable": {
-                                    "type": "string"
-                                },
-                                "target": {
-                                    "type": "string"
-                                }
-                            },
-                            "required": ["variable", "target"]
-                        }
-                    },
-                    "required": ["type", "condition"]
-                },
-                {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "const": "bluetooth"
-                        },
-                        "condition": {
-                            "type": "object",
-                            "properties": {
-                                "device": {
-                                    "type": "string"
-                                },
-                                "match_by_mac": {
-                                    "type": "boolean"
-                                }
-                            },
-                            "required": ["device"]
-                        }
-                    },
-                    "required": ["type", "condition"]
-                },
-                {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "const": "wifi"
-                        },
-                        "condition": {
-                            "type": "object",
-                            "properties": {
-                                "ssid": {
-                                    "type": "string"
-                                }
-                            },
-                            "required": ["ssid"]
-                        }
-                    },
-                    "required": ["type", "condition"]
-                },
-                {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "const": "power"
-                        },
-                        "condition": {
-                            "type": "object",
-                            "properties": {
-                                "check_charging": {
-                                    "type": "boolean"
-                                },
-                                "threshold": {
-                                    "type": "number"
-                                },
-                                "operator": {
-                                    "type": "string",
-                                    "enum": ["greater", "less"]
-                                }
-                            }
-                        }
-                    },
-                    "required": ["type", "condition"]
-                },
-                {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "const": "resource"
-                        },
-                        "condition": {
-                            "type": "object",
-                            "properties": {
-                                "resource_type": {
-                                    "type": "string",
-                                    "enum": ["cpu", "memory"]
-                                },
-                                "threshold": {
-                                    "type": "number"
-                                },
-                                "operator": {
-                                    "type": "string",
-                                    "enum": ["greater", "less"]
-                                }
-                            },
-                            "required": ["resource_type", "threshold"]
-                        }
-                    },
-                    "required": ["type", "condition"]
-                },
-                {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "const": "internet"
-                        },
-                        "condition": {
-                            "type": "object",
-                            "properties": {
-                                "host": {
-                                    "type": "string"
-                                },
-                                "timeout": {
-                                    "type": "number"
-                                }
-                            }
-                        }
-                    },
-                    "required": ["type", "condition"]
-                },
-                {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "const": "process"
-                        },
-                        "condition": {
-                            "type": "object",
-                            "properties": {
-                                "process_name": {
-                                    "type": "string"
-                                },
-                                "should_be_running": {
-                                    "type": "boolean"
-                                }
-                            },
-                            "required": ["process_name"]
-                        }
-                    },
-                    "required": ["type", "condition"]
-                },
-                {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "const": "diskspace"
-                        },
-                        "condition": {
-                            "type": "object",
-                            "properties": {
-                                "path": {
-                                    "type": "string"
-                                },
-                                "min_free_gb": {
-                                    "type": "number"
-                                },
-                                "max_used_gb": {
-                                    "type": "number"
-                                }
-                            },
-                            "required": ["path", "min_free_gb"]
-                        }
-                    },
-                    "required": ["type", "condition"]
-                },
-                {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "const": "file"
-                        },
-                        "condition": {
-                            "type": "object",
-                            "properties": {
-                                "path": {
-                                    "type": "string"
-                                },
-                                "check_type": {
-                                    "type": "string",
-                                    "enum": ["exists", "modified_recently", "size_changed"]
-                                },
-                                "time_threshold": {
-                                    "type": "number"
-                                },
-                                "size_threshold": {
-                                    "type": "number"
-                                }
-                            },
-                            "required": ["path", "check_type"]
-                        }
-                    },
-                    "required": ["type", "condition"]
-                },
-                {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "const": "externaldevice"
-                        },
-                        "condition": {
-                            "type": "object",
-                            "properties": {
-                            "device_identifier": {
-                                "type": "string"
-                            },
-                            "check_by_name": {
-                                "type": "boolean"
-                            }
-                        },
-                        "required": ["device_identifier"]
-                    }
-                },
-                {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "const": "screen"
-                        },
-                        "condition": {
-                            "type": "object",
-                            "properties": {
-                                "screen_count": {
-                                    "type": "number"
-                                },
-                                "active_screen_name": {
-                                    "type": "string"
-                                },
-                                "screen_names": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "required": ["type", "condition"]
-                },
-                {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "const": "logical"
-                        },
-                        "condition": {
-                            "type": "object",
-                            "properties": {
-                                "operator": {
-                                    "type": "string",
-                                    "enum": ["and", "or", "nor"]
-                                },
-                                "conditions": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/definitions/conditionItem"
-                                    }
-                                }
-                            },
-                            "required": ["operator", "conditions"]
-                        }
-                    },
-                    "required": ["type", "condition"]
-                }
-            ]
+    "conditions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ConditionScheme"
+      }
+    },
+    "description": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Task"
+      }
+    },
+    "when": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/When"
+        },
+        {
+          "type": "null"
         }
+      ]
     }
+  },
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "conditions",
+    "tasks"
+  ],
+  "$defs": {
+    "BluetoothConditionScheme": {
+      "title": "Bluetooth condition",
+      "description": "Scheme for deserializing BluetoothCondition from JSON/JSONC",
+      "type": "object",
+      "properties": {
+        "device": {
+          "title": "Device",
+          "description": "The Bluetooth device address or name to match",
+          "type": "string",
+          "default": "",
+          "x-autopilot": {
+            "allow_custom": true,
+            "provider": "bluetooth.devices",
+            "required": true,
+            "widget": "dynamic-select"
+          }
+        },
+        "match_by_mac": {
+          "title": "Match by MAC address",
+          "description": "Match by MAC address (true) or device name (false). Defaults to false.",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "additionalProperties": false
+    },
+    "CommandConditionScheme": {
+      "title": "Command condition",
+      "description": "Scheme for CommandCondition (JSON Comaptible)",
+      "type": "object",
+      "properties": {
+        "check_exit_code": {
+          "title": "Check exit code",
+          "description": "Leave unset to check the exit code",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null
+        },
+        "command": {
+          "title": "Command",
+          "description": "The shell command to execute",
+          "type": "string",
+          "default": "",
+          "x-autopilot": {
+            "placeholder": "Shell command",
+            "provider": "editors",
+            "required": true,
+            "widget": "editor"
+          }
+        },
+        "target_output": {
+          "title": "Target output",
+          "description": "Target output to match (only used if check_exit_code is false)",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "x-autopilot": {
+            "provider": "editors",
+            "widget": "editor"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ConditionScheme": {
+      "description": "Unified enum for all condition types, supporting deserialization from JSON/JSONC",
+      "oneOf": [
+        {
+          "description": "Command condition: checks if command output matches a target value",
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "#/$defs/CommandConditionScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "command"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ]
+        },
+        {
+          "description": "Variable condition: checks if an environment variable matches a target value",
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "#/$defs/VariableConditionScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "variable"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "#/$defs/DesktopEnvConditionScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "desktopenv"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ]
+        },
+        {
+          "description": "Bluetooth condition: checks if a Bluetooth device is connected",
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "#/$defs/BluetoothConditionScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "bluetooth"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ]
+        },
+        {
+          "description": "WiFi condition: checks if connected to a specific WiFi network",
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "#/$defs/WifiConditionScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "wifi"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ]
+        },
+        {
+          "description": "Power condition: checks charging status or battery level",
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "#/$defs/PowerConditionScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "power"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ]
+        },
+        {
+          "description": "Resource condition: checks CPU or RAM usage",
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "#/$defs/ResourceConditionScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "resource"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ]
+        },
+        {
+          "description": "Internet condition: checks internet reachability",
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "#/$defs/InternetConditionScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "internet"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ]
+        },
+        {
+          "description": "Process condition: checks if a process is running",
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "#/$defs/ProcessConditionScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "process"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ]
+        },
+        {
+          "description": "Disk space condition: checks available disk space",
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "#/$defs/DiskSpaceConditionScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "diskspace"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ]
+        },
+        {
+          "description": "File condition: checks file existence or properties",
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "#/$defs/FileConditionScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "file"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ]
+        },
+        {
+          "description": "External device condition: checks for connected USB/external drives",
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "#/$defs/ExternalDeviceConditionScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "externaldevice"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "#/$defs/FailCondition"
+            },
+            "type": {
+              "type": "string",
+              "const": "fail"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "#/$defs/ScreenConditionScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "screen"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "#/$defs/LogicalConditionScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "logical"
+            }
+          },
+          "required": [
+            "type",
+            "condition"
+          ]
+        }
+      ]
+    },
+    "DateTimeScheme": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string"
+        },
+        "time": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "date",
+        "time"
+      ]
+    },
+    "DesktopEnvConditionScheme": {
+      "title": "Desktop environment condition",
+      "type": "object",
+      "properties": {
+        "target": {
+          "title": "Desktop environment",
+          "description": "For example GNOME, KDE, or SWAY",
+          "type": "string",
+          "default": "",
+          "x-autopilot": {
+            "required": true
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "DiskSpaceConditionScheme": {
+      "title": "Disk space condition",
+      "type": "object",
+      "properties": {
+        "max_used_gb": {
+          "title": "Maximum used space",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double",
+          "default": null,
+          "minimum": 0.0,
+          "x-autopilot": {
+            "unit": "GB"
+          }
+        },
+        "min_free_gb": {
+          "title": "Minimum free space",
+          "type": "number",
+          "format": "double",
+          "default": 0.0,
+          "minimum": 0.0,
+          "x-autopilot": {
+            "required": true,
+            "unit": "GB"
+          }
+        },
+        "path": {
+          "title": "Mount point",
+          "type": "string",
+          "default": "",
+          "x-autopilot": {
+            "allow_custom": true,
+            "provider": "disks",
+            "required": true,
+            "widget": "dynamic-select"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ExternalDeviceConditionScheme": {
+      "title": "External device condition",
+      "type": "object",
+      "properties": {
+        "check_by_name": {
+          "title": "Check by device name",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null
+        },
+        "device_identifier": {
+          "title": "Device",
+          "description": "Device name or mount point",
+          "type": "string",
+          "default": "",
+          "x-autopilot": {
+            "allow_custom": true,
+            "provider": "disks",
+            "required": true,
+            "widget": "dynamic-select"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "FailCondition": {
+      "description": "A condition that always returns false, used as a fallback for error cases",
+      "type": "null"
+    },
+    "FileConditionScheme": {
+      "title": "File condition",
+      "type": "object",
+      "properties": {
+        "check_type": {
+          "title": "Check type",
+          "type": "string",
+          "default": "",
+          "x-autopilot": {
+            "options": [
+              {
+                "label": "File/Directory Exists",
+                "value": "exists"
+              },
+              {
+                "label": "Modified Recently",
+                "value": "modified_recently"
+              },
+              {
+                "label": "Size Changed",
+                "value": "size_changed"
+              }
+            ],
+            "required": true,
+            "widget": "select"
+          }
+        },
+        "path": {
+          "title": "Path",
+          "type": "string",
+          "default": "",
+          "x-autopilot": {
+            "required": true
+          }
+        },
+        "size_threshold": {
+          "title": "Size threshold",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "default": null,
+          "minimum": 0,
+          "x-autopilot": {
+            "unit": "bytes"
+          }
+        },
+        "time_threshold": {
+          "title": "Time threshold",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64",
+          "default": null,
+          "minimum": 0,
+          "x-autopilot": {
+            "unit": "seconds"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "InternetConditionScheme": {
+      "title": "Internet condition",
+      "type": "object",
+      "properties": {
+        "host": {
+          "title": "Host",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "x-autopilot": {
+            "placeholder": "8.8.8.8"
+          }
+        },
+        "timeout": {
+          "title": "Timeout",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "default": null,
+          "minimum": 1,
+          "x-autopilot": {
+            "unit": "seconds"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "LogicalConditionScheme": {
+      "title": "Logical condition",
+      "type": "object",
+      "properties": {
+        "conditions": {
+          "title": "Conditions",
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ConditionScheme"
+          },
+          "x-autopilot": {
+            "min_items": 1,
+            "required": true,
+            "widget": "conditions"
+          }
+        },
+        "operator": {
+          "title": "Operator",
+          "$ref": "#/$defs/LogicalOperator",
+          "x-autopilot": {
+            "required": true
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "operator"
+      ]
+    },
+    "LogicalOperator": {
+      "type": "string",
+      "enum": [
+        "And",
+        "Or",
+        "Nor"
+      ]
+    },
+    "PowerConditionScheme": {
+      "title": "Power condition",
+      "type": "object",
+      "properties": {
+        "check_charging": {
+          "title": "Check charging",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null
+        },
+        "operator": {
+          "title": "Comparison operator",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "x-autopilot": {
+            "options": [
+              {
+                "label": "Greater than (>)",
+                "value": "greater"
+              },
+              {
+                "label": "Less than (<)",
+                "value": "less"
+              }
+            ],
+            "widget": "select"
+          }
+        },
+        "threshold": {
+          "title": "Battery threshold",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "float",
+          "default": null,
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "x-autopilot": {
+            "unit": "%"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ProcessConditionScheme": {
+      "title": "Process condition",
+      "type": "object",
+      "properties": {
+        "process_name": {
+          "title": "Process name",
+          "type": "string",
+          "default": "",
+          "x-autopilot": {
+            "allow_custom": true,
+            "provider": "processes",
+            "required": true,
+            "widget": "dynamic-select"
+          }
+        },
+        "should_be_running": {
+          "title": "Should be running",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "additionalProperties": false
+    },
+    "ResourceConditionScheme": {
+      "title": "Resource condition",
+      "type": "object",
+      "properties": {
+        "operator": {
+          "title": "Comparison operator",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "x-autopilot": {
+            "options": [
+              {
+                "label": "Greater than (>)",
+                "value": "greater"
+              },
+              {
+                "label": "Less than (<)",
+                "value": "less"
+              }
+            ],
+            "widget": "select"
+          }
+        },
+        "resource_type": {
+          "title": "Resource type",
+          "type": "string",
+          "default": "",
+          "x-autopilot": {
+            "options": [
+              {
+                "label": "CPU",
+                "value": "cpu"
+              },
+              {
+                "label": "Memory (RAM)",
+                "value": "memory"
+              }
+            ],
+            "required": true,
+            "widget": "select"
+          }
+        },
+        "threshold": {
+          "title": "Threshold",
+          "type": "number",
+          "format": "float",
+          "default": 0.0,
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "x-autopilot": {
+            "required": true,
+            "unit": "%"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ScreenConditionScheme": {
+      "title": "Screen condition",
+      "type": "object",
+      "properties": {
+        "active_screen_name": {
+          "title": "Active screen name",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "x-autopilot": {
+            "allow_custom": true,
+            "provider": "screens",
+            "widget": "dynamic-select"
+          }
+        },
+        "screen_count": {
+          "title": "Screen count",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "default": null,
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "screen_names": {
+          "title": "Screen names",
+          "type": [
+            "array",
+            "null"
+          ],
+          "default": null,
+          "items": {
+            "type": "string"
+          },
+          "x-autopilot": {
+            "allow_custom": true,
+            "multiple": true,
+            "provider": "screens",
+            "widget": "dynamic-select"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Task": {
+      "title": "Task",
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "command"
+      ]
+    },
+    "TimeScheme": {
+      "type": "object",
+      "properties": {
+        "time": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "time"
+      ]
+    },
+    "VariableConditionScheme": {
+      "title": "Variable condition",
+      "type": "object",
+      "properties": {
+        "target": {
+          "title": "Expected value",
+          "type": "string",
+          "default": "",
+          "x-autopilot": {
+            "required": true
+          }
+        },
+        "variable": {
+          "title": "Variable",
+          "description": "Environment variable name without $",
+          "type": "string",
+          "default": "",
+          "x-autopilot": {
+            "required": true
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "When": {
+      "title": "Schedule",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "trigger": {
+              "$ref": "#/$defs/DateTimeScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "once"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "trigger"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "trigger": {
+              "$ref": "#/$defs/TimeScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "daily"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "trigger"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "trigger": {
+              "$ref": "#/$defs/TimeScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "weekly"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "trigger"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "trigger": {
+              "$ref": "#/$defs/TimeScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "monthly"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "trigger"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "trigger": {
+              "$ref": "#/$defs/TimeScheme"
+            },
+            "type": {
+              "type": "string",
+              "const": "yearly"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "trigger"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "trigger": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "cron"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "trigger"
+          ]
+        }
+      ]
+    },
+    "WifiConditionScheme": {
+      "title": "WiFi condition",
+      "description": "Scheme for deserializing WifiCondition from JSON/JSONC",
+      "type": "object",
+      "properties": {
+        "ssid": {
+          "title": "WiFi network",
+          "description": "The SSID (network name) to match",
+          "type": "string",
+          "default": "",
+          "x-autopilot": {
+            "allow_custom": true,
+            "provider": "wifi.networks",
+            "required": true,
+            "widget": "dynamic-select"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
 }

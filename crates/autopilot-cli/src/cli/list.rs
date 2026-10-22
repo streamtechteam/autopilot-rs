@@ -4,31 +4,33 @@ use colored::*;
 use crossterm::{execute, terminal};
 use dialoguer::{Confirm, Select, theme::ColorfulTheme};
 
-use autopilot_core::{
-    error::AutoPilotError,
-    fs::get_autopilot_path,
-    job::{Job, get::get_jobs, set::remove_job},
-};
+use autopilot_core::{error::AutoPilotError, fs::get_autopilot_path, job::JobScheme};
+use autopilot_ui_api::{FileJobApi, JobApi};
 
-pub fn list() {
-    match list_interactive() {
+pub async fn list() {
+    match list_interactive().await {
         Ok(_) => {}
         Err(err) => eprintln!("Error: {}", err),
     }
 }
 
-fn format_job(job: &Job) -> String {
-    format!("{} - {}", job.id, job.name)
+fn format_job(job: &JobScheme) -> String {
+    format!(
+        "{} - {}",
+        job.id,
+        job.name.as_deref().unwrap_or(job.id.as_str())
+    )
 }
 
-fn format_jobs(jobs: &[Job]) -> Vec<String> {
+fn format_jobs(jobs: &[JobScheme]) -> Vec<String> {
     jobs.iter().map(format_job).collect()
 }
 
-pub fn list_interactive() -> Result<(), AutoPilotError> {
+pub async fn list_interactive() -> Result<(), AutoPilotError> {
     execute!(stdout(), terminal::Clear(terminal::ClearType::All))?;
     loop {
-        let jobs = get_jobs(true);
+        let api = FileJobApi::new()?;
+        let jobs = api.list_jobs().await?;
 
         let formated_jobs = format_jobs(&jobs);
 
@@ -44,41 +46,43 @@ pub fn list_interactive() -> Result<(), AutoPilotError> {
             .items(&formated_jobs)
             .default(0)
             .interact()
-            .map_err(|err| AutoPilotError::Dialoguer(err))?;
+            .map_err(|err| AutoPilotError::InvalidJob(err.to_string()))?;
         let selected_action = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Select an action:")
             .items(&["View Details", "Delete"])
             .default(0)
             .interact()
-            .map_err(|err| AutoPilotError::Dialoguer(err))?;
+            .map_err(|err| AutoPilotError::InvalidJob(err.to_string()))?;
         let selected_job = &jobs[selected_job_index];
         match selected_action {
             0 => {
                 execute!(stdout(), terminal::Clear(terminal::ClearType::All))?;
-                //
                 println!(
                     "\nID : {}\nName: {}\n",
                     selected_job.id.yellow(),
-                    selected_job.name.green(),
+                    selected_job
+                        .name
+                        .as_deref()
+                        .unwrap_or(selected_job.id.as_str())
+                        .green(),
                 );
-                // println!("Viewing details for job {}", jobs[selected_job]);
             }
             1 => {
                 execute!(stdout(), terminal::Clear(terminal::ClearType::All))?;
                 let confirm = Confirm::with_theme(&ColorfulTheme::default())
                     .with_prompt("Are you sure you want to delete this job?")
                     .interact()
-                    .map_err(|err| AutoPilotError::Dialoguer(err))?;
+                    .map_err(|err| AutoPilotError::InvalidJob(err.to_string()))?;
                 if confirm {
+                    let id = selected_job.id.clone();
                     execute!(stdout(), terminal::Clear(terminal::ClearType::All))?;
-                    remove_job(Some(selected_job.id.clone()), None)?;
-                    println!("Deleting job {}", selected_job.id);
+                    api.delete_job(&id).await?;
+                    println!("Deleting job {}", id);
                 }
             }
             _ => unreachable!(),
         }
     }
-    // Ok(())
 }
 
 #[cfg(test)]

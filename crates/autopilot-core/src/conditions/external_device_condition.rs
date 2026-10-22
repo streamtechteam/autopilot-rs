@@ -1,10 +1,8 @@
-use crate::{
-    conditions::{Condition, ConditionScheme},
-    error::AutoPilotError,
-};
-use dialoguer::{Confirm, Input, theme::ColorfulTheme};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use sysinfo::Disks;
+
+use crate::conditions::Condition;
 
 /// Represents an external device (USB/mount) condition
 #[derive(Clone)]
@@ -66,34 +64,28 @@ impl Condition for ExternalDeviceCondition {
     fn name(&self) -> &str {
         "External Device"
     }
-
-    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        let device_identifier = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter device name or mount point to check for:")
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        let check_by_name = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("Check by device name? (Otherwise check by mount point)")
-            .interact_opt()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?
-            .unwrap_or(true);
-
-        Ok(ConditionScheme::ExternalDevice(
-            ExternalDeviceConditionScheme {
-                device_identifier,
-                check_by_name: Some(check_by_name),
-            },
-        ))
-    }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "External device condition")]
 pub struct ExternalDeviceConditionScheme {
     #[serde(default)]
+    #[schemars(
+        title = "Device",
+        description = "Device name or mount point",
+        extend(
+            "x-autopilot" = {
+                "required": true,
+                "widget": "dynamic-select",
+                "provider": "disks",
+                "allow_custom": true
+            }
+        )
+    )]
     pub device_identifier: String,
     #[serde(default)]
+    #[schemars(title = "Check by device name")]
     pub check_by_name: Option<bool>,
 }
 

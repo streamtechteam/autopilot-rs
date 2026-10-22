@@ -10,7 +10,6 @@ authors.workspace = true
 [dependencies]
 chrono.workspace = true
 colored.workspace = true
-dialoguer.workspace = true
 display-info.workspace = true
 duct.workspace = true
 duct_sh.workspace = true

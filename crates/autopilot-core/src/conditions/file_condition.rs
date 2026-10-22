@@ -1,12 +1,10 @@
-use crate::{
-    conditions::{Condition, ConditionScheme},
-    error::AutoPilotError,
-};
 use chrono::{DateTime, Duration, Local};
-use dialoguer::{Input, Select, theme::ColorfulTheme};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
+
+use crate::conditions::Condition;
 
 /// Represents a file/path monitor condition
 #[derive(Clone)]
@@ -103,80 +101,47 @@ impl Condition for FileCondition {
     fn name(&self) -> &str {
         "File"
     }
-
-    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        let path = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter file or directory path to monitor:")
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        let check_types = ["File/Directory Exists", "Modified Recently", "Size Changed"];
-        let selected_type = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Select check type:")
-            .items(check_types)
-            .default(0)
-            .interact_opt()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?
-            .unwrap_or(0);
-
-        let check_type = match selected_type {
-            0 => "exists".to_string(),
-            1 => "modified_recently".to_string(),
-            2 => "size_changed".to_string(),
-            _ => "exists".to_string(),
-        };
-
-        let (time_threshold, size_threshold) = match selected_type {
-            1 => {
-                // Modified recently
-                let time_input: i64 = Input::with_theme(&ColorfulTheme::default())
-                    .with_prompt("Enter time threshold in seconds (default: 300 for 5 minutes):")
-                    .default(300)
-                    .allow_empty(true)
-                    .interact_text()
-                    .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-                let time_threshold = if time_input == 0 {
-                    Some(300)
-                } else {
-                    Some(time_input)
-                };
-
-                (time_threshold, None)
-            }
-            2 => {
-                // Size changed
-                let size_input: u64 = Input::with_theme(&ColorfulTheme::default())
-                    .with_prompt("Enter size threshold in bytes:")
-                    .interact_text()
-                    .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-                let size_threshold = Some(size_input);
-
-                (None, size_threshold)
-            }
-            _ => (None, None), // For "exists" check, no additional parameters needed
-        };
-
-        Ok(ConditionScheme::File(FileConditionScheme {
-            path,
-            check_type,
-            time_threshold,
-            size_threshold,
-        }))
-    }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "File condition")]
 pub struct FileConditionScheme {
     #[serde(default)]
+    #[schemars(
+        title = "Path",
+        extend("x-autopilot" = {"required": true})
+    )]
     pub path: String,
     #[serde(default)]
+    #[schemars(
+        title = "Check type",
+        extend(
+            "x-autopilot" = {
+                "required": true,
+                "widget": "select",
+                "options": [
+                    {"label": "File/Directory Exists", "value": "exists"},
+                    {"label": "Modified Recently", "value": "modified_recently"},
+                    {"label": "Size Changed", "value": "size_changed"}
+                ]
+            }
+        )
+    )]
     pub check_type: String,
     #[serde(default)]
+    #[schemars(
+        title = "Time threshold",
+        range(min = 0),
+        extend("x-autopilot" = {"unit": "seconds"})
+    )]
     pub time_threshold: Option<i64>,
     #[serde(default)]
+    #[schemars(
+        title = "Size threshold",
+        range(min = 0),
+        extend("x-autopilot" = {"unit": "bytes"})
+    )]
     pub size_threshold: Option<u64>,
 }
 

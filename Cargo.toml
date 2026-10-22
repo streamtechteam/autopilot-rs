@@ -5,6 +5,7 @@ members = [
     "crates/autopilot-api",
     "crates/autopilot-gui",
     "crates/autopilot-cli",
+    "crates/autopilot-ui-api",
 ]
 
 [workspace.package]
@@ -15,6 +16,7 @@ repository = "https://github.com/streamtechteam/autopilot_rs"
 authors = ["Taha"]
 
 [workspace.dependencies]
+async-trait = "0.1.89"
 chrono = { version = "0.4.42", features = ["serde"] }
 clap = { version = "4.5.56", features = ["cargo", "derive"] }
 colored = "3.0.0"
@@ -47,6 +49,7 @@ walkdir = "2.5.0"
 autopilot-core = { path = "crates/autopilot-core" }
 autopilot-api = { path = "crates/autopilot-api" }
 autopilot-gui = { path = "crates/autopilot-gui" }
+autopilot-ui-api = { path = "crates/autopilot-ui-api" }
 
 [profile.release]
 lto = "thin"

@@ -6,6 +6,7 @@ use crate::cli::{
 };
 
 pub mod create;
+pub mod form;
 pub mod list;
 pub mod remove;
 pub mod serve;
@@ -57,17 +58,17 @@ pub async fn handle_cli() {
             serve(cli.verbose, *api).await;
         }
         Some(Commands::Create) => {
-            create();
+            create().await;
         }
         Some(Commands::Remove) => {
-            remove();
+            remove().await;
         }
 
         Some(Commands::Stop) => {
             stop(false).ok();
         }
         Some(Commands::List) => {
-            list();
+            list().await;
         }
         Some(Commands::Status) => {
             status();

@@ -4,7 +4,6 @@ use super::*;
 fn fail_condition_always_fails() {
     assert!(!FailCondition.check());
     assert_eq!(FailCondition.name(), "Fail");
-    assert!(FailCondition.create().is_err());
     assert_eq!(FailCondition.clone_box().name(), "Fail");
 }
 
