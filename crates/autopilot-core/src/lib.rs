@@ -3,6 +3,7 @@ pub mod checks;
 pub mod conditions;
 pub mod cross_platform;
 pub mod error;
+pub mod form;
 pub mod fs;
 pub mod job;
 pub mod language;
