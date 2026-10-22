@@ -51,3 +51,7 @@ pub fn get_supported_editors() -> Vec<&'static str> {
         })
         .collect()
 }
+
+#[cfg(test)]
+#[path = "get.spec.rs"]
+mod spec;

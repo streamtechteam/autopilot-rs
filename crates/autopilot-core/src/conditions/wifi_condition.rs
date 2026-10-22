@@ -192,21 +192,5 @@ pub struct WifiConditionScheme {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_wifi_condition_creation() {
-        let condition = WifiCondition::new("MyNetwork".to_string());
-        assert_eq!(condition.ssid, "MyNetwork");
-    }
-
-    #[test]
-    fn test_wifi_condition_from_scheme() {
-        let scheme = WifiConditionScheme {
-            ssid: "TestNetwork".to_string(),
-        };
-        let condition = WifiCondition::from_scheme(scheme);
-        assert_eq!(condition.ssid, "TestNetwork");
-    }
-}
+#[path = "wifi_condition.spec.rs"]
+mod spec;

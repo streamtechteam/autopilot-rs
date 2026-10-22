@@ -21,7 +21,7 @@ pub use autopilot_core::checks::{API_SERVICE_NAME, HealthResponse};
 
 use crate::state::{AppState, ReloadResponse, StatusResponse};
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct JobResponse {
     id: String,
     name: String,
@@ -313,3 +313,7 @@ pub async fn jobs_update(
         }
     }
 }
+
+#[cfg(test)]
+#[path = "handlers.spec.rs"]
+mod spec;

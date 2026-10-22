@@ -166,3 +166,7 @@ pub struct CommandConditionScheme {
     #[serde(default)]
     pub target_output: Option<String>,
 }
+
+#[cfg(test)]
+#[path = "command_condition.spec.rs"]
+mod spec;

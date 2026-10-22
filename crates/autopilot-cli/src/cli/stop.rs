@@ -33,3 +33,7 @@ pub fn stop(quiet: bool) -> Result<(), std::io::Error> {
 
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "stop.spec.rs"]
+mod spec;

@@ -147,3 +147,7 @@ pub struct DiskSpaceConditionScheme {
     #[serde(default)]
     pub max_used_gb: Option<f64>,
 }
+
+#[cfg(test)]
+#[path = "disk_space_condition.spec.rs"]
+mod spec;

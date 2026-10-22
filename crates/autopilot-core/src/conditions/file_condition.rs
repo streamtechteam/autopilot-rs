@@ -179,3 +179,7 @@ pub struct FileConditionScheme {
     #[serde(default)]
     pub size_threshold: Option<u64>,
 }
+
+#[cfg(test)]
+#[path = "file_condition.spec.rs"]
+mod spec;

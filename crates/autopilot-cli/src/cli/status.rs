@@ -1,12 +1,17 @@
 use autopilot_core::checks::check_if_running;
 
 pub fn status() {
-    match check_if_running() {
-        true => {
-            println!("Autopilot is running");
-        }
-        false => {
-            println!("Autopilot is not running");
-        }
+    println!("{}", status_message(check_if_running()));
+}
+
+fn status_message(running: bool) -> &'static str {
+    if running {
+        "Autopilot is running"
+    } else {
+        "Autopilot is not running"
     }
 }
+
+#[cfg(test)]
+#[path = "status.spec.rs"]
+mod spec;

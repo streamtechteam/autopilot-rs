@@ -1,10 +1,6 @@
-
-use chrono::{
-    DateTime, Local, NaiveDate, NaiveTime, ParseError, TimeZone, Timelike,
-};
+use chrono::{DateTime, Local, NaiveDate, NaiveTime, ParseError, TimeZone, Timelike};
 use log::error;
 use serde::{Deserialize, Serialize};
-
 
 pub mod add;
 pub mod init;
@@ -83,27 +79,31 @@ pub fn to_cron_expression(when: When) -> Result<String, ParseError> {
         When::Daily(time_scheme) => {
             let time = time_scheme.parse()?;
             // Run every day at the specified time
-            // Format: "minute hour * * *"
-            Ok(format!("{} {} * * *", time.minute(), time.hour()))
+            // Format: "second minute hour * * *"
+            Ok(format!("0 {} {} * * *", time.minute(), time.hour()))
         }
         When::Weekly(time_scheme) => {
             let time = time_scheme.parse()?;
             // Run every week on Monday at the specified time
-            // Format: "minute hour * * 1" (1 = Monday)
-            Ok(format!("{} {} * * 1", time.minute(), time.hour()))
+            // Format: "second minute hour * * 1" (1 = Monday)
+            Ok(format!("0 {} {} * * 1", time.minute(), time.hour()))
         }
         When::Monthly(time_scheme) => {
             let time = time_scheme.parse()?;
             // Run every month on the 1st at the specified time
-            // Format: "minute hour 1 * *"
-            Ok(format!("{} {} 1 * *", time.minute(), time.hour()))
+            // Format: "second minute hour 1 * *"
+            Ok(format!("0 {} {} 1 * *", time.minute(), time.hour()))
         }
         When::Yearly(time_scheme) => {
             let time = time_scheme.parse()?;
             // Run every year on January 1st at the specified time
-            // Format: "minute hour 1 1 *"
-            Ok(format!("{} {} 1 1 *", time.minute(), time.hour()))
+            // Format: "second minute hour 1 1 *"
+            Ok(format!("0 {} {} 1 1 *", time.minute(), time.hour()))
         }
         _ => Ok("".to_string()),
     }
 }
+
+#[cfg(test)]
+#[path = "time.spec.rs"]
+mod spec;

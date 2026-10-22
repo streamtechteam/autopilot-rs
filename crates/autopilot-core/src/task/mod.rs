@@ -27,3 +27,7 @@ impl Task {
 }
 
 pub type TaskScheme = Task;
+
+#[cfg(test)]
+#[path = "task.spec.rs"]
+mod spec;

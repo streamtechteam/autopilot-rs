@@ -96,3 +96,7 @@ pub struct ExternalDeviceConditionScheme {
     #[serde(default)]
     pub check_by_name: Option<bool>,
 }
+
+#[cfg(test)]
+#[path = "external_device_condition.spec.rs"]
+mod spec;

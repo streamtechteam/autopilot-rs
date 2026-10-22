@@ -128,3 +128,7 @@ pub struct ResourceConditionScheme {
     #[serde(default)]
     pub operator: Option<String>,
 }
+
+#[cfg(test)]
+#[path = "resource_condition.spec.rs"]
+mod spec;

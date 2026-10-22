@@ -7,7 +7,7 @@ use dialoguer::{Confirm, Select, theme::ColorfulTheme};
 use autopilot_core::{
     error::AutoPilotError,
     fs::get_autopilot_path,
-    job::{get::get_jobs, set::remove_job},
+    job::{Job, get::get_jobs, set::remove_job},
 };
 
 pub fn list() {
@@ -17,15 +17,20 @@ pub fn list() {
     }
 }
 
+fn format_job(job: &Job) -> String {
+    format!("{} - {}", job.id, job.name)
+}
+
+fn format_jobs(jobs: &[Job]) -> Vec<String> {
+    jobs.iter().map(format_job).collect()
+}
+
 pub fn list_interactive() -> Result<(), AutoPilotError> {
     execute!(stdout(), terminal::Clear(terminal::ClearType::All))?;
     loop {
         let jobs = get_jobs(true);
 
-        let formated_jobs: Vec<String> = jobs
-            .iter()
-            .map(|value| format!("{} - {}", value.id, value.name))
-            .collect();
+        let formated_jobs = format_jobs(&jobs);
 
         if formated_jobs.is_empty() {
             println!("No jobs found");
@@ -75,3 +80,7 @@ pub fn list_interactive() -> Result<(), AutoPilotError> {
     }
     // Ok(())
 }
+
+#[cfg(test)]
+#[path = "list.spec.rs"]
+mod spec;

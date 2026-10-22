@@ -1,8 +1,8 @@
+use autopilot_core::{error::AutoPilotError, port};
 use axum::{
     Router,
     routing::{delete, get, post, put},
 };
-use autopilot_core::{error::AutoPilotError, port};
 use colored::Colorize;
 use log::info;
 use tokio::task::JoinHandle;
@@ -34,3 +34,7 @@ pub async fn start_api(state: AppState) -> Result<JoinHandle<()>, AutoPilotError
     });
     Ok(api_handle)
 }
+
+#[cfg(test)]
+#[path = "routes.spec.rs"]
+mod spec;

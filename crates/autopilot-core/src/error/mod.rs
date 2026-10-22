@@ -56,3 +56,7 @@ pub enum AutoPilotError {
 
 // Type alias for convenience
 pub type Result<T> = std::result::Result<T, AutoPilotError>;
+
+#[cfg(test)]
+#[path = "error.spec.rs"]
+mod spec;

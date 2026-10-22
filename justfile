@@ -10,3 +10,6 @@ run_debug +args="":
 
 clean:
     rm -rf build
+
+test:
+    cargo test --workspace

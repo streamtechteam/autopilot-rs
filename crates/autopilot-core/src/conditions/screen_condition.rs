@@ -121,9 +121,10 @@ pub fn sync_condition(
         Ok(displays) => {
             // Check count
             if let Some(count) = expected_count
-                && (displays.len() as u16) != count {
-                    return false;
-                }
+                && (displays.len() as u16) != count
+            {
+                return false;
+            }
 
             // Check active screen name (primary display)
             if let Some(target_active) = expected_active_name {
@@ -183,3 +184,7 @@ pub struct ScreenConditionScheme {
     pub active_screen_name: Option<String>,
     pub screen_names: Option<Vec<String>>,
 }
+
+#[cfg(test)]
+#[path = "screen_condition.spec.rs"]
+mod spec;

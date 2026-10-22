@@ -35,3 +35,7 @@ pub fn search_directory(dir: &Path, pattern: &str) -> std::io::Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "directory_search.spec.rs"]
+mod spec;
