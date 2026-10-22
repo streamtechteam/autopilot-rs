@@ -115,3 +115,7 @@ pub fn remove_job(id: Option<String>, file_name: Option<String>) -> Result<(), A
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "set.spec.rs"]
+mod spec;

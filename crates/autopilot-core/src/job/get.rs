@@ -150,3 +150,7 @@ pub fn get_job(path: PathBuf) -> Result<Job, AutoPilotError> {
         )))?,
     }
 }
+
+#[cfg(test)]
+#[path = "get.spec.rs"]
+mod spec;

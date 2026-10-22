@@ -4,7 +4,7 @@ pub fn jsonc_parse(jsonc: &str) -> String {
     let mut in_line_comment = false;
     let mut in_block_comment = false;
     let mut result = String::new();
-    
+
     // Stack to track braces/brackets for trailing comma detection
     let mut stack = Vec::new();
 
@@ -68,15 +68,17 @@ pub fn jsonc_parse(jsonc: &str) -> String {
                     // Check if this is a trailing comma
                     let mut lookahead = chars.clone();
                     let mut is_trailing = true;
-                    
+
                     while let Some(next_ch) = lookahead.next() {
                         match next_ch {
                             ' ' | '\t' | '\n' | '\r' => continue,
                             '/' => {
                                 // Skip comments in lookahead
                                 if lookahead.peek() == Some(&'/') {
-                                    for c in lookahead.by_ref(){
-                                        if c == '\n' { break; }
+                                    for c in lookahead.by_ref() {
+                                        if c == '\n' {
+                                            break;
+                                        }
                                     }
                                     continue;
                                 } else if lookahead.peek() == Some(&'*') {
@@ -100,7 +102,7 @@ pub fn jsonc_parse(jsonc: &str) -> String {
                             }
                         }
                     }
-                    
+
                     if !is_trailing {
                         result.push(',');
                     }
@@ -113,3 +115,7 @@ pub fn jsonc_parse(jsonc: &str) -> String {
 
     result
 }
+
+#[cfg(test)]
+#[path = "jsonc_parser.spec.rs"]
+mod spec;

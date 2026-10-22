@@ -174,3 +174,7 @@ pub struct BluetoothConditionScheme {
     #[serde(default)]
     pub match_by_mac: Option<bool>,
 }
+
+#[cfg(test)]
+#[path = "bluetooth_condition.spec.rs"]
+mod spec;

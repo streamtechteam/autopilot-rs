@@ -98,3 +98,7 @@ fn handle_dir(config_path: Option<String>) {
 
     // println!("CONFIG_PATH {}", CONFIG_PATH.get().unwrap());
 }
+
+#[cfg(test)]
+#[path = "cli.spec.rs"]
+mod spec;

@@ -23,3 +23,7 @@ pub struct AppState {
     pub auto_pilot: Arc<RwLock<AutoPilot>>,
     pub started: Arc<AtomicBool>,
 }
+
+#[cfg(test)]
+#[path = "state.spec.rs"]
+mod spec;

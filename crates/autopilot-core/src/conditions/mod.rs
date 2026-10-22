@@ -134,3 +134,7 @@ impl ConditionScheme {
             .collect()
     }
 }
+
+#[cfg(test)]
+#[path = "conditions.spec.rs"]
+mod spec;

@@ -75,3 +75,7 @@ pub fn set_jobs_path() -> Result<()> {
         AutoPilotError::DirectoryInit(format!("Failed to create jobs directory: {}", e))
     })
 }
+
+#[cfg(test)]
+#[path = "set.spec.rs"]
+mod spec;

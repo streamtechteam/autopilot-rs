@@ -209,3 +209,7 @@ pub struct JobScheme {
     pub conditions: Vec<ConditionScheme>,
     pub tasks: Vec<TaskScheme>,
 }
+
+#[cfg(test)]
+#[path = "job.spec.rs"]
+mod spec;

@@ -39,3 +39,7 @@ pub async fn async_run(command: String) -> Result<(), AutoPilotError> {
 
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "runner.spec.rs"]
+mod spec;

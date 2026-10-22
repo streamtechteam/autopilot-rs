@@ -70,3 +70,7 @@ pub struct VariableConditionScheme {
     #[serde(default)]
     target: String,
 }
+
+#[cfg(test)]
+#[path = "variable_condition.spec.rs"]
+mod spec;

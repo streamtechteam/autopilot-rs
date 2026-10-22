@@ -115,3 +115,7 @@ pub struct ProcessConditionScheme {
     #[serde(default)]
     pub should_be_running: Option<bool>,
 }
+
+#[cfg(test)]
+#[path = "process_condition.spec.rs"]
+mod spec;

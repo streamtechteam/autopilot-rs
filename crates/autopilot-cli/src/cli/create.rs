@@ -23,6 +23,16 @@ pub fn create() {
     }
 }
 
+fn validate_cron_expression(cron_exp: &str) -> Result<When, AutoPilotError> {
+    if cron_exp.split_whitespace().count() < 5 {
+        return Err(AutoPilotError::InvalidJob(
+            "Cron expression must have at least 5 fields (minute hour day-of-month month day-of-week)".to_string(),
+        ));
+    }
+
+    Ok(When::Cron(cron_exp.to_string()))
+}
+
 fn create_interactive() -> Result<PathBuf, AutoPilotError> {
     // Get job basic information
     let name: String = Input::with_theme(&ColorfulTheme::default())
@@ -139,14 +149,7 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
                         ))
                     })?;
 
-                // Basic validation, actual validation is done during job creation
-                if cron_exp.split_whitespace().count() < 5 {
-                    return Err(AutoPilotError::InvalidJob(
-                        "Cron expression must have at least 5 fields (minute hour day-of-month month day-of-week)".to_string(),
-                    ));
-                }
-
-                Some(When::Cron(cron_exp))
+                Some(validate_cron_expression(&cron_exp)?)
             }
             _ => None,
         }
@@ -278,3 +281,7 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
         tasks,
     )
 }
+
+#[cfg(test)]
+#[path = "create.spec.rs"]
+mod spec;

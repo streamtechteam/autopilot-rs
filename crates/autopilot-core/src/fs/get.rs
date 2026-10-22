@@ -25,3 +25,7 @@ pub fn get_jobs_dir() -> Result<PathBuf, crate::error::AutoPilotError> {
     let jobs_path = get_jobs_path();
     Ok(PathBuf::from(jobs_path))
 }
+
+#[cfg(test)]
+#[path = "get.spec.rs"]
+mod spec;

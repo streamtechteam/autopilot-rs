@@ -124,3 +124,7 @@ impl AutoPilot {
         self.stop_jobs().await
     }
 }
+
+#[cfg(test)]
+#[path = "autopilot.spec.rs"]
+mod spec;

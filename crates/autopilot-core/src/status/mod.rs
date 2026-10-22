@@ -85,7 +85,7 @@ impl JobStatusStruct {
         JobStatusStruct { id, name, status }
     }
 }
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub enum JobStatusEnum {
     /// Job is queued but not yet started
     Pending,
@@ -108,33 +108,5 @@ pub enum JobStatusEnum {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn set_updates_existing_entry_in_place() {
-        let manager = StateManager::new();
-        manager
-            .set("a".into(), Some("A".into()), JobStatusEnum::Pending)
-            .await;
-        manager
-            .set("b".into(), Some("B".into()), JobStatusEnum::Pending)
-            .await;
-        manager
-            .set("a".into(), Some("ignored".into()), JobStatusEnum::Running)
-            .await;
-
-        let all = manager.get_all().await;
-        assert_eq!(all.len(), 2);
-        assert_eq!(all[0].id, "a");
-        assert_eq!(all[0].name, "A");
-        assert!(matches!(all[0].status, JobStatusEnum::Running));
-        assert_eq!(all[1].id, "b");
-
-        assert!(matches!(
-            manager.get_state_by_id("a".into()).await,
-            Some(JobStatusEnum::Running)
-        ));
-        assert!(manager.get_state_by_id("missing".into()).await.is_none());
-    }
-}
+#[path = "status.spec.rs"]
+mod spec;

@@ -119,3 +119,7 @@ pub struct InternetConditionScheme {
     #[serde(default)]
     pub timeout: Option<u64>,
 }
+
+#[cfg(test)]
+#[path = "internet_condition.spec.rs"]
+mod spec;

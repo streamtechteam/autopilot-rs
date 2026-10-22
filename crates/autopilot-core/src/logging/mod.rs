@@ -24,3 +24,7 @@ pub fn init_logging(verbose: bool) {
     log::set_max_level(level);
     // TODO: system logging (journald/syslog/Windows Event Log)
 }
+
+#[cfg(test)]
+#[path = "logging.spec.rs"]
+mod spec;

@@ -93,3 +93,7 @@ where
 
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "add.spec.rs"]
+mod spec;

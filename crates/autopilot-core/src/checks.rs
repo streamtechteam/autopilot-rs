@@ -45,3 +45,7 @@ pub fn check_if_running() -> bool {
 
     json_body.status == "ok" && json_body.service == API_SERVICE_NAME.to_string()
 }
+
+#[cfg(test)]
+#[path = "checks.spec.rs"]
+mod spec;

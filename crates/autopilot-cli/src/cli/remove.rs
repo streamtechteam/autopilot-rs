@@ -23,6 +23,19 @@ pub fn remove() {
     }
 }
 
+fn format_job_option(job_name: Option<&str>, path: &std::path::Path) -> String {
+    format!(
+        "{} - {}",
+        job_name.unwrap_or("Unknown"),
+        path.file_name()
+            .expect("Failed to get file name")
+            .to_str()
+            .expect(
+                "Failed to convert filename to String (filename may have unsupported characters)"
+            )
+    )
+}
+
 pub fn remove_interactive() -> Result<PathBuf, AutoPilotError> {
     println!(
         "{}",
@@ -38,15 +51,7 @@ pub fn remove_interactive() -> Result<PathBuf, AutoPilotError> {
                 Err(_) => None,
             };
 
-            format!(
-                "{} - {}",
-                job_name.unwrap_or("Unknown".to_string()),
-                value
-                    .file_name()
-                    .expect("Failed to get file name")
-                    .to_str()
-                    .expect("Failed to convert filename to String (filename may have unsupported characters)")
-            )
+            format_job_option(job_name.as_deref(), value)
         })
         .collect();
     let mut selection;
@@ -93,3 +98,7 @@ pub fn remove_interactive() -> Result<PathBuf, AutoPilotError> {
     }
     Ok(job_paths[selection].clone())
 }
+
+#[cfg(test)]
+#[path = "remove.spec.rs"]
+mod spec;

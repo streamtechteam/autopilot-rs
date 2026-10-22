@@ -173,3 +173,7 @@ pub struct LogicalConditionScheme {
     #[serde(default)]
     conditions: Vec<ConditionScheme>,
 }
+
+#[cfg(test)]
+#[path = "logical_condition.spec.rs"]
+mod spec;

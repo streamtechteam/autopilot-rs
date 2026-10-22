@@ -27,3 +27,7 @@ impl Condition for FailCondition {
         ))
     }
 }
+
+#[cfg(test)]
+#[path = "fail_condition.spec.rs"]
+mod spec;

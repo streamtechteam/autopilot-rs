@@ -3,7 +3,7 @@ use eframe::egui;
 pub struct AutopilotGUI {
     pub active_tab: Tabs,
 }
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Tabs {
     Overview,
     Jobs,
@@ -51,3 +51,6 @@ impl eframe::App for AutopilotGUI {
         });
     }
 }
+#[cfg(test)]
+#[path = "app.spec.rs"]
+mod spec;

@@ -202,3 +202,7 @@ pub struct PowerConditionScheme {
     #[serde(default)]
     pub operator: Option<String>,
 }
+
+#[cfg(test)]
+#[path = "power_condition.spec.rs"]
+mod spec;
