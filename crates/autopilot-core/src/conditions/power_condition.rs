@@ -1,9 +1,7 @@
-use crate::{
-    conditions::{Condition, ConditionScheme},
-    error::AutoPilotError,
-};
-use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use crate::conditions::Condition;
 
 /// Represents a power/battery condition
 #[derive(Clone)]
@@ -150,56 +148,35 @@ impl Condition for PowerCondition {
     fn name(&self) -> &str {
         "Power"
     }
-
-    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        let check_charging = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("Check if charging? (Otherwise check battery level)")
-            .interact_opt()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?
-            .unwrap_or(true);
-
-        if check_charging {
-            Ok(ConditionScheme::Power(PowerConditionScheme {
-                check_charging: Some(true),
-                threshold: None,
-                operator: None,
-            }))
-        } else {
-            let threshold: f32 = Input::<f32>::with_theme(&ColorfulTheme::default())
-                .with_prompt("Enter battery threshold percentage (0-100):")
-                .interact_text()
-                .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-            // .parse()
-            // .map_err(|_| AutoPilotError::Condition("Invalid threshold value".to_string()))?;
-
-            let operators = ["Greater than (>)", "Less than (<)"];
-            let selected_op = Select::with_theme(&ColorfulTheme::default())
-                .with_prompt("Select comparison operator:")
-                .items(operators)
-                .default(0)
-                .interact_opt()
-                .map_err(|err| AutoPilotError::Condition(err.to_string()))?
-                .unwrap_or(0);
-
-            let operator = if selected_op == 0 { "greater" } else { "less" }.to_string();
-
-            Ok(ConditionScheme::Power(PowerConditionScheme {
-                check_charging: Some(false),
-                threshold: Some(threshold),
-                operator: Some(operator),
-            }))
-        }
-    }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "Power condition")]
 pub struct PowerConditionScheme {
     #[serde(default)]
+    #[schemars(title = "Check charging")]
     pub check_charging: Option<bool>,
     #[serde(default)]
+    #[schemars(
+        title = "Battery threshold",
+        range(min = 0.0, max = 100.0),
+        extend("x-autopilot" = {"unit": "%"})
+    )]
     pub threshold: Option<f32>,
     #[serde(default)]
+    #[schemars(
+        title = "Comparison operator",
+        extend(
+            "x-autopilot" = {
+                "widget": "select",
+                "options": [
+                    {"label": "Greater than (>)", "value": "greater"},
+                    {"label": "Less than (<)", "value": "less"}
+                ]
+            }
+        )
+    )]
     pub operator: Option<String>,
 }
 

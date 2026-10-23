@@ -10,7 +10,6 @@ authors.workspace = true
 [dependencies]
 chrono.workspace = true
 colored.workspace = true
-dialoguer.workspace = true
 display-info.workspace = true
 duct.workspace = true
 duct_sh.workspace = true
@@ -20,6 +19,7 @@ log.workspace = true
 once_cell.workspace = true
 rayon.workspace = true
 regex.workspace = true
+schemars.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 strum.workspace = true

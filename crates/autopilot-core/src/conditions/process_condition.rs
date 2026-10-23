@@ -1,11 +1,9 @@
-use crate::{
-    conditions::{Condition, ConditionScheme},
-    error::AutoPilotError,
-};
-use dialoguer::{Confirm, Input, theme::ColorfulTheme};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 #[cfg(not(target_os = "linux"))]
 use sysinfo::{ProcessRefreshKind, RefreshKind, System};
+
+use crate::conditions::Condition;
 
 /// Represents a process monitor condition
 #[derive(Clone)]
@@ -87,32 +85,27 @@ impl Condition for ProcessCondition {
     fn name(&self) -> &str {
         "Process"
     }
-
-    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        let process_name = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter process name to monitor:")
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        let should_be_running = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("Should the process be running? (Otherwise check if NOT running)")
-            .interact_opt()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?
-            .unwrap_or(true);
-
-        Ok(ConditionScheme::Process(ProcessConditionScheme {
-            process_name,
-            should_be_running: Some(should_be_running),
-        }))
-    }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "Process condition")]
 pub struct ProcessConditionScheme {
     #[serde(default)]
+    #[schemars(
+        title = "Process name",
+        extend(
+            "x-autopilot" = {
+                "required": true,
+                "widget": "dynamic-select",
+                "provider": "processes",
+                "allow_custom": true
+            }
+        )
+    )]
     pub process_name: String,
     #[serde(default)]
+    #[schemars(title = "Should be running")]
     pub should_be_running: Option<bool>,
 }
 

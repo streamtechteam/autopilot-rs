@@ -1,25 +1,24 @@
 {
-  "$schema": "../json_schema/schema.json",
-  "id": "1",
-  "name": "Name",
-  "description": "Description",
+  "id": "example-job",
+  "name": "Example job",
+  "description": "Replace this with what the job should do",
+  "when": {
+    "type": "daily",
+    "trigger": {
+      "time": "08:00"
+    }
+  },
   "conditions": [
     {
-      "type": "output",
+      "type": "wifi",
       "condition": {
-        "command": "",
-        "target": "",
-      },
-    },
+        "ssid": "HomeNetwork"
+      }
+    }
   ],
   "tasks": [
     {
-      "command": "",
-    },
-  ],
-
-  "when": "",
-  // "check_interval": "",
-  // "last_run_date": "",
-  // "last_run_status": ""
+      "command": "echo 'Hello from AutoPilot'"
+    }
+  ]
 }

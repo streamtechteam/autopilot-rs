@@ -1,9 +1,7 @@
-use crate::{
-    conditions::{Condition, ConditionScheme},
-    error::AutoPilotError,
-};
-use dialoguer::{Input, theme::ColorfulTheme};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use crate::conditions::Condition;
 
 /// Represents an internet reachability condition (ping based)
 #[derive(Clone)]
@@ -82,41 +80,21 @@ impl Condition for InternetCondition {
     fn name(&self) -> &str {
         "Internet"
     }
-
-    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        let host: String = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter host to ping (default: 8.8.8.8):")
-            .allow_empty(true)
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        let host = if host.is_empty() {
-            "8.8.8.8".to_string()
-        } else {
-            host
-        };
-
-        let timeout_input: u64 = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter timeout in seconds (default: 2):")
-            .default(2)
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        let timeout = if timeout_input == 0 { 2 } else { timeout_input };
-
-        Ok(ConditionScheme::Internet(InternetConditionScheme {
-            host: Some(host),
-            timeout: Some(timeout),
-        }))
-    }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "Internet condition")]
 pub struct InternetConditionScheme {
     #[serde(default)]
+    #[schemars(title = "Host", extend("x-autopilot" = {"placeholder": "8.8.8.8"}))]
     pub host: Option<String>,
     #[serde(default)]
+    #[schemars(
+        title = "Timeout",
+        range(min = 1),
+        extend("x-autopilot" = {"unit": "seconds"})
+    )]
     pub timeout: Option<u64>,
 }
 

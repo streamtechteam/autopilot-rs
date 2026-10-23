@@ -1,11 +1,13 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tokio::task::JoinHandle;
 
 use crate::error::AutoPilotError;
 
 pub mod runner;
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "Task")]
 pub struct Task {
     pub command: String,
 }

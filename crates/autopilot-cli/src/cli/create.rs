@@ -3,17 +3,20 @@ use colored::Colorize;
 use dialoguer::Editor;
 use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
 use std::path::PathBuf;
-use strum::IntoEnumIterator;
 
 use autopilot_core::conditions::ConditionScheme;
 use autopilot_core::cross_platform::get::get_supported_editors;
 use autopilot_core::error::AutoPilotError;
-use autopilot_core::job::set::add_job;
+use autopilot_core::job::JobScheme;
 use autopilot_core::task::TaskScheme;
 use autopilot_core::time::{DateTimeScheme, TimeScheme, When};
 
-pub fn create() {
-    match create_interactive() {
+use autopilot_ui_api::{FileJobApi, JobApi};
+
+use crate::cli::form::prompt_condition;
+
+pub async fn create() {
+    match create_interactive().await {
         Ok(job_file_path) => {
             println!("Job created successfully at: {}", job_file_path.display());
         }
@@ -33,7 +36,7 @@ fn validate_cron_expression(cron_exp: &str) -> Result<When, AutoPilotError> {
     Ok(When::Cron(cron_exp.to_string()))
 }
 
-fn create_interactive() -> Result<PathBuf, AutoPilotError> {
+async fn create_interactive() -> Result<PathBuf, AutoPilotError> {
     // Get job basic information
     let name: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Enter job name:")
@@ -171,29 +174,7 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
             break;
         }
 
-        // Get available condition types
-        let condition_names: Vec<String> = ConditionScheme::varient_names();
-
-        let selected_index = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Choose a condition type:")
-            .items(
-                condition_names
-                    .iter()
-                    .map(|s| s.as_str())
-                    .collect::<Vec<_>>(),
-            )
-            .default(0)
-            .interact_opt()
-            .map_err(|err| {
-                AutoPilotError::InvalidJob(format!("Failed to select condition type: {}", err))
-            })?
-            .ok_or_else(|| AutoPilotError::InvalidJob("No condition type selected".to_string()))?;
-
-        let selected_condition = ConditionScheme::iter()
-            .nth(selected_index)
-            .expect("Error happened when creating condition")
-            .to_condition();
-        match selected_condition.create() {
+        match prompt_condition() {
             Ok(condition_scheme) => {
                 conditions.push(condition_scheme);
                 println!("Condition added successfully!");
@@ -231,7 +212,7 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
             .default(0)
             .items(&supported_editors)
             .interact()
-            .map_err(AutoPilotError::Dialoguer)?;
+            .map_err(|err| AutoPilotError::InvalidJob(err.to_string()))?;
 
         let desired_editor = supported_editors[desired_editor];
         let command;
@@ -246,7 +227,7 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
             command = Editor::new()
                 .executable(desired_editor)
                 .edit("")
-                .map_err(AutoPilotError::Dialoguer)?
+                .map_err(|err| AutoPilotError::InvalidJob(err.to_string()))?
                 .ok_or_else(|| AutoPilotError::Command("Command not provided".to_string()))?;
         }
         tasks.push(TaskScheme { command });
@@ -272,14 +253,17 @@ fn create_interactive() -> Result<PathBuf, AutoPilotError> {
         None
     };
 
-    add_job(
-        Some(name),
-        Some(description),
+    let job = JobScheme {
+        id: format!("job_{}", chrono::Utc::now().timestamp_millis()),
+        name: Some(name),
+        description: Some(description),
         when,
         check_interval,
         conditions,
         tasks,
-    )
+    };
+
+    FileJobApi::new()?.save_job(job).await
 }
 
 #[cfg(test)]

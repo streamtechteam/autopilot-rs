@@ -1,11 +1,8 @@
-use dialoguer::{Confirm, Input, theme::ColorfulTheme};
 use duct::cmd;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    conditions::{Condition, ConditionScheme},
-    error::AutoPilotError,
-};
+use crate::conditions::Condition;
 
 /// Represents a Bluetooth device condition that checks if a specific device is connected
 #[derive(Clone)]
@@ -53,23 +50,6 @@ impl Condition for BluetoothCondition {
 
     fn name(&self) -> &str {
         "Bluetooth"
-    }
-
-    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        let device = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter device name :")
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        let match_by_mac = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("Match by MAC address?")
-            .interact_opt()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        Ok(ConditionScheme::Bluetooth(BluetoothConditionScheme {
-            device,
-            match_by_mac,
-        }))
     }
 }
 
@@ -164,14 +144,27 @@ fn check_bluetooth_linux(output: &str, target_device: &str, match_by_mac: bool) 
 }
 
 /// Scheme for deserializing BluetoothCondition from JSON/JSONC
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "Bluetooth condition")]
 pub struct BluetoothConditionScheme {
     /// The Bluetooth device address or name to match
     #[serde(default)]
+    #[schemars(
+        title = "Device",
+        extend(
+            "x-autopilot" = {
+                "required": true,
+                "widget": "dynamic-select",
+                "provider": "bluetooth.devices",
+                "allow_custom": true
+            }
+        )
+    )]
     pub device: String,
     /// Match by MAC address (true) or device name (false). Defaults to false.
     #[serde(default)]
+    #[schemars(title = "Match by MAC address")]
     pub match_by_mac: Option<bool>,
 }
 

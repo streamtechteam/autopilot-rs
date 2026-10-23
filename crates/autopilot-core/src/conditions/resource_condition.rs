@@ -1,10 +1,8 @@
-use crate::{
-    conditions::{Condition, ConditionScheme},
-    error::AutoPilotError,
-};
-use dialoguer::{Input, Select, theme::ColorfulTheme};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, System};
+
+use crate::conditions::Condition;
 
 /// Represents a system resource condition (CPU or RAM)
 #[derive(Clone)]
@@ -81,51 +79,47 @@ impl Condition for ResourceCondition {
     fn name(&self) -> &str {
         "Resource"
     }
-
-    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        let resource_types = ["CPU", "Memory (RAM)"];
-        let selected_type = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Select resource type to monitor:")
-            .items(resource_types)
-            .default(0)
-            .interact_opt()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?
-            .unwrap_or(0);
-
-        let resource_type = if selected_type == 0 { "cpu" } else { "memory" }.to_string();
-
-        let threshold: f32 = Input::<f32>::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter threshold percentage (0-100):")
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        let operators = ["Greater than (>)", "Less than (<)"];
-        let selected_op = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Select comparison operator:")
-            .items(operators)
-            .default(0)
-            .interact_opt()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?
-            .unwrap_or(0);
-
-        let operator = if selected_op == 0 { "greater" } else { "less" }.to_string();
-
-        Ok(ConditionScheme::Resource(ResourceConditionScheme {
-            resource_type,
-            threshold,
-            operator: Some(operator),
-        }))
-    }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "Resource condition")]
 pub struct ResourceConditionScheme {
     #[serde(default)]
+    #[schemars(
+        title = "Resource type",
+        extend(
+            "x-autopilot" = {
+                "required": true,
+                "widget": "select",
+                "options": [
+                    {"label": "CPU", "value": "cpu"},
+                    {"label": "Memory (RAM)", "value": "memory"}
+                ]
+            }
+        )
+    )]
     pub resource_type: String,
     #[serde(default)]
+    #[schemars(
+        title = "Threshold",
+        range(min = 0.0, max = 100.0),
+        extend("x-autopilot" = {"required": true, "unit": "%"})
+    )]
     pub threshold: f32,
     #[serde(default)]
+    #[schemars(
+        title = "Comparison operator",
+        extend(
+            "x-autopilot" = {
+                "widget": "select",
+                "options": [
+                    {"label": "Greater than (>)", "value": "greater"},
+                    {"label": "Less than (<)", "value": "less"}
+                ]
+            }
+        )
+    )]
     pub operator: Option<String>,
 }
 

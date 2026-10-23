@@ -1,11 +1,7 @@
-use dialoguer::{Confirm, Editor, Input, Select, theme::ColorfulTheme};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    conditions::{Condition, ConditionScheme},
-    cross_platform::get::get_supported_editors,
-    error::AutoPilotError,
-};
+use crate::conditions::Condition;
 
 /// Represents a custom condition that executes an arbitrary command and checks its exit code
 #[derive(Clone)]
@@ -63,67 +59,6 @@ impl Condition for CommandCondition {
     fn name(&self) -> &str {
         "Command"
     }
-
-    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        let mut supported_editors = get_supported_editors();
-        supported_editors.insert(0, "Inline");
-        let supported_editors = supported_editors;
-
-        let desired_editor = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Choose your desired editor:")
-            .default(0)
-            .items(&supported_editors)
-            .interact()
-            .map_err(AutoPilotError::Dialoguer)?;
-
-        let desired_editor = supported_editors[desired_editor];
-        let command;
-        if desired_editor == "Inline" {
-            command = Input::with_theme(&ColorfulTheme::default())
-                .with_prompt("Enter command to execute:")
-                .interact_text()
-                .map_err(|err| {
-                    AutoPilotError::InvalidJob(format!("Failed to get command: {}", err))
-                })?;
-        } else {
-            command = Editor::new()
-                .executable(desired_editor)
-                .edit("")
-                .map_err(AutoPilotError::Dialoguer)?
-                .ok_or_else(|| AutoPilotError::Command("Command not provided".to_string()))?;
-        }
-
-        let check_exit_code = Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt("Check command exit code (success/failure, otherwise check by output)?")
-            .interact_opt()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?
-            .unwrap_or(true);
-
-        let target_output = if !check_exit_code {
-            let output;
-            if desired_editor == "Inline" {
-                output = Input::with_theme(&ColorfulTheme::default())
-                    .with_prompt("Enter expected output to match:")
-                    .interact_text()
-                    .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-            } else {
-                output = Editor::new()
-                    .executable(desired_editor)
-                    .edit("")
-                    .map_err(AutoPilotError::Dialoguer)?
-                    .ok_or_else(|| AutoPilotError::Condition("output not provided".to_string()))?;
-            }
-            Some(output)
-        } else {
-            None
-        };
-
-        Ok(ConditionScheme::Command(CommandConditionScheme {
-            command,
-            check_exit_code: Some(check_exit_code),
-            target_output,
-        }))
-    }
 }
 
 /// Check if a custom command condition is satisfied (synchronously)
@@ -153,17 +88,37 @@ pub async fn async_condition(
 }
 
 /// Scheme for CommandCondition (JSON Comaptible)
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "Command condition")]
 pub struct CommandConditionScheme {
     /// The shell command to execute
     #[serde(default)]
+    #[schemars(
+        title = "Command",
+        extend(
+            "x-autopilot" = {
+                "required": true,
+                "widget": "editor",
+                "provider": "editors",
+                "placeholder": "Shell command"
+            }
+        )
+    )]
     pub command: String,
     /// Check for exit code 0 (true) or match output (false). Defaults to true.
     #[serde(default)]
+    #[schemars(
+        title = "Check exit code",
+        description = "Leave unset to check the exit code"
+    )]
     pub check_exit_code: Option<bool>,
     /// Target output to match (only used if check_exit_code is false)
     #[serde(default)]
+    #[schemars(
+        title = "Target output",
+        extend("x-autopilot" = {"widget": "editor", "provider": "editors"})
+    )]
     pub target_output: Option<String>,
 }
 

@@ -15,8 +15,8 @@ Define a job, set conditions, list tasks. AutoPilot does the rest.
   "id": "morning-setup",
   "name": "Setup my workday",
   "when": {
-    "time": "08:00:00",
-    "date": "2026/02/02",
+    "type": "daily",
+    "trigger": { "time": "08:00" },
   },
   "conditions": [
     { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } },
@@ -190,8 +190,8 @@ If any condition fails, the task doesn't run.
   "name": "Human readable name",
   "description": "What this job does",
   "when": {
-    "time": "08:00:00",
-    "date": "2026/02/02",
+    "type": "daily",
+    "trigger": { "time": "08:00" },
   },
   // check conditions every 1000 milliseconds (1 second)
   "check_interval": "1000",
@@ -213,6 +213,16 @@ If any condition fails, the task doesn't run.
 - **check_interval:** If a condition fails, autopilot will check it again every x milliseconds
 - **conditions:** List of conditions to check (optional, defaults to always run)
 - **tasks:** List of commands to execute (required)
+
+## JSON Schema
+
+`json_schema/schema.json` is generated from the Rust `JobScheme` types. Regenerate it after changing job, schedule, task, or condition fields:
+
+```bash
+cargo run -p autopilot-core --example schema > json_schema/schema.json
+```
+
+The core test suite checks that the committed schema matches the Rust definitions.
 
 ## Tasks
 
@@ -282,8 +292,8 @@ AutoPilot reads from `~/.auto_pilot/`:
   "id": "morning-routine",
   "name": "Morning setup",
   "when": {
-    "time": "08:00:00",
-    "date": "2026/02/02",
+    "type": "daily",
+    "trigger": { "time": "08:00" },
   },
   "conditions": [
     { "type": "bluetooth", "condition": { "device": "Headphones" } },
@@ -432,11 +442,11 @@ autopilot-rs serve --verbose
 | Screen/Monitor      | ✅    | ✅    | ✅      |
 | Logical             | ✅    | ✅    | ✅      |
 
-All 13 condition types work on all platforms.
+All 14 user-facing condition types are supported.
 
 ## Documentation
 
-- **[CONDITIONS.md](docs/CONDITIONS.md)** - Detailed condition reference (12 types)
+- **[CONDITIONS.md](docs/CONDITIONS.md)** - Detailed condition reference (14 types)
 - **[PLUGIN-SYSTEM.md](PLUGIN-SYSTEM.md)** - Extend AutoPilot with custom plugins (coming soon)
 
 ### AI powered docs
@@ -461,7 +471,7 @@ MIT
 - [ ] Web dashboard
 - [ ] Performance optimizations
 - [ ] Metrics and monitoring
-- [x] 13 condition types (WiFi, Bluetooth, Command, Variable, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, Screen, Logical)
+- [x] 14 condition types (WiFi, Bluetooth, Command, Variable, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, Screen, Logical)
 
 ## FAQ
 

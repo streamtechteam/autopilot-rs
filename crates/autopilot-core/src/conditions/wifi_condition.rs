@@ -1,11 +1,8 @@
-use dialoguer::{Input, theme::ColorfulTheme};
 use duct::cmd;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    conditions::{Condition, ConditionScheme},
-    error::AutoPilotError,
-};
+use crate::conditions::Condition;
 
 /// Represents a WiFi network condition that checks if a specific network is connected
 #[derive(Clone)]
@@ -37,15 +34,6 @@ impl Condition for WifiCondition {
 
     fn name(&self) -> &str {
         "WiFi"
-    }
-
-    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        let ssid = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Enter WiFi network name (SSID):")
-            .interact_text()
-            .map_err(|err| AutoPilotError::Condition(err.to_string()))?;
-
-        Ok(ConditionScheme::Wifi(WifiConditionScheme { ssid }))
     }
 }
 
@@ -183,11 +171,23 @@ fn get_connected_wifi_windows(output: &str) -> Option<String> {
 }
 
 /// Scheme for deserializing WifiCondition from JSON/JSONC
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "WiFi condition")]
 pub struct WifiConditionScheme {
     /// The SSID (network name) to match
     #[serde(default)]
+    #[schemars(
+        title = "WiFi network",
+        extend(
+            "x-autopilot" = {
+                "required": true,
+                "widget": "dynamic-select",
+                "provider": "wifi.networks",
+                "allow_custom": true
+            }
+        )
+    )]
     pub ssid: String,
 }
 

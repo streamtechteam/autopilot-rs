@@ -104,10 +104,6 @@ impl Condition for EventuallyTrue {
         Box::new(Self(self.0.clone()))
     }
 
-    fn create(&self) -> Result<ConditionScheme, AutoPilotError> {
-        Err(AutoPilotError::Condition("not interactive".to_string()))
-    }
-
     fn name(&self) -> &str {
         "EventuallyTrue"
     }
@@ -181,4 +177,27 @@ async fn load_jobs_reads_the_config_directory() {
 
     std::fs::remove_file(path).unwrap();
     autopilot.shutdown().await.unwrap();
+}
+
+#[test]
+fn committed_schema_matches_job_scheme() {
+    let generated = serde_json::to_string_pretty(&schemars::schema_for!(JobScheme)).unwrap();
+    let schema_path =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../json_schema/schema.json");
+    let committed = std::fs::read_to_string(schema_path).unwrap();
+
+    assert_eq!(committed, format!("{generated}\n"));
+}
+
+#[test]
+fn bundled_job_template_matches_scheme() {
+    let template_path =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../templates/job.jsonc");
+    let template = std::fs::read_to_string(template_path).unwrap();
+    let parsed = crate::utilities::jsonc_parser::jsonc_parse(&template);
+
+    let job: JobScheme = serde_json::from_str(&parsed).unwrap();
+
+    assert_eq!(job.id, "example-job");
+    assert_eq!(job.tasks.len(), 1);
 }

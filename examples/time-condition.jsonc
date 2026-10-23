@@ -3,8 +3,11 @@
   "name": "Run at specific time",
   "description": "Executes a task at a specific date and time",
   "when": {
-    "date": "2026/02/02",
-    "time": "14:30:00"
+    "type": "once",
+    "trigger": {
+      "date": "2026/02/02",
+      "time": "14:30"
+    }
   },
   "conditions": [],
   "tasks": [

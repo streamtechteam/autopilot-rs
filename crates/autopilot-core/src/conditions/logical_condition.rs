@@ -1,11 +1,7 @@
-use crate::{
-    conditions::{Condition, ConditionScheme},
-    error::AutoPilotError,
-};
-use colored::Colorize;
-use dialoguer::{Confirm, Select, theme::ColorfulTheme};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use strum::IntoEnumIterator;
+
+use crate::conditions::{Condition, ConditionScheme};
 
 #[derive(Clone)]
 pub struct LogicalCondition {
@@ -13,7 +9,7 @@ pub struct LogicalCondition {
     conditions: Vec<Box<dyn Condition>>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, Deserialize, Serialize, JsonSchema)]
 pub enum LogicalOperator {
     #[default]
     And,
@@ -22,6 +18,7 @@ pub enum LogicalOperator {
 }
 
 impl LogicalOperator {
+    #[cfg(test)]
     fn name(&self) -> &'static str {
         match self {
             LogicalOperator::And => "AND",
@@ -77,100 +74,30 @@ impl Condition for LogicalCondition {
     fn name(&self) -> &str {
         "Logical"
     }
-
-    fn create(&self) -> Result<super::ConditionScheme, AutoPilotError> {
-        let mut conditions: Vec<ConditionScheme> = Vec::new();
-
-        // First, ask user which logical operator they want to use
-        let operators = vec!["AND", "OR", "NOR"];
-        let selected_operator_idx = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Choose a logical operator:")
-            .items(&operators)
-            .default(0)
-            .interact_opt()
-            .map_err(|err| {
-                AutoPilotError::InvalidJob(format!("Failed to select logical operator: {}", err))
-            })?
-            .ok_or_else(|| {
-                AutoPilotError::InvalidJob("No logical operator selected".to_string())
-            })?;
-
-        let operator = match selected_operator_idx {
-            0 => LogicalOperator::And,
-            1 => LogicalOperator::Or,
-            2 => LogicalOperator::Nor,
-            _ => LogicalOperator::And, // fallback
-        };
-
-        loop {
-            println!("{}", format!("[{} CONDITION]", operator.name()).yellow());
-            if !Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt(format!(
-                    "Do you want to add a condition to '{}'? ",
-                    operator.name()
-                ))
-                .interact_opt()
-                .map_err(|err| {
-                    AutoPilotError::InvalidJob(format!(
-                        "Failed to get condition preference: {}",
-                        err
-                    ))
-                })?
-                .unwrap_or(false)
-            {
-                break;
-            }
-
-            // Get available condition types
-            let condition_names: Vec<String> = ConditionScheme::varient_names();
-
-            let selected_index = Select::with_theme(&ColorfulTheme::default())
-                .with_prompt("Choose a condition type:")
-                .items(
-                    condition_names
-                        .iter()
-                        .map(|s| s.as_str())
-                        .collect::<Vec<_>>(),
-                )
-                .default(0)
-                .interact_opt()
-                .map_err(|err| {
-                    AutoPilotError::InvalidJob(format!("Failed to select condition type: {}", err))
-                })?
-                .ok_or_else(|| {
-                    AutoPilotError::InvalidJob("No condition type selected".to_string())
-                })?;
-
-            let selected_condition = ConditionScheme::iter()
-                .nth(selected_index)
-                .expect("Error happened when creating condition")
-                .to_condition();
-            match selected_condition.create() {
-                Ok(condition_scheme) => {
-                    conditions.push(condition_scheme);
-                    println!("Condition added to '{}' successfully!", operator.name());
-                }
-                Err(e) => {
-                    eprintln!("Failed to create condition: {}", e);
-                    continue;
-                }
-            }
-        }
-
-        Ok(ConditionScheme::Logical(LogicalConditionScheme {
-            operator,
-            conditions,
-        }))
-    }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default, JsonSchema)]
 #[serde(deny_unknown_fields)]
+#[schemars(title = "Logical condition")]
 pub struct LogicalConditionScheme {
     #[serde(rename = "operator")]
+    #[schemars(
+        title = "Operator",
+        extend("x-autopilot" = {"required": true})
+    )]
     operator: LogicalOperator,
 
     #[serde(default)]
+    #[schemars(
+        title = "Conditions",
+        extend(
+            "x-autopilot" = {
+                "required": true,
+                "widget": "conditions",
+                "min_items": 1
+            }
+        )
+    )]
     conditions: Vec<ConditionScheme>,
 }
 
