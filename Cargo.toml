@@ -2,10 +2,22 @@
 resolver = "2"
 members = [
     "crates/autopilot-core",
+    "crates/autopilot-core-fs",
+    "crates/autopilot-core-checks",
+    "crates/autopilot-core-conditions",
+    "crates/autopilot-core-cross-platform",
+    "crates/autopilot-core-error",
+    "crates/autopilot-core-form",
+    "crates/autopilot-core-job",
+    "crates/autopilot-core-language",
+    "crates/autopilot-core-logging",
+    "crates/autopilot-core-status",
+    "crates/autopilot-core-task",
+    "crates/autopilot-core-time",
+    "crates/autopilot-core-utilities",
     "crates/autopilot-api",
     "crates/autopilot-gui",
     "crates/autopilot-cli",
-    "crates/autopilot-ui-api",
 ]
 
 [workspace.package]
@@ -47,9 +59,21 @@ tokio-cron-scheduler = "0.15.1"
 walkdir = "2.5.0"
 
 autopilot-core = { path = "crates/autopilot-core" }
+autopilot-core-fs = { path = "crates/autopilot-core-fs" }
+autopilot-core-checks = { path = "crates/autopilot-core-checks" }
+autopilot-core-conditions = { path = "crates/autopilot-core-conditions" }
+autopilot-core-cross-platform = { path = "crates/autopilot-core-cross-platform" }
+autopilot-core-error = { path = "crates/autopilot-core-error" }
+autopilot-core-form = { path = "crates/autopilot-core-form" }
+autopilot-core-job = { path = "crates/autopilot-core-job" }
+autopilot-core-language = { path = "crates/autopilot-core-language" }
+autopilot-core-logging = { path = "crates/autopilot-core-logging" }
+autopilot-core-status = { path = "crates/autopilot-core-status" }
+autopilot-core-task = { path = "crates/autopilot-core-task" }
+autopilot-core-time = { path = "crates/autopilot-core-time" }
+autopilot-core-utilities = { path = "crates/autopilot-core-utilities" }
 autopilot-api = { path = "crates/autopilot-api" }
 autopilot-gui = { path = "crates/autopilot-gui" }
-autopilot-ui-api = { path = "crates/autopilot-ui-api" }
 
 [profile.release]
 lto = "thin"

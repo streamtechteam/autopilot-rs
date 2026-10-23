@@ -1,0 +1,19 @@
+[package]
+name = "autopilot-core-task"
+description = "Task execution for AutoPilot"
+publish = false
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+autopilot-core-error.workspace = true
+duct_sh.workspace = true
+schemars.workspace = true
+serde.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

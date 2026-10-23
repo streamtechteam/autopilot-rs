@@ -1,0 +1,14 @@
+[package]
+name = "autopilot-core-logging"
+description = "Logging initialization for AutoPilot"
+publish = false
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+autopilot-core-fs.workspace = true
+flexi_logger.workspace = true
+log.workspace = true

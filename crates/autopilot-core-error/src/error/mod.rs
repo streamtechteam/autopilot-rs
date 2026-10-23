@@ -1,0 +1,74 @@
+use autopilot_core_fs::FsError;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum AutoPilotError {
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("JSON serialization/deserialization error: {0}")]
+    Json(String),
+
+    #[error("Job error: {0}")]
+    Job(String),
+
+    #[error("Job execution error: {0}")]
+    JobExecution(String),
+
+    #[error("Configuration error: {0}")]
+    Config(String),
+
+    #[error("State management error: {0}")]
+    State(String),
+
+    #[error("Directory initialization error: {0}")]
+    DirectoryInit(String),
+
+    #[error("Command execution error: {0}")]
+    Command(String),
+
+    #[error("Invalid job definition: {0}")]
+    InvalidJob(String),
+
+    #[error("Signal handling error: {0}")]
+    Signal(String),
+
+    #[error("Cron scheduler error: {0}")]
+    Cron(#[from] tokio_cron_scheduler::JobSchedulerError),
+
+    #[error("Condition conversion error: {0}")]
+    Condition(String),
+
+    #[error("Unknown error: {0}")]
+    Unknown(String),
+
+    #[error("Time error: {0}")]
+    Time(String),
+
+    #[error("Autopilot error: {0}")]
+    Autopilot(String),
+
+    #[error("Api Error: {0}")]
+    Api(String),
+}
+
+impl From<FsError> for AutoPilotError {
+    fn from(error: FsError) -> Self {
+        match error {
+            FsError::Io(error) => AutoPilotError::Io(error),
+            FsError::Json(error) => AutoPilotError::Json(error.to_string()),
+            FsError::InvalidId(id) => AutoPilotError::InvalidJob(format!("Invalid job id '{id}'")),
+            FsError::NotInitialized => AutoPilotError::DirectoryInit(
+                "Filesystem paths have not been initialized".to_string(),
+            ),
+            FsError::Init(message) => AutoPilotError::DirectoryInit(message),
+        }
+    }
+}
+
+// Type alias for convenience
+pub type Result<T> = std::result::Result<T, AutoPilotError>;
+
+#[cfg(test)]
+#[path = "error.spec.rs"]
+mod spec;

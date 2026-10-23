@@ -471,6 +471,7 @@ name = "autopilot-api"
 version = "0.1.0-beta.1"
 dependencies = [
  "autopilot-core",
+ "autopilot-core-fs",
  "axum",
  "colored",
  "log",
@@ -483,25 +484,169 @@ dependencies = [
 name = "autopilot-core"
 version = "0.1.0-beta.1"
 dependencies = [
- "chrono",
+ "autopilot-core-checks",
+ "autopilot-core-conditions",
+ "autopilot-core-cross-platform",
+ "autopilot-core-error",
+ "autopilot-core-form",
+ "autopilot-core-job",
+ "autopilot-core-language",
+ "autopilot-core-logging",
+ "autopilot-core-status",
+ "autopilot-core-task",
+ "autopilot-core-time",
+ "autopilot-core-utilities",
  "colored",
+ "log",
+ "schemars",
+ "serde_json",
+ "tokio",
+ "tokio-cron-scheduler",
+]
+
+[[package]]
+name = "autopilot-core-checks"
+version = "0.1.0-beta.1"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "autopilot-core-conditions"
+version = "0.1.0-beta.1"
+dependencies = [
+ "autopilot-core-form",
+ "chrono",
  "display-info",
  "duct",
  "duct_sh",
- "flexi_logger",
  "futures",
  "log",
- "once_cell",
- "rayon",
- "regex",
  "schemars",
  "serde",
  "serde_json",
  "strum",
  "sysinfo",
+]
+
+[[package]]
+name = "autopilot-core-cross-platform"
+version = "0.1.0-beta.1"
+dependencies = [
+ "duct_sh",
+ "rayon",
+]
+
+[[package]]
+name = "autopilot-core-error"
+version = "0.1.0-beta.1"
+dependencies = [
+ "autopilot-core-fs",
  "thiserror 2.0.18",
+ "tokio-cron-scheduler",
+]
+
+[[package]]
+name = "autopilot-core-form"
+version = "0.1.0-beta.1"
+dependencies = [
+ "autopilot-core-cross-platform",
+ "display-info",
+ "duct_sh",
+ "schemars",
+ "serde",
+ "serde_json",
+ "sysinfo",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "autopilot-core-fs"
+version = "0.1.0-beta.1"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "autopilot-core-job"
+version = "0.1.0-beta.1"
+dependencies = [
+ "async-trait",
+ "autopilot-core-conditions",
+ "autopilot-core-error",
+ "autopilot-core-fs",
+ "autopilot-core-status",
+ "autopilot-core-task",
+ "autopilot-core-time",
+ "autopilot-core-utilities",
+ "chrono",
+ "colored",
+ "futures",
+ "log",
+ "schemars",
+ "serde",
+ "serde_json",
  "tokio",
  "tokio-cron-scheduler",
+]
+
+[[package]]
+name = "autopilot-core-language"
+version = "0.1.0-beta.1"
+
+[[package]]
+name = "autopilot-core-logging"
+version = "0.1.0-beta.1"
+dependencies = [
+ "autopilot-core-fs",
+ "flexi_logger",
+ "log",
+]
+
+[[package]]
+name = "autopilot-core-status"
+version = "0.1.0-beta.1"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "autopilot-core-task"
+version = "0.1.0-beta.1"
+dependencies = [
+ "autopilot-core-error",
+ "duct_sh",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "autopilot-core-time"
+version = "0.1.0-beta.1"
+dependencies = [
+ "autopilot-core-error",
+ "chrono",
+ "log",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-cron-scheduler",
+]
+
+[[package]]
+name = "autopilot-core-utilities"
+version = "0.1.0-beta.1"
+dependencies = [
+ "regex",
  "walkdir",
 ]
 
@@ -520,8 +665,8 @@ version = "0.1.0-beta.1"
 dependencies = [
  "autopilot-api",
  "autopilot-core",
+ "autopilot-core-fs",
  "autopilot-gui",
- "autopilot-ui-api",
  "chrono",
  "clap",
  "colored",
@@ -530,17 +675,6 @@ dependencies = [
  "log",
  "serde_json",
  "strum",
- "tokio",
-]
-
-[[package]]
-name = "autopilot-ui-api"
-version = "0.1.0-beta.1"
-dependencies = [
- "async-trait",
- "autopilot-core",
- "serde",
- "serde_json",
  "tokio",
 ]
 

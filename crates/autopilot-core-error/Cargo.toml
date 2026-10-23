@@ -1,0 +1,14 @@
+[package]
+name = "autopilot-core-error"
+description = "Error types for AutoPilot"
+publish = false
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+autopilot-core-fs.workspace = true
+thiserror.workspace = true
+tokio-cron-scheduler.workspace = true

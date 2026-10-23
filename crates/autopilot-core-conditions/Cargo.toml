@@ -1,0 +1,25 @@
+[package]
+name = "autopilot-core-conditions"
+description = "Condition types and evaluation for AutoPilot"
+publish = false
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+autopilot-core-form.workspace = true
+chrono.workspace = true
+display-info.workspace = true
+duct.workspace = true
+duct_sh.workspace = true
+log.workspace = true
+schemars.workspace = true
+serde.workspace = true
+strum.workspace = true
+sysinfo.workspace = true
+
+[dev-dependencies]
+futures.workspace = true
+serde_json.workspace = true

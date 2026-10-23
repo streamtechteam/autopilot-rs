@@ -11,7 +11,7 @@ use autopilot_core::job::JobScheme;
 use autopilot_core::task::TaskScheme;
 use autopilot_core::time::{DateTimeScheme, TimeScheme, When};
 
-use autopilot_ui_api::{FileJobApi, JobApi};
+use autopilot_core::job::{FsJobRepository, JobRepository};
 
 use crate::cli::form::prompt_condition;
 
@@ -263,7 +263,7 @@ async fn create_interactive() -> Result<PathBuf, AutoPilotError> {
         tasks,
     };
 
-    FileJobApi::new()?.save_job(job).await
+    FsJobRepository::new()?.save_job(job).await
 }
 
 #[cfg(test)]

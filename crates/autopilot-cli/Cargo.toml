@@ -9,7 +9,7 @@ authors.workspace = true
 
 [dependencies]
 autopilot-core.workspace = true
-autopilot-ui-api.workspace = true
+autopilot-core-fs.workspace = true
 autopilot-api.workspace = true
 autopilot-gui.workspace = true
 chrono.workspace = true

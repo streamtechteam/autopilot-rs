@@ -4,8 +4,11 @@ use colored::*;
 use crossterm::{execute, terminal};
 use dialoguer::{Confirm, Select, theme::ColorfulTheme};
 
-use autopilot_core::{error::AutoPilotError, fs::get_autopilot_path, job::JobScheme};
-use autopilot_ui_api::{FileJobApi, JobApi};
+use autopilot_core::{
+    error::AutoPilotError,
+    job::{FsJobRepository, JobRepository, JobScheme},
+};
+use autopilot_core_fs::paths;
 
 pub async fn list() {
     match list_interactive().await {
@@ -29,8 +32,8 @@ fn format_jobs(jobs: &[JobScheme]) -> Vec<String> {
 pub async fn list_interactive() -> Result<(), AutoPilotError> {
     execute!(stdout(), terminal::Clear(terminal::ClearType::All))?;
     loop {
-        let api = FileJobApi::new()?;
-        let jobs = api.list_jobs().await?;
+        let repository = FsJobRepository::new()?;
+        let jobs = repository.list_jobs().await?;
 
         let formated_jobs = format_jobs(&jobs);
 
@@ -41,7 +44,9 @@ pub async fn list_interactive() -> Result<(), AutoPilotError> {
         let selected_job_index: usize = Select::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "Job (↑↓ nav, Enter action, ESC back) [root: {}]",
-                get_autopilot_path()
+                paths()
+                    .map(|paths| paths.root().display().to_string())
+                    .unwrap_or_default()
             ))
             .items(&formated_jobs)
             .default(0)
@@ -76,7 +81,7 @@ pub async fn list_interactive() -> Result<(), AutoPilotError> {
                 if confirm {
                     let id = selected_job.id.clone();
                     execute!(stdout(), terminal::Clear(terminal::ClearType::All))?;
-                    api.delete_job(&id).await?;
+                    repository.delete_job(&id).await?;
                     println!("Deleting job {}", id);
                 }
             }

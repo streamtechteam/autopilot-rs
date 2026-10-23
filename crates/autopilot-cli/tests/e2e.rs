@@ -455,16 +455,12 @@ fn api_crud_reload_and_status_work() {
     assert_eq!(status, 200, "create failed: {body:#?}");
     let path = PathBuf::from(body["path"].as_str().expect("created path"));
     assert!(path.exists());
-    assert!(
-        path.file_name()
-            .unwrap()
-            .to_string_lossy()
-            .contains("created")
-    );
+    assert_eq!(path.extension().unwrap(), "jsonc");
 
     let created_body: Value = serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
     let created_id = created_body["id"].as_str().unwrap().to_string();
     assert!(created_id.starts_with("job_"));
+    assert_eq!(path.file_stem().unwrap(), created_id.as_str());
     assert!(daemon.jobs().iter().any(|job| job["id"] == created_id));
 
     // Creating only writes a file; the in-memory job list is refreshed on reload.

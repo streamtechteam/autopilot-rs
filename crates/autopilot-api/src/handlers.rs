@@ -19,7 +19,7 @@ use autopilot_core::{
 
 pub use autopilot_core::checks::{API_SERVICE_NAME, HealthResponse};
 
-use crate::state::{AppState, ReloadResponse, StatusResponse};
+use crate::state::{AppState, ReloadResponse, RestartResponse, StatusResponse};
 
 #[derive(Serialize, Debug)]
 pub struct JobResponse {
@@ -114,6 +114,27 @@ pub async fn jobs_reload(
     state.started.store(true, Ordering::Relaxed);
     Ok(Json(ReloadResponse {
         message: "Config reloaded.".to_string(),
+        success: true,
+    }))
+}
+
+pub async fn jobs_restart(
+    State(state): State<AppState>,
+) -> Result<Json<RestartResponse>, StatusCode> {
+    let mut ap = state.auto_pilot.write().await;
+
+    if let Err(e) = ap.restart().await {
+        warn!("Restart failed: {}", e);
+        return Ok(Json(RestartResponse {
+            message: format!("Restart failed: {}", e),
+            success: false,
+        }));
+    }
+
+    // reload_config already calls run_jobs(), so ensure flag is set
+    state.started.store(true, Ordering::Relaxed);
+    Ok(Json(RestartResponse {
+        message: "Autopilot restarted.".to_string(),
         success: true,
     }))
 }

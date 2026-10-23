@@ -17,6 +17,7 @@ pub async fn start_api(state: AppState) -> Result<JoinHandle<()>, AutoPilotError
         .route("/start", post(jobs_start))
         .route("/stop", post(jobs_stop))
         .route("/reload", post(jobs_reload))
+        .route("/restart", post(jobs_reload))
         .route("/jobs", get(jobs_list))
         .route("/jobs", post(jobs_create))
         .route("/jobs/{id}", get(jobs_getbyid))

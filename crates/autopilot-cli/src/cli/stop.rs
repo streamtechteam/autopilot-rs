@@ -22,7 +22,7 @@ pub fn stop(quiet: bool) -> Result<(), std::io::Error> {
     );
 
     if stream.write_all(request.as_bytes()).is_err() {
-        eprintln!("Warning: failed to stop auto_pilot");
+        eprintln!("Warning: failed to stop autopilot");
     }
 
     // Wait for the daemon's response before dropping the socket. Dropping

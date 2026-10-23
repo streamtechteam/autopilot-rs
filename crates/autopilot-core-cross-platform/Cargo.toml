@@ -1,0 +1,13 @@
+[package]
+name = "autopilot-core-cross-platform"
+description = "Cross-platform helpers for AutoPilot"
+publish = false
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+duct_sh.workspace = true
+rayon.workspace = true

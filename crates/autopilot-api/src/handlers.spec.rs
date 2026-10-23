@@ -14,10 +14,7 @@ fn config_lock() -> MutexGuard<'static, ()> {
                 .unwrap()
                 .as_nanos()
         ));
-        std::fs::create_dir_all(dir.join("jobs")).unwrap();
-        autopilot_core::fs::CONFIG_PATH
-            .set(dir.to_string_lossy().into_owned())
-            .unwrap();
+        autopilot_core::fs::init(Some(dir)).unwrap();
     });
 
     CONFIG_LOCK

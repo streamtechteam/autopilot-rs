@@ -1,0 +1,21 @@
+[package]
+name = "autopilot-core-time"
+description = "Schedule types and scheduler initialization for AutoPilot"
+publish = false
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+autopilot-core-error.workspace = true
+chrono.workspace = true
+log.workspace = true
+schemars.workspace = true
+serde.workspace = true
+tokio-cron-scheduler.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+tokio.workspace = true

@@ -1,0 +1,14 @@
+[package]
+name = "autopilot-core-fs"
+description = "Filesystem, path, config, and JSON storage layer for AutoPilot-rs"
+publish = false
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
