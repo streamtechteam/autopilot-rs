@@ -13,6 +13,7 @@ log.workspace = true
 tokio.workspace = true
 tokio-cron-scheduler.workspace = true
 autopilot-core-checks.workspace = true
+autopilot_core_fs.workspace = true
 autopilot-core-conditions.workspace = true
 autopilot-core-cross-platform.workspace = true
 autopilot-core-error.workspace = true

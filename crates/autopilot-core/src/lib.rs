@@ -4,6 +4,7 @@ pub use autopilot_core_conditions as conditions;
 pub use autopilot_core_cross_platform as cross_platform;
 pub use autopilot_core_error as error;
 pub use autopilot_core_form as form;
+pub use autopilot_core_fs as fs;
 pub use autopilot_core_job as job;
 pub use autopilot_core_language as language;
 pub use autopilot_core_logging as logging;
