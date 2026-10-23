@@ -489,6 +489,7 @@ dependencies = [
  "autopilot-core-cross-platform",
  "autopilot-core-error",
  "autopilot-core-form",
+ "autopilot-core-fs",
  "autopilot-core-job",
  "autopilot-core-language",
  "autopilot-core-logging",
