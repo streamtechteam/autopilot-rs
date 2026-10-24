@@ -12,7 +12,7 @@ use autopilot_core::{
     job::{
         JobScheme,
         get::get_jobs,
-        set::{add_job, remove_job},
+        set::{add_job, remove_job, update_job},
     },
     status::{JobStatusEnum, StateManager},
 };
@@ -293,6 +293,7 @@ pub async fn jobs_update(
     Json(payload): Json<JobScheme>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     let JobScheme {
+        name,
         description,
         when,
         check_interval,
@@ -302,12 +303,9 @@ pub async fn jobs_update(
     } = payload;
 
     let result = tokio::task::spawn_blocking(move || {
-        if remove_job(Some(id.clone()), None).is_err() {
-            return Err(StatusCode::NOT_FOUND);
-        }
-
-        add_job(
-            Some(format!("{}_updated", id)),
+        update_job(
+            &id,
+            name,
             description,
             when,
             check_interval,

@@ -472,7 +472,7 @@ fn api_crud_reload_and_status_work() {
 
     let update = json!({
         "id": "job_existing",
-        "name": "ignored",
+        "name": "updated name",
         "description": "updated",
         "conditions": [],
         "tasks": []
@@ -480,15 +480,15 @@ fn api_crud_reload_and_status_work() {
     // Pre-existing behavior: updating a missing job reports 500, not 404.
     assert_eq!(daemon.put("/jobs/job_missing", update.clone()).0, 500);
     assert_eq!(daemon.put("/jobs/job_existing", update).0, 200);
-    assert!(!daemon.dir.join("jobs/existing.jsonc").exists());
+    assert!(daemon.dir.join("jobs/existing.jsonc").exists());
 
     let (status, reload) = daemon.post("/reload", None);
     assert_eq!(status, 200);
     assert_eq!(reload["success"], true);
     let jobs = daemon.jobs();
     assert_eq!(jobs.len(), 1);
-    assert!(jobs.iter().all(|job| job["id"] != "job_existing"));
-    assert!(jobs.iter().any(|job| job["name"] == "job_existing_updated"));
+    assert_eq!(jobs[0]["id"], "job_existing");
+    assert_eq!(jobs[0]["name"], "updated name");
 
     daemon.shutdown();
 }

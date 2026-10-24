@@ -237,34 +237,36 @@ async fn jobs_update_replaces_an_existing_job() {
     let _guard = config_lock();
     let path = add_job(
         Some("Update Spec".to_string()),
-        None,
+        Some("before".to_string()),
         None,
         None,
         vec![],
         vec![],
     )
     .unwrap();
-    println!("{path:?}");
     let id = autopilot_core::job::get::get_job(path.clone()).unwrap().id;
-    println!("{id}");
     let state = state_with_jobs(vec![]).await;
 
     let response = jobs_update(
         State(state),
         Path(id.clone()),
-        Json(payload("ignored", "Ignored")),
+        Json(payload("ignored", "Updated Spec")),
     )
     .await
     .unwrap()
     .0;
-    println!("{response:?}");
-    let new_path = response["path"].as_str().unwrap();
+    let updated_path = response["path"].as_str().unwrap();
 
     assert_eq!(response["success"], true);
+    assert_eq!(std::path::Path::new(updated_path), path.as_path());
     assert!(path.exists());
-    assert!(std::path::Path::new(new_path).exists());
 
-    std::fs::remove_file(new_path).unwrap();
+    let updated = autopilot_core::job::get::get_job(path.clone()).unwrap();
+    assert_eq!(updated.id, id);
+    assert_eq!(updated.name, "Updated Spec");
+    assert_eq!(updated.description, "description");
+
+    std::fs::remove_file(path).unwrap();
 }
 
 #[tokio::test]

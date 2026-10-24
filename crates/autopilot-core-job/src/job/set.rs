@@ -33,6 +33,34 @@ pub fn add_job(
     Ok(store.save(&job)?)
 }
 
+pub fn update_job(
+    id: &str,
+    name: Option<String>,
+    description: Option<String>,
+    when: Option<When>,
+    check_interval: Option<String>,
+    conditions: Vec<ConditionScheme>,
+    tasks: Vec<TaskScheme>,
+) -> Result<PathBuf, AutoPilotError> {
+    let store = JsonFileStore::<JobScheme>::new(paths()?.jobs_dir());
+
+    let Some((path, mut job)) = store.list()?.into_iter().find(|(_, job)| job.id == id) else {
+        return Err(AutoPilotError::Job(
+            "Job associated with provided job id not found".to_string(),
+        ));
+    };
+
+    job.name = name.or(job.name);
+    job.description = description.or(job.description);
+    job.when = when;
+    job.check_interval = check_interval;
+    job.conditions = conditions;
+    job.tasks = tasks;
+
+    store.write_path(&path, &job)?;
+    Ok(path)
+}
+
 pub fn remove_job(id: Option<String>, file_name: Option<String>) -> Result<(), AutoPilotError> {
     if id.is_none() && file_name.is_none() {
         return Err(AutoPilotError::InvalidJob(

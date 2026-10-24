@@ -45,6 +45,41 @@ fn add_job_without_name_uses_the_generated_id() {
 }
 
 #[test]
+fn update_job_preserves_the_id_and_path() {
+    let _guard = test_support::lock();
+    let path = add(Some("before"));
+    let job = get_job(path.clone()).unwrap();
+
+    let updated_path = update_job(
+        &job.id,
+        Some("after".to_string()),
+        Some("updated".to_string()),
+        None,
+        None,
+        vec![],
+        vec![],
+    )
+    .unwrap();
+
+    assert_eq!(updated_path, path);
+    assert!(path.exists());
+
+    let updated = get_job(path.clone()).unwrap();
+    assert_eq!(updated.id, job.id);
+    assert_eq!(updated.name, "after");
+    assert_eq!(updated.description, "updated");
+
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn update_job_reports_unknown_ids() {
+    let _guard = test_support::lock();
+    let error = update_job("job_missing", None, None, None, None, vec![], vec![]).unwrap_err();
+    assert!(error.to_string().contains("not found"));
+}
+
+#[test]
 fn remove_job_requires_an_identifier() {
     let error = remove_job(None, None).unwrap_err();
 

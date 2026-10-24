@@ -80,6 +80,15 @@ impl<T> JsonFileStore<T> {
         parse_record(&content)
     }
 
+    pub fn write_path(&self, path: impl AsRef<Path>, record: &T) -> Result<()>
+    where
+        T: Serialize,
+    {
+        let content = serde_json::to_string_pretty(record)?;
+        fs::write(path, content)?;
+        Ok(())
+    }
+
     pub fn remove_path(&self, path: impl AsRef<Path>) -> Result<()> {
         fs::remove_file(path)?;
         Ok(())
