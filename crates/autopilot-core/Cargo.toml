@@ -8,23 +8,24 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-chrono.workspace = true
 colored.workspace = true
-display-info.workspace = true
-duct.workspace = true
-duct_sh.workspace = true
-flexi_logger.workspace = true
-futures.workspace = true
 log.workspace = true
-once_cell.workspace = true
-rayon.workspace = true
-regex.workspace = true
-schemars.workspace = true
-serde.workspace = true
-serde_json.workspace = true
-strum.workspace = true
-sysinfo.workspace = true
-thiserror.workspace = true
 tokio.workspace = true
 tokio-cron-scheduler.workspace = true
-walkdir.workspace = true
+autopilot-core-checks.workspace = true
+autopilot-core-fs.workspace = true
+autopilot-core-conditions.workspace = true
+autopilot-core-cross-platform.workspace = true
+autopilot-core-error.workspace = true
+autopilot-core-form.workspace = true
+autopilot-core-job.workspace = true
+autopilot-core-language.workspace = true
+autopilot-core-logging.workspace = true
+autopilot-core-status.workspace = true
+autopilot-core-task.workspace = true
+autopilot-core-time.workspace = true
+autopilot-core-utilities.workspace = true
+
+[dev-dependencies]
+schemars.workspace = true
+serde_json.workspace = true

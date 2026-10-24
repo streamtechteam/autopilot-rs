@@ -1,0 +1,9 @@
+[package]
+name = "autopilot-core-language"
+description = "Language strings for AutoPilot"
+publish = false
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true

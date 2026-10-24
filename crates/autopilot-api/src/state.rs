@@ -17,6 +17,8 @@ pub struct ReloadResponse {
     pub message: String,
 }
 
+pub type RestartResponse = ReloadResponse;
+
 // Shared application state
 #[derive(Clone)]
 pub struct AppState {

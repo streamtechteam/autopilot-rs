@@ -1,0 +1,13 @@
+[package]
+name = "autopilot-core-checks"
+description = "Runtime health checks for AutoPilot"
+publish = false
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true

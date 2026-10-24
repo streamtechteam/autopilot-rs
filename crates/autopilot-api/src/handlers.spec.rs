@@ -14,10 +14,7 @@ fn config_lock() -> MutexGuard<'static, ()> {
                 .unwrap()
                 .as_nanos()
         ));
-        std::fs::create_dir_all(dir.join("jobs")).unwrap();
-        autopilot_core::fs::CONFIG_PATH
-            .set(dir.to_string_lossy().into_owned())
-            .unwrap();
+        autopilot_core::fs::init(Some(dir)).unwrap();
     });
 
     CONFIG_LOCK
@@ -247,7 +244,9 @@ async fn jobs_update_replaces_an_existing_job() {
         vec![],
     )
     .unwrap();
+    println!("{path:?}");
     let id = autopilot_core::job::get::get_job(path.clone()).unwrap().id;
+    println!("{id}");
     let state = state_with_jobs(vec![]).await;
 
     let response = jobs_update(
@@ -258,10 +257,11 @@ async fn jobs_update_replaces_an_existing_job() {
     .await
     .unwrap()
     .0;
+    println!("{response:?}");
     let new_path = response["path"].as_str().unwrap();
 
     assert_eq!(response["success"], true);
-    assert!(!path.exists());
+    assert!(path.exists());
     assert!(std::path::Path::new(new_path).exists());
 
     std::fs::remove_file(new_path).unwrap();

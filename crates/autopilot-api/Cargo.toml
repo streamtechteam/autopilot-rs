@@ -16,3 +16,6 @@ log.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
+
+[dev-dependencies]
+autopilot-core-fs.workspace = true

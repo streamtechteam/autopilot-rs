@@ -1,0 +1,13 @@
+[package]
+name = "autopilot-core-utilities"
+description = "Shared utilities for AutoPilot"
+publish = false
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+regex.workspace = true
+walkdir.workspace = true

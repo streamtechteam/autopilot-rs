@@ -1,7 +1,7 @@
 use super::*;
-use crate::conditions::ConditionScheme;
-use crate::job::{Job, JobScheme};
-use crate::task::TaskScheme;
+use autopilot_core_conditions::ConditionScheme;
+use autopilot_core_job::{Job, JobScheme};
+use autopilot_core_task::TaskScheme;
 
 fn job(id: &str) -> Job {
     Job::from_scheme(JobScheme {
@@ -93,7 +93,9 @@ async fn stop_jobs_clears_jobs_and_handles() {
 async fn run_jobs_uses_scheme_conditions() {
     let mut autopilot = AutoPilot::new().await.unwrap();
     let mut configured = job("job_condition");
-    configured.add_condition(Box::new(crate::conditions::fail_condition::FailCondition));
+    configured.add_condition(Box::new(
+        autopilot_core_conditions::fail_condition::FailCondition,
+    ));
     autopilot.jobs = vec![configured];
     autopilot.init_status().await.unwrap();
 

@@ -21,7 +21,7 @@ pub async fn serve(verbose: bool, api: bool) {
         Ok(_) => {}
     }
     if !api {
-        auto_pilot.write().await.start(verbose);
+        auto_pilot.write().await.start();
     }
     let state = AppState {
         auto_pilot: auto_pilot.clone(),

@@ -1,5 +1,6 @@
-use autopilot_core::fs::{set_all_paths, set_autopilot_path};
+use autopilot_core_fs::init;
 use clap::{Parser, Subcommand, crate_version};
+use std::path::PathBuf;
 
 use crate::cli::{
     create::create, list::list, remove::remove, serve::serve, status::status, stop::stop,
@@ -89,15 +90,10 @@ pub async fn handle_cli() {
 }
 
 fn handle_dir(config_path: Option<String>) {
-    // println!("cli config path : {}", config_path.clone().unwrap());
-
-    set_autopilot_path(config_path.clone()).expect("Failed to setup dirs");
-    if let Err(e) = set_all_paths(false) {
-        eprintln!("Failed to set up directories: {}", e);
+    if let Err(error) = init(config_path.map(PathBuf::from)) {
+        eprintln!("Failed to set up directories: {error}");
         std::process::exit(1);
     }
-
-    // println!("CONFIG_PATH {}", CONFIG_PATH.get().unwrap());
 }
 
 #[cfg(test)]

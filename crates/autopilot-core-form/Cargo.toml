@@ -1,0 +1,19 @@
+[package]
+name = "autopilot-core-form"
+description = "UI-agnostic condition form model for AutoPilot"
+publish = false
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+autopilot-core-cross-platform.workspace = true
+display-info.workspace = true
+duct_sh.workspace = true
+schemars.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sysinfo.workspace = true
+thiserror.workspace = true

@@ -1,8 +1,11 @@
 use colored::Colorize;
 use dialoguer::{Confirm, Select, theme::ColorfulTheme};
 
-use autopilot_core::{error::AutoPilotError, fs::get_autopilot_path, job::JobScheme};
-use autopilot_ui_api::{FileJobApi, JobApi};
+use autopilot_core::{
+    error::AutoPilotError,
+    job::{FsJobRepository, JobRepository, JobScheme},
+};
+use autopilot_core_fs::paths;
 
 pub async fn remove() {
     match remove_interactive().await {
@@ -24,8 +27,8 @@ pub async fn remove_interactive() -> Result<String, AutoPilotError> {
         "{}",
         "This subcommand is now deprecated\nPlease use autopilot list instead".red()
     );
-    let api = FileJobApi::new()?;
-    let jobs = api.list_jobs().await?;
+    let repository = FsJobRepository::new()?;
+    let jobs = repository.list_jobs().await?;
     let options: Vec<String> = jobs.iter().map(format_job_option).collect();
 
     if options.is_empty() {
@@ -36,7 +39,9 @@ pub async fn remove_interactive() -> Result<String, AutoPilotError> {
         let selection = Select::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "Select an option to remove (root: {})",
-                get_autopilot_path()
+                paths()
+                    .map(|paths| paths.root().display().to_string())
+                    .unwrap_or_default()
             ))
             .default(0)
             .items(&options)
@@ -58,7 +63,7 @@ pub async fn remove_interactive() -> Result<String, AutoPilotError> {
 
     let job = &jobs[selection];
     println!("Removing job");
-    if !api.delete_job(&job.id).await? {
+    if !repository.delete_job(&job.id).await? {
         return Err(AutoPilotError::Job(format!(
             "Job '{}' no longer exists",
             job.id

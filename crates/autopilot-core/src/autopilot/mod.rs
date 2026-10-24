@@ -3,14 +3,12 @@ use log::{info, warn};
 use tokio::task::JoinHandle;
 use tokio_cron_scheduler::JobScheduler;
 
-use crate::{
-    checks::check_if_running,
-    error::AutoPilotError,
-    job::{Job, get::get_jobs},
-    logging::init_logging,
-    status::{JobStatusEnum, StateManager},
-    time::init::init_time_check,
-};
+use autopilot_core_checks::check_if_running;
+use autopilot_core_error::AutoPilotError;
+use autopilot_core_job::{Job, get::get_jobs};
+use autopilot_core_logging::init_logging;
+use autopilot_core_status::{JobStatusEnum, StateManager};
+use autopilot_core_time::init::init_time_check;
 
 // #[derive(Clone)]
 pub struct AutoPilot {
@@ -51,12 +49,17 @@ impl AutoPilot {
         self.load_jobs().await?;
         self.init_status().await?;
 
-        self.start(false);
-
         info!("{}", "Autopilot reloaded successfully!".green());
         Ok(())
     }
-    pub fn start(&mut self, _: bool) {
+
+    pub async fn restart(&mut self) -> Result<(), AutoPilotError> {
+        self.reload().await?;
+        self.start();
+
+        Ok(())
+    }
+    pub fn start(&mut self) {
         self.jobs_handles = self.run_jobs();
         info!("{}", "Autopilot served!".green());
     }
