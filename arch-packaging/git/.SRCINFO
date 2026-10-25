@@ -2,7 +2,7 @@ pkgbase = autopilot-rs-git
 	pkgdesc = AutoPilot-rs runs automation jobs based on conditions like WiFi, Bluetooth, battery, CPU usage, and more.
 	pkgver = git
 	pkgrel = 1
-	url = https://github.com/streamtechteam/auto_pilot_rs
+	url = https://github.com/streamtechteam/autopilot-rs
 	arch = x86_64
 	license = MIT
 	makedepends = rust
@@ -19,7 +19,7 @@ pkgbase = autopilot-rs-git
 	depends = libxau
 	provides = autopilot-rs
 	conflicts = autopilot-rs
-	source = git+https://github.com/streamtechteam/auto_pilot_rs
+	source = git+https://github.com/streamtechteam/autopilot-rs
 	sha256sums = SKIP
 
 pkgname = autopilot-rs-git

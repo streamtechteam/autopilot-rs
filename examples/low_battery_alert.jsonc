@@ -1,17 +1,12 @@
 {
   "id": "battery-saver",
   "name": "Battery Saver Alert",
-  "description": "Notify when battery is low and not charging",
+  "description": "Notify when battery is low",
   "conditions": [
     {
       "type": "power",
       "condition": {
-        "check_charging": false
-      }
-    },
-    {
-      "type": "power",
-      "condition": {
+        "check_charging": false,
         "threshold": 20.0,
         "operator": "less"
       }

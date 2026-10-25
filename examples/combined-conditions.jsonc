@@ -17,7 +17,7 @@
       }
     },
     {
-      "type": "custom",
+      "type": "command",
       "condition": {
         "command": "test $(date +%H) -ge 18 && test $(date +%H) -lt 22",
         "check_exit_code": true

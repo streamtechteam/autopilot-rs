@@ -30,6 +30,23 @@ impl ProcessCondition {
     }
 }
 
+/// Linux truncates `/proc/<pid>/comm` to 15 bytes, so a configured longer
+/// name can still match when the observed name is the truncated prefix. Short
+/// process names are only matched in the forward direction to avoid treating
+/// e.g. `sshd` as a match for `ssh`.
+#[cfg(target_os = "linux")]
+fn process_name_matches(proc_name: &str, name: &str) -> bool {
+    const LINUX_COMM_MAX_LEN: usize = 15;
+
+    proc_name.contains(name)
+        || (proc_name.len() == LINUX_COMM_MAX_LEN && name.starts_with(proc_name))
+}
+
+#[cfg(not(target_os = "linux"))]
+fn process_name_matches(proc_name: &str, name: &str) -> bool {
+    proc_name.contains(name)
+}
+
 #[cfg(target_os = "linux")]
 fn is_process_running(name: &str) -> bool {
     use std::fs;
@@ -47,11 +64,10 @@ fn is_process_running(name: &str) -> bool {
             continue;
         };
         let proc_name = comm.trim_end().to_lowercase();
-        if proc_name.contains(name) || name.contains(&proc_name) {
+        if process_name_matches(&proc_name, name) {
             return true;
         }
     }
-
     false
 }
 
@@ -63,7 +79,7 @@ fn is_process_running(name: &str) -> bool {
 
     sys.processes().values().any(|process| {
         let proc_name = process.name().to_string_lossy().to_lowercase();
-        proc_name.contains(name) || name.contains(&proc_name)
+        process_name_matches(&proc_name, name)
     })
 }
 

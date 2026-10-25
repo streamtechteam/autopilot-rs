@@ -87,12 +87,21 @@ fn remove_job_requires_an_identifier() {
 }
 
 #[test]
-fn remove_job_by_absolute_file_name() {
+fn remove_job_by_file_name() {
     let _guard = test_support::lock();
     let path = add(Some("by_file"));
+    let file_name = path.file_name().unwrap().to_string_lossy().into_owned();
 
-    remove_job(None, Some(path.to_string_lossy().into_owned())).unwrap();
+    remove_job(None, Some(file_name)).unwrap();
     assert!(!path.exists());
+}
+
+#[test]
+fn remove_job_rejects_path_traversal() {
+    let _guard = test_support::lock();
+
+    let error = remove_job(None, Some("../outside.jsonc".to_string())).unwrap_err();
+    assert!(error.to_string().contains("path separators"));
 }
 
 #[test]
@@ -100,6 +109,8 @@ fn remove_job_by_file_name_without_extension() {
     let _guard = test_support::lock();
     let path = add(Some("without_extension"));
     let without_extension = path
+        .file_name()
+        .unwrap()
         .to_string_lossy()
         .trim_end_matches(".jsonc")
         .to_string();

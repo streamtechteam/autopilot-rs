@@ -116,14 +116,14 @@ jobs:
       - name: Prepare Compatible Binary
         run: |
           mkdir -p dist
-          cp target/release/autopilot-rs dist/autopilot-rs-linux-glibc2.17
-          objdump -T dist/autopilot-rs-linux-glibc2.17 | grep GLIBC | sort -u
+          cp target/release/autopilot-rs dist/autopilot-rs-linux-glibc2.34
+          objdump -T dist/autopilot-rs-linux-glibc2.34 | grep GLIBC | sort -u
 
       - name: Upload Compatible Binary
         uses: actions/upload-artifact@v4
         with:
           name: autopilot-rs-linux-compatible
-          path: dist/autopilot-rs-linux-glibc2.17
+          path: dist/autopilot-rs-linux-glibc2.34
 
   build-rpm:
     name: Build RPM Package
@@ -300,7 +300,7 @@ jobs:
 
           # Copy binaries
           cp artifacts/autopilot-rs-linux-latest/autopilot-rs-linux release/ || true
-          cp artifacts/autopilot-rs-linux-compatible/autopilot-rs-linux-glibc2.17 release/ || true
+          cp artifacts/autopilot-rs-linux-compatible/autopilot-rs-linux-glibc2.34 release/ || true
           cp artifacts/autopilot-rs-windows/autopilot-rs-windows.exe release/ || true
           cp artifacts/autopilot-rs-macos/autopilot-rs-macos release/ || true
 
@@ -418,7 +418,7 @@ jobs:
           files: release/*
           fail_on_unmatched_files: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release Summary
         run: |

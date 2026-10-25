@@ -116,6 +116,29 @@ fn delete_reports_whether_a_record_existed() {
 }
 
 #[test]
+fn rejects_paths_outside_the_store_directory() {
+    let dir = TestDir::new();
+    let store = dir.store();
+    let outside = dir.path.join("..").join("outside.jsonc");
+
+    assert!(
+        store
+            .write_path(&outside, &record("outside", "Outside"))
+            .is_err()
+    );
+    assert!(store.remove_path(&outside).is_err());
+
+    let relative_store = JsonFileStore::<Record>::new("relative-jobs");
+    let relative_outside = Path::new("relative-jobs/../outside.jsonc");
+    assert!(
+        relative_store
+            .write_path(relative_outside, &record("outside", "Outside"))
+            .is_err()
+    );
+    assert!(relative_store.remove_path(relative_outside).is_err());
+}
+
+#[test]
 fn invalid_ids_are_rejected() {
     let dir = TestDir::new();
     let store = dir.store();

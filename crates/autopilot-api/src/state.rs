@@ -1,5 +1,5 @@
 use serde::Serialize;
-use std::sync::{Arc, atomic::AtomicBool};
+use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use autopilot_core::autopilot::AutoPilot;
@@ -23,7 +23,6 @@ pub type RestartResponse = ReloadResponse;
 #[derive(Clone)]
 pub struct AppState {
     pub auto_pilot: Arc<RwLock<AutoPilot>>,
-    pub started: Arc<AtomicBool>,
 }
 
 #[cfg(test)]

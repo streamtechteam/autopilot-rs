@@ -46,7 +46,7 @@ fn stop_sends_a_shutdown_request() {
 
     assert!(stop(true).is_ok());
     let request = server.join().unwrap();
-    assert!(request.starts_with("GET /shutdown HTTP/1.1"));
+    assert!(request.starts_with("POST /shutdown HTTP/1.1"));
 
     // SAFETY: env access is serialised by ENV_LOCK.
     unsafe { std::env::remove_var("AUTOPILOT_PORT") };

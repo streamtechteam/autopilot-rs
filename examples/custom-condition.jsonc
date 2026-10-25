@@ -4,7 +4,7 @@
   "description": "Runs a task only if a custom command succeeds (exit code 0)",
   "conditions": [
     {
-      "type": "custom",
+      "type": "command",
       "condition": {
         "command": "test -f /tmp/trigger-file",
         "check_exit_code": true

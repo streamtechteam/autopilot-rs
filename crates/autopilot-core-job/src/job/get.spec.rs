@@ -40,7 +40,7 @@ fn get_jobs_reads_valid_files_and_skips_invalid_ones() {
     );
     let invalid = write_job("job_get_invalid.jsonc", "ignored", "not json");
 
-    let jobs = get_jobs(true);
+    let jobs = get_jobs(true).unwrap();
     let ids: Vec<&str> = jobs.iter().map(|job| job.id.as_str()).collect();
 
     assert!(ids.contains(&"job_get_valid"));
@@ -48,6 +48,29 @@ fn get_jobs_reads_valid_files_and_skips_invalid_ones() {
     assert!(!ids.contains(&"ignored"));
 
     for path in [valid, commented, invalid] {
+        std::fs::remove_file(path).unwrap();
+    }
+}
+
+#[test]
+fn get_jobs_rejects_duplicate_job_ids() {
+    let _guard = test_support::lock();
+    let first = write_job(
+        "job_get_duplicate_a.jsonc",
+        "job_get_duplicate",
+        r#"{"id":"job_get_duplicate","conditions":[],"tasks":[]}"#,
+    );
+    let second = write_job(
+        "job_get_duplicate_b.jsonc",
+        "job_get_duplicate",
+        r#"{"id":"job_get_duplicate","conditions":[],"tasks":[]}"#,
+    );
+
+    let error = get_jobs(true).err().expect("duplicate job ids should fail");
+
+    assert!(error.to_string().contains("job_get_duplicate"));
+
+    for path in [first, second] {
         std::fs::remove_file(path).unwrap();
     }
 }

@@ -1,7 +1,7 @@
 use std::{
     fs,
     marker::PhantomData,
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
 };
 
 use serde::{Serialize, de::DeserializeOwned};
@@ -84,13 +84,36 @@ impl<T> JsonFileStore<T> {
     where
         T: Serialize,
     {
+        let path = path.as_ref();
+        self.ensure_member_path(path)?;
         let content = serde_json::to_string_pretty(record)?;
         fs::write(path, content)?;
         Ok(())
     }
 
     pub fn remove_path(&self, path: impl AsRef<Path>) -> Result<()> {
+        let path = path.as_ref();
+        self.ensure_member_path(path)?;
         fs::remove_file(path)?;
+        Ok(())
+    }
+
+    fn ensure_member_path(&self, path: &Path) -> Result<()> {
+        let relative = path
+            .strip_prefix(self.dir.as_path())
+            .map_err(|_| FsError::InvalidId(path.display().to_string()))?;
+
+        if relative.as_os_str().is_empty()
+            || relative.components().any(|component| {
+                matches!(
+                    component,
+                    Component::ParentDir | Component::RootDir | Component::Prefix(_)
+                )
+            })
+        {
+            return Err(FsError::InvalidId(path.display().to_string()));
+        }
+
         Ok(())
     }
 }

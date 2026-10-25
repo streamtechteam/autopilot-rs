@@ -1,6 +1,6 @@
 [package]
 name = "autopilot-core"
-description = "Core library for AutoPilot: conditions, jobs, tasks and status"
+description = "Core library for AutoPilot: conditions, jobs, tasks, status and scheduling"
 edition.workspace = true
 license.workspace = true
 version.workspace = true

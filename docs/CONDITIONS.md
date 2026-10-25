@@ -632,7 +632,7 @@ _Combine multiple screen checks:_
 {
   "type": "logical",
   "condition": {
-    "operator": "and", // Required: "and", "or", or "nor"
+    "operator": "And", // Required: "And", "Or", or "Nor"
     "conditions": [
       // Array of conditions to combine with the specified operator
       { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
@@ -650,7 +650,7 @@ _OR logic (at least one must pass):_
 {
   "type": "logical",
   "condition": {
-    "operator": "or",
+    "operator": "Or",
     "conditions": [
       { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
       { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } }
@@ -665,7 +665,7 @@ _AND logic (all must pass):_
 {
   "type": "logical",
   "condition": {
-    "operator": "and",
+    "operator": "And",
     "conditions": [
       { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
       { "type": "power", "condition": { "check_charging": true } }
@@ -680,7 +680,7 @@ _NOR logic (none must pass):_
 {
   "type": "logical",
   "condition": {
-    "operator": "nor",
+    "operator": "Nor",
     "conditions": [
       { "type": "process", "condition": { "process_name": "chrome" } },
       { "type": "process", "condition": { "process_name": "firefox" } }
@@ -691,9 +691,9 @@ _NOR logic (none must pass):_
 
 **Available Operators:**
 
-- `and`: All conditions must be true
-- `or`: At least one condition must be true  
-- `nor`: None of the conditions must be true (NOT OR)
+- `And`: All conditions must be true
+- `Or`: At least one condition must be true
+- `Nor`: None of the conditions must be true (NOT OR)
 
 **Platform Support:** All platforms
 
@@ -706,7 +706,49 @@ _NOR logic (none must pass):_
 - Nested condition logic
 - Reusable condition groups
 
+---
 
+### 14. Desktop Environment Condition
+
+**Purpose:** Check which desktop environment is currently running.
+
+**Schema:**
+
+```jsonc
+{
+  "type": "desktopenv",
+  "condition": {
+    "target": "GNOME" // Required: desktop environment name
+  }
+}
+```
+
+**Example:**
+
+```jsonc
+{
+  "type": "desktopenv",
+  "condition": {
+    "target": "KDE"
+  }
+}
+```
+
+The comparison is case-insensitive. AutoPilot checks `XDG_CURRENT_DESKTOP`,
+`DESKTOP_SESSION`, and common desktop-specific environment variables, then
+falls back to `WAYLAND_DISPLAY`.
+
+**Platform Support:**
+
+- **Linux:** Detected from the active desktop session environment
+- **macOS:** Reports `MACOS`
+- **Windows:** Reports `WINDOWS`
+
+**Use Cases:**
+
+- Apply desktop-specific window or notification commands
+- Run GNOME-only extensions or settings
+- Skip tasks that only make sense under a particular desktop environment
 
 ## Multiple Conditions (AND Logic)
 
@@ -738,28 +780,30 @@ In this example, the job runs **only if**:
 ## OR vs AND Logic
 
 - **Job-level conditions array:** Always AND logic (all must pass)
-- **`"type": "or"` condition:** OR logic (at least one must pass)
-- **`"type": "and"` condition:** AND logic (all must pass, useful for nesting)
+- **`"type": "logical"` condition with `"operator": "Or"`:** OR logic (at least one must pass)
+- **`"type": "logical"` condition with `"operator": "And"`:** AND logic (all must pass, useful for nesting)
 
 **Example combining both:**
 
 ```jsonc
 {
-  "conditions": [
-    {
-      "type": "or",
-      "condition": {
-        "conditions": [
-          { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
-          { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } }
-        ]
-      }
-    },
-    {
-      "type": "power",
-      "condition": { "check_charging": true }
-    }
-  ]
+  "type": "logical",
+  "condition": {
+    "operator": "And",
+    "conditions": [
+      {
+        "type": "logical",
+        "condition": {
+          "operator": "Or",
+          "conditions": [
+            { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
+            { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } }
+          ]
+        }
+      },
+      { "type": "power", "condition": { "check_charging": true } }
+    ]
+  }
 }
 ```
 
@@ -816,8 +860,9 @@ This runs if:
 
 ```jsonc
 {
-  "type": "or",
+  "type": "logical",
   "condition": {
+    "operator": "Or",
     "conditions": [
       { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
       { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } }
@@ -829,16 +874,16 @@ This runs if:
 ### Only When at Home
 
 ```jsonc
-[
-  {
-    "type": "wifi",
-    "condition": { "ssid": "HomeNetwork" }
-  },
-  {
-    "type": "bluetooth",
-    "condition": { "device": "HomeHub" }
+{
+  "type": "logical",
+  "condition": {
+    "operator": "And",
+    "conditions": [
+      { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
+      { "type": "bluetooth", "condition": { "device": "HomeHub" } }
+    ]
   }
-]
+}
 ```
 
 ### Only on Weekdays
@@ -916,8 +961,8 @@ Error executing condition command 'bad syntax': (error details)
 | file           | `path`, `check_type`, `time_threshold`, `size_threshold` | All      |
 | externaldevice | `device_identifier`, `check_by_name`             | All      |
 | screen         | `screen_count`, `active_screen_name`, `screen_names` | All      |
-| or             | `conditions` (array of conditions)               | All      |
-| and            | `conditions` (array of conditions)               | All      |
+| logical        | `operator` (`And`, `Or`, or `Nor`) and `conditions` | All      |
+| desktopenv     | `target`                                         | All      |
 
 ---
 

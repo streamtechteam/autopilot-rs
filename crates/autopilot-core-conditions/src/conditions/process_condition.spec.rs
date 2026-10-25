@@ -47,6 +47,20 @@ fn missing_process_is_not_running() {
 }
 
 #[test]
+fn short_process_names_do_not_match_longer_names_in_reverse() {
+    assert!(process_name_matches("bash", "bash"));
+    assert!(process_name_matches("chromium", "chrom"));
+    assert!(!process_name_matches("ssh", "sshd"));
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn truncated_linux_comm_names_match_longer_configured_names() {
+    assert_eq!("telegram-deskto".len(), 15);
+    assert!(process_name_matches("telegram-deskto", "telegram-desktop"));
+}
+
+#[test]
 fn reports_name_and_clones() {
     let condition = ProcessCondition::new("bash".to_string(), true);
 

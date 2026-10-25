@@ -1,6 +1,6 @@
 build +args="":
-    mkdir build
-    cargo build --release {{ args }} && cp target/release/autopilot-rs ./build/autopilot_rs
+    mkdir -p build
+    cargo build --release {{ args }} && cp target/release/autopilot-rs ./build/autopilot-rs
 
 run_release +args="":
     cargo run --release {{ args }}

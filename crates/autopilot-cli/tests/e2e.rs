@@ -185,7 +185,7 @@ impl Daemon {
     }
 
     fn shutdown(&mut self) {
-        let _ = self.request("GET", "/shutdown", None);
+        let _ = self.request("POST", "/shutdown", None);
         let deadline = Instant::now() + Duration::from_secs(5);
         while Instant::now() < deadline {
             if let Ok(Some(_)) = self.child.try_wait() {
@@ -463,8 +463,7 @@ fn api_crud_reload_and_status_work() {
     assert_eq!(path.file_stem().unwrap(), created_id.as_str());
     assert!(daemon.jobs().iter().any(|job| job["id"] == created_id));
 
-    // Creating only writes a file; the in-memory job list is refreshed on reload.
-    assert_eq!(daemon.get(&format!("/jobs/{created_id}")).0, 404);
+    assert_eq!(daemon.get(&format!("/jobs/{created_id}")).0, 200);
 
     assert_eq!(daemon.delete(&format!("/jobs/{created_id}")).0, 200);
     assert!(!path.exists());
@@ -477,8 +476,7 @@ fn api_crud_reload_and_status_work() {
         "conditions": [],
         "tasks": []
     });
-    // Pre-existing behavior: updating a missing job reports 500, not 404.
-    assert_eq!(daemon.put("/jobs/job_missing", update.clone()).0, 500);
+    assert_eq!(daemon.put("/jobs/job_missing", update.clone()).0, 404);
     assert_eq!(daemon.put("/jobs/job_existing", update).0, 200);
     assert!(daemon.dir.join("jobs/existing.jsonc").exists());
 
