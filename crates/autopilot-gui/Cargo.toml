@@ -17,4 +17,3 @@ path = "src/main.rs"
 [dependencies]
 egui.workspace = true
 eframe.workspace = true
-egui_extras.workspace = true

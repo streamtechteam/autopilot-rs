@@ -78,15 +78,72 @@ async fn run_jobs_marks_jobs_loaded_and_completes_them() {
 }
 
 #[tokio::test]
-async fn stop_jobs_clears_jobs_and_handles() {
+async fn stop_jobs_clears_handles_and_marks_the_instance_stopped() {
     let mut autopilot = AutoPilot::new().await.unwrap();
     autopilot.jobs = vec![job("job_stop")];
-    autopilot.jobs_handles = autopilot.run_jobs();
+    autopilot.start();
 
     autopilot.stop_jobs().await.unwrap();
 
-    assert!(autopilot.jobs.is_empty());
+    assert_eq!(autopilot.jobs.len(), 1);
     assert!(autopilot.jobs_handles.is_empty());
+    assert!(!autopilot.started);
+}
+
+#[tokio::test]
+async fn reload_restarts_running_jobs() {
+    let mut autopilot = AutoPilot::new().await.unwrap();
+    autopilot.jobs = vec![job("job_reload")];
+    autopilot.init_status().await.unwrap();
+    autopilot.start();
+
+    for _ in 0..100 {
+        if matches!(
+            autopilot
+                .status_manager
+                .get_state_by_id("job_reload".to_string())
+                .await,
+            Some(JobStatusEnum::Completed)
+        ) {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+    }
+    assert!(matches!(
+        autopilot
+            .status_manager
+            .get_state_by_id("job_reload".to_string())
+            .await,
+        Some(JobStatusEnum::Completed)
+    ));
+
+    autopilot_core_fs::init(Some(std::env::temp_dir().join(format!(
+        "autopilot-autopilot-reload-spec-{}",
+        std::process::id()
+    ))))
+    .unwrap();
+    let paths = autopilot_core_fs::paths().unwrap();
+    std::fs::write(
+        paths.jobs_dir().join("job_reload.jsonc"),
+        r#"{
+            "id": "job_reload",
+            "name": "Job Reload",
+            "description": "Reload test",
+            "conditions": [],
+            "tasks": []
+        }"#,
+    )
+    .unwrap();
+    autopilot.reload().await.unwrap();
+
+    assert!(autopilot.started);
+    assert_eq!(autopilot.jobs.len(), 1);
+    assert!(autopilot.jobs[0].loaded);
+    assert!(!autopilot.jobs_handles.is_empty());
+    for handle in autopilot.jobs_handles.iter() {
+        handle.abort();
+    }
+    autopilot.shutdown().await.unwrap();
 }
 
 #[tokio::test]

@@ -3,6 +3,8 @@ use log::error;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use autopilot_core_error::AutoPilotError;
+
 pub mod init;
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -24,37 +26,26 @@ pub struct DateTimeScheme {
 }
 
 impl DateTimeScheme {
-    pub fn parse(&self) -> Result<DateTime<Local>, ParseError> {
-        let date: NaiveDate;
-        let time: NaiveTime;
-        let naive_dt;
-        let local_dt;
-        match NaiveTime::parse_from_str(&self.time, "%H:%M") {
-            Ok(value) => {
-                time = value;
-                match NaiveDate::parse_from_str(&self.date, "%Y/%m/%d") {
-                    Ok(value) => {
-                        date = value;
-                        naive_dt = date.and_time(time);
-                        local_dt = Local
-                            .from_local_datetime(&naive_dt)
-                            .single()
-                            .ok_or("Ambiguous or invalid local datetime".to_string())
-                            .expect("invalid local datetime");
-                    }
-                    Err(e) => {
-                        error!("Invalid date format. Expected YYYY/MM/DD: {}", e);
-                        return Err(e);
-                    }
-                }
-            }
-            Err(e) => {
-                error!("Invalid time format. Expected HH:MM: {}", e);
-                return Err(e);
-            }
-        }
+    pub fn parse(&self) -> Result<DateTime<Local>, AutoPilotError> {
+        let time = NaiveTime::parse_from_str(&self.time, "%H:%M").map_err(|error| {
+            error!("Invalid time format. Expected HH:MM: {error}");
+            AutoPilotError::Time(format!("Invalid time format. Expected HH:MM: {error}"))
+        })?;
+        let date = NaiveDate::parse_from_str(&self.date, "%Y/%m/%d").map_err(|error| {
+            error!("Invalid date format. Expected YYYY/MM/DD: {error}");
+            AutoPilotError::Time(format!("Invalid date format. Expected YYYY/MM/DD: {error}"))
+        })?;
+        let naive_dt = date.and_time(time);
 
-        Ok(local_dt)
+        Local
+            .from_local_datetime(&naive_dt)
+            .single()
+            .ok_or_else(|| {
+                AutoPilotError::Time(format!(
+                    "Ambiguous or invalid local datetime: {} {}",
+                    self.date, self.time
+                ))
+            })
     }
 }
 

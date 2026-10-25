@@ -1,4 +1,4 @@
-use autopilot_core::checks::port;
+use autopilot_core::checks::address;
 use colored::Colorize;
 use core::result::Result::Ok;
 use log::info;
@@ -11,14 +11,16 @@ pub fn stop(quiet: bool) -> Result<(), std::io::Error> {
     if !quiet {
         info!("{}", language::en_us::AUTOPILOT_SHUTDOWN.yellow());
     }
-    let mut stream = match TcpStream::connect(format!("localhost:{}", port())) {
+    let address = address();
+    let mut stream = match TcpStream::connect(&address) {
         Ok(stream) => stream,
         Err(err) => return Err(err),
     };
+    let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(2)));
+    let _ = stream.set_write_timeout(Some(std::time::Duration::from_secs(2)));
 
     let request = format!(
-        "GET /shutdown HTTP/1.1\r\nHost: localhost:{}\r\nConnection: close\r\n\r\n",
-        port()
+        "POST /shutdown HTTP/1.1\r\nHost: {address}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     );
 
     if stream.write_all(request.as_bytes()).is_err() {

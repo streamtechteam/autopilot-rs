@@ -24,17 +24,12 @@ async fn app_state_clone_shares_the_underlying_state() {
     let autopilot = AutoPilot::new().await.unwrap();
     let state = AppState {
         auto_pilot: Arc::new(RwLock::new(autopilot)),
-        started: Arc::new(AtomicBool::new(false)),
     };
     let clone = state.clone();
 
     assert!(Arc::ptr_eq(&state.auto_pilot, &clone.auto_pilot));
-    assert!(Arc::ptr_eq(&state.started, &clone.started));
-
-    clone
-        .started
-        .store(true, std::sync::atomic::Ordering::Relaxed);
-    assert!(state.started.load(std::sync::atomic::Ordering::Relaxed));
+    clone.auto_pilot.write().await.started = true;
+    assert!(state.auto_pilot.read().await.started);
 
     state.auto_pilot.write().await.shutdown().await.unwrap();
 }

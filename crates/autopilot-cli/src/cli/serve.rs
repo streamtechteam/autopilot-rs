@@ -1,4 +1,4 @@
-use std::sync::{Arc, atomic::AtomicBool};
+use std::sync::Arc;
 
 use autopilot_api::{routes::start_api, state::AppState};
 use autopilot_core::autopilot::AutoPilot;
@@ -25,7 +25,6 @@ pub async fn serve(verbose: bool, api: bool) {
     }
     let state = AppState {
         auto_pilot: auto_pilot.clone(),
-        started: Arc::new(AtomicBool::new(!api)),
     };
     match start_api(state).await {
         Ok(_) => {}

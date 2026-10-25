@@ -70,7 +70,9 @@ cargo build --release
 autopilot-rs create
 ```
 
-Or manually create a JSON file in `~/.autopilot-rs/jobs/my-job.jsonc`
+Or manually create a JSON file in your AutoPilot configuration directory, such as
+`~/.config/autopilot/jobs/my-job.jsonc` on Linux/macOS or
+`%APPDATA%\autopilot\jobs\my-job.jsonc` on Windows.
 
 ### 2. Start the Daemon
 
@@ -86,7 +88,7 @@ AutoPilot runs in the background, checking conditions and running tasks.
 autopilot-rs list
 ```
 
-See all your jobs and their status.
+See all configured jobs.
 
 ### 4. Remove job
 
@@ -242,7 +244,7 @@ Or multi-step with pipes:
 }
 ```
 
-Tasks run sequentially. If one fails, remaining tasks still run (for now).
+Tasks run concurrently as parallel shell commands. If one task fails, the remaining tasks still run; the failure is logged.
 
 ## CLI Commands
 
@@ -258,18 +260,27 @@ autopilot-rs --help             # Show help
 
 ## Configuration
 
-AutoPilot reads from `~/.auto_pilot/`:
+AutoPilot reads from its configuration directory, defaulting to:
 
 ```
-~/.auto_pilot/
+~/.config/autopilot/
 ├── jobs/
 │   ├── morning.jsonc
 │   ├── evening.jsonc
 │   └── cleanup.jsonc
-├── status.jsonc
 │
 └── logs/
-    └── autopilot.log
+    └── <autopilot-log>.log
+```
+
+Status is held in memory while AutoPilot is running and is exposed through the API at `/status`.
+
+On Windows, the default configuration directory is:
+
+```
+%APPDATA%\autopilot/
+├── jobs/
+└── logs/
 ```
 
 ## Examples
@@ -379,7 +390,7 @@ AutoPilot reads from `~/.auto_pilot/`:
 autopilot-rs list
 ```
 
-If it hangs, daemon isn't running:
+If it is not responding, start the daemon:
 
 ```bash
 autopilot-rs serve
@@ -400,7 +411,7 @@ test -f /tmp/file && echo "Exists" || echo "Missing"
 **Check logs:**
 
 ```bash
-tail -f ~/.config/auto_pilot/logs/<logdate>.log
+tail -f ~/.config/autopilot/logs/<logdate>.log
 ```
 
 **Enable verbose mode:**
@@ -415,7 +426,7 @@ autopilot-rs serve --verbose
 2. Check exact paths (use absolute paths, not `~`)
 3. Check file permissions
 4. Check environment variables are set
-5. See docs/TROUBLESHOOTING.md for detailed guides
+5. See the issue tracker and condition reference for further debugging guidance.
 
 ### Task execution issues
 
@@ -446,13 +457,12 @@ All 14 user-facing condition types are supported.
 
 ## Documentation
 
-- **[CONDITIONS.md](docs/CONDITIONS.md)** - Detailed condition reference (14 types)
-- **[PLUGIN-SYSTEM.md](PLUGIN-SYSTEM.md)** - Extend AutoPilot with custom plugins (coming soon)
+- **[CONDITIONS.md](docs/CONDITIONS.md)** - Detailed condition reference (14 user-facing types)
 
 ### AI powered docs
 
-- https://deepwiki.com/streamtechteam/auto_pilot_rs
-- https://github.com/copilot and start chat with `#@streamtechteam/auto_pilot_rs`
+- https://deepwiki.com/streamtechteam/autopilot-rs
+- https://github.com/streamtechteam/autopilot-rs
 
 ## Contributing
 
@@ -467,11 +477,11 @@ MIT
 ## Roadmap
 
 - [ ] Plugin system for custom conditions
-- [ ] REST API for job management
+- [x] REST API for job management
 - [ ] Web dashboard
 - [ ] Performance optimizations
 - [ ] Metrics and monitoring
-- [x] 14 condition types (WiFi, Bluetooth, Command, Variable, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, Screen, Logical)
+- [x] 14 user-facing condition types (WiFi, Bluetooth, Command, Variable, DesktopEnv, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, Screen, Logical)
 
 ## FAQ
 
@@ -479,7 +489,7 @@ MIT
 A: Yes. Define as many jobs as you need. All conditions are checked independently.
 
 **Q: What happens if a task fails?**  
-A: Currently, remaining tasks still run. Error is logged.
+A: Tasks run concurrently; the remaining tasks still run. The failed task's error is logged.
 
 **Q: Can I use environment variables in commands?**  
 A: Yes. Shell expands them: `{ "command": "$HOME/backup.sh" }`
@@ -491,7 +501,7 @@ A: Mostly. Dependencies are minimal. Check docs for platform-specific requiremen
 A: Yes, but AutoPilot is designed to replace constant cron tasks with condition-based execution.
 
 **Q: How many condition types are supported?**  
-A: 14 condition types: WiFi, Bluetooth, Command, Variable, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, Screen, And, and Or.
+A: 14 user-facing condition types: WiFi, Bluetooth, Command, Variable, DesktopEnv, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, Screen, and Logical.
 
 ---
 

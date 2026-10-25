@@ -4,7 +4,7 @@
   "description": "Runs a task only if a custom command outputs a specific value",
   "conditions": [
     {
-      "type": "custom",
+      "type": "command",
       "condition": {
         "command": "cat /sys/class/power_supply/BAT0/status",
         "check_exit_code": false,

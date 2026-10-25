@@ -170,7 +170,7 @@ async fn load_jobs_reads_the_config_directory() {
     )
     .unwrap();
 
-    let jobs = crate::job::get::get_jobs(false);
+    let jobs = crate::job::get::get_jobs(false).unwrap();
     assert!(jobs.iter().any(|job| job.id == "job_load_spec"));
 
     std::fs::remove_file(path).unwrap();

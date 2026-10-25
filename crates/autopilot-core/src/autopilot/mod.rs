@@ -5,7 +5,7 @@ use tokio_cron_scheduler::JobScheduler;
 
 use autopilot_core_checks::check_if_running;
 use autopilot_core_error::AutoPilotError;
-use autopilot_core_job::{Job, get::get_jobs};
+use autopilot_core_job::{Job, get};
 use autopilot_core_logging::init_logging;
 use autopilot_core_status::{JobStatusEnum, StateManager};
 use autopilot_core_time::init::init_time_check;
@@ -44,23 +44,30 @@ impl AutoPilot {
         Ok(())
     }
     pub async fn reload(&mut self) -> Result<(), AutoPilotError> {
+        let was_started = self.started;
         self.stop_jobs().await?;
         info!("{}", "Reloading Autopilot...".yellow());
         self.load_jobs().await?;
         self.init_status().await?;
+        if was_started {
+            self.start();
+        }
 
         info!("{}", "Autopilot reloaded successfully!".green());
         Ok(())
     }
 
     pub async fn restart(&mut self) -> Result<(), AutoPilotError> {
-        self.reload().await?;
+        self.stop_jobs().await?;
+        self.load_jobs().await?;
+        self.init_status().await?;
         self.start();
 
         Ok(())
     }
     pub fn start(&mut self) {
         self.jobs_handles = self.run_jobs();
+        self.started = true;
         info!("{}", "Autopilot served!".green());
     }
     pub fn check_instance() -> bool {
@@ -99,24 +106,26 @@ impl AutoPilot {
         handles
     }
     pub async fn load_jobs(&mut self) -> Result<(), AutoPilotError> {
-        self.jobs = tokio::task::spawn_blocking(|| get_jobs(false))
+        self.jobs = tokio::task::spawn_blocking(|| get::get_jobs(false))
             .await
-            .map_err(|e| AutoPilotError::JobExecution(format!("Failed to load jobs: {}", e)))?;
+            .map_err(|e| AutoPilotError::JobExecution(format!("Failed to load jobs: {}", e)))??;
         Ok(())
     }
 
-    /// Stop all jobs (graceful shutdown of scheduler)
+    /// Stop running jobs and clear the scheduler's pending work.
     pub async fn stop_jobs(&mut self) -> Result<(), AutoPilotError> {
         warn!("Stopping jobs...");
         self.jobs_handles.iter().for_each(|handle| {
             handle.abort();
         });
+        self.jobs_handles.clear();
+        self.started = false;
+
         self.scheduler
             .shutdown()
             .await
             .map_err(|e| AutoPilotError::JobExecution(e.to_string()))?;
-        self.jobs = vec![];
-        self.jobs_handles = vec![];
+        self.scheduler = init_time_check().await?;
 
         Ok(())
     }
@@ -124,7 +133,11 @@ impl AutoPilot {
         init_logging(verbose);
     }
     pub async fn shutdown(&mut self) -> Result<(), AutoPilotError> {
-        self.stop_jobs().await
+        self.stop_jobs().await?;
+        self.scheduler
+            .shutdown()
+            .await
+            .map_err(|e| AutoPilotError::JobExecution(e.to_string()))
     }
 }
 

@@ -51,7 +51,6 @@ async fn state_with_jobs(jobs: Vec<autopilot_core::job::Job>) -> AppState {
     autopilot.jobs = jobs;
     AppState {
         auto_pilot: std::sync::Arc::new(tokio::sync::RwLock::new(autopilot)),
-        started: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
     }
 }
 
@@ -106,11 +105,11 @@ async fn jobs_status_reports_count_and_running_flag() {
     assert!(!response.running);
     assert_eq!(response.job_count, 2);
 
-    state
-        .started
-        .store(true, std::sync::atomic::Ordering::Relaxed);
-    let response = jobs_status(State(state)).await.0;
+    state.auto_pilot.write().await.started = true;
+    let response = jobs_status(State(state.clone())).await.0;
     assert!(response.running);
+
+    state.auto_pilot.write().await.shutdown().await.unwrap();
 }
 
 #[tokio::test]
@@ -126,26 +125,36 @@ async fn jobs_stop_reports_conflict_when_already_stopped() {
 #[tokio::test]
 async fn jobs_stop_stops_a_started_instance() {
     let state = state_with_jobs(vec![]).await;
-    state
-        .started
-        .store(true, std::sync::atomic::Ordering::Relaxed);
+    state.auto_pilot.write().await.started = true;
 
     let response = jobs_stop(State(state.clone())).await.unwrap().0;
     assert_eq!(response["success"], true);
     assert_eq!(response["message"], "Jobs stopped");
-    assert!(!state.started.load(std::sync::atomic::Ordering::Relaxed));
+    assert!(!state.auto_pilot.read().await.started);
 }
 
 #[tokio::test]
-async fn jobs_getbyid_finds_loaded_jobs() {
-    let state = state_with_jobs(vec![job("job_find", "Find")]).await;
+async fn jobs_getbyid_finds_jobs_on_disk() {
+    let _guard = config_lock();
+    let path = add_job(
+        Some("Find".to_string()),
+        Some("Find description".to_string()),
+        None,
+        None,
+        vec![],
+        vec![],
+    )
+    .unwrap();
+    let id = autopilot_core::job::get::get_job(path.clone()).unwrap().id;
+    let state = state_with_jobs(vec![]).await;
 
-    let response = jobs_getbyid(State(state.clone()), Path("job_find".to_string()))
+    let response = jobs_getbyid(State(state.clone()), Path(id.clone()))
         .await
         .unwrap()
         .0;
-    assert_eq!(response.id, "job_find");
+    assert_eq!(response.id, id);
     assert_eq!(response.name, "Find");
+    assert_eq!(response.description, "Find description");
 
     assert_eq!(
         jobs_getbyid(State(state), Path("missing".to_string()))
@@ -153,35 +162,43 @@ async fn jobs_getbyid_finds_loaded_jobs() {
             .unwrap_err(),
         StatusCode::NOT_FOUND
     );
+
+    std::fs::remove_file(path).unwrap();
 }
 
 #[tokio::test]
 async fn jobs_list_merges_live_statuses() {
     let _guard = config_lock();
-    let state = state_with_jobs(vec![job("job_list_live", "List Live")]).await;
+    let path = add_job(
+        Some("List Live".to_string()),
+        Some("List description".to_string()),
+        None,
+        None,
+        vec![],
+        vec![],
+    )
+    .unwrap();
+    let id = autopilot_core::job::get::get_job(path.clone()).unwrap().id;
+    let state = state_with_jobs(vec![]).await;
     {
         let autopilot = state.auto_pilot.read().await;
         autopilot
             .status_manager
             .set(
-                "job_list_live".to_string(),
+                id.clone(),
                 Some("List Live".to_string()),
                 JobStatusEnum::Running,
             )
             .await;
     }
-    state
-        .started
-        .store(true, std::sync::atomic::Ordering::Relaxed);
 
     let response = jobs_list(State(state.clone())).await.unwrap().0;
-    let listed = response
-        .iter()
-        .find(|job| job.id == "job_list_live")
-        .unwrap();
+    let listed = response.iter().find(|job| job.id == id).unwrap();
     assert_eq!(listed.status, "Running");
+    assert_eq!(listed.description, "List description");
     assert!(listed.loaded);
 
+    std::fs::remove_file(path).unwrap();
     state.auto_pilot.write().await.shutdown().await.unwrap();
 }
 
@@ -270,7 +287,7 @@ async fn jobs_update_replaces_an_existing_job() {
 }
 
 #[tokio::test]
-async fn jobs_update_reports_missing_jobs_as_server_errors() {
+async fn jobs_update_reports_missing_jobs_as_not_found() {
     let _guard = config_lock();
     let state = state_with_jobs(vec![]).await;
 
@@ -282,5 +299,5 @@ async fn jobs_update_reports_missing_jobs_as_server_errors() {
     .await
     .unwrap_err();
 
-    assert_eq!(error, StatusCode::INTERNAL_SERVER_ERROR);
+    assert_eq!(error, StatusCode::NOT_FOUND);
 }

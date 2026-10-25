@@ -20,7 +20,6 @@ async fn starts_an_http_server_with_the_health_route() {
     let autopilot = autopilot_core::autopilot::AutoPilot::new().await.unwrap();
     let state = AppState {
         auto_pilot: std::sync::Arc::new(tokio::sync::RwLock::new(autopilot)),
-        started: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
     };
     let handle = start_api(state.clone()).await.unwrap();
 

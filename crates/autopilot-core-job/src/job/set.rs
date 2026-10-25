@@ -1,4 +1,8 @@
-use std::path::PathBuf;
+use std::{
+    path::{Path, PathBuf},
+    sync::atomic::{AtomicU64, Ordering},
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use autopilot_core_fs::{JsonFileStore, paths};
 
@@ -17,7 +21,7 @@ pub fn add_job(
     conditions: Vec<ConditionScheme>,
     tasks: Vec<TaskScheme>,
 ) -> Result<PathBuf, AutoPilotError> {
-    let id = format!("job_{}", chrono::Utc::now().timestamp());
+    let id = next_job_id();
 
     let job = JobScheme {
         id,
@@ -31,6 +35,17 @@ pub fn add_job(
 
     let store = JsonFileStore::<JobScheme>::new(paths()?.jobs_dir());
     Ok(store.save(&job)?)
+}
+
+fn next_job_id() -> String {
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+
+    let nanosecond = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or_default();
+    let sequence = COUNTER.fetch_add(1, Ordering::Relaxed);
+    format!("job_{nanosecond}_{sequence}")
 }
 
 pub fn update_job(
@@ -71,12 +86,24 @@ pub fn remove_job(id: Option<String>, file_name: Option<String>) -> Result<(), A
     let store = JsonFileStore::<JobScheme>::new(paths()?.jobs_dir());
 
     if let Some(file_name) = file_name {
-        let path = if file_name.ends_with(".jsonc") {
-            PathBuf::from(file_name)
-        } else {
-            PathBuf::from(format!("{file_name}.jsonc"))
+        let candidate = Path::new(&file_name);
+        let Some(name) = candidate.file_name().and_then(|name| name.to_str()) else {
+            return Err(AutoPilotError::InvalidJob(
+                "Job file name must be a single file name".to_string(),
+            ));
         };
-        store.remove_path(path)?;
+        if candidate.components().count() != 1 || name.is_empty() || name == "." || name == ".." {
+            return Err(AutoPilotError::InvalidJob(
+                "Job file name must not contain path separators".to_string(),
+            ));
+        }
+
+        let file_name = if name.ends_with(".jsonc") {
+            name.to_string()
+        } else {
+            format!("{name}.jsonc")
+        };
+        store.remove_path(store.dir().join(file_name))?;
     }
 
     if let Some(id) = id

@@ -1,4 +1,4 @@
-use autopilot_core::{error::AutoPilotError, port};
+use autopilot_core::{checks::address, error::AutoPilotError};
 use axum::{
     Router,
     routing::{delete, get, post, put},
@@ -11,7 +11,7 @@ use crate::{handlers::*, state::AppState};
 
 pub async fn start_api(state: AppState) -> Result<JoinHandle<()>, AutoPilotError> {
     let app = Router::new()
-        .route("/shutdown", get(shutdown))
+        .route("/shutdown", post(shutdown))
         .route("/health", get(health))
         .route("/status", get(jobs_status))
         .route("/start", post(jobs_start))
@@ -24,11 +24,12 @@ pub async fn start_api(state: AppState) -> Result<JoinHandle<()>, AutoPilotError
         .route("/jobs/{id}", delete(jobs_delete))
         .route("/jobs/{id}", put(jobs_update))
         .with_state(state.clone());
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port()))
+    let address = address();
+    let listener = tokio::net::TcpListener::bind(&address)
         .await
         .map_err(|err| AutoPilotError::Api(err.to_string()))?;
 
-    info!("{}{}", "Api server started on 0.0.0.0:".green(), port());
+    info!("{}{}", "Api server started on ".green(), address);
     // Spawn API server
     let api_handle = tokio::spawn(async move {
         axum::serve(listener, app).await.expect("API server failed");

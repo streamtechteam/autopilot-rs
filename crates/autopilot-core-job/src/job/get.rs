@@ -1,8 +1,4 @@
-use std::{
-    collections::HashSet,
-    path::{Path, PathBuf},
-    process::exit,
-};
+use std::{collections::HashSet, path::PathBuf};
 
 use colored::*;
 use log::{error, info};
@@ -10,24 +6,14 @@ use log::{error, info};
 use autopilot_core_fs::{JsonFileStore, paths};
 
 use autopilot_core_error::AutoPilotError;
-use autopilot_core_utilities::directory_search::search_directory;
 
 use crate::job::{Job, JobScheme};
 
-pub fn get_jobs(quiet: bool) -> Vec<Job> {
-    let Ok(paths) = paths() else {
-        log_storage_error(quiet, "Filesystem paths have not been initialized");
-        return Vec::new();
-    };
-    let jobs_dir = paths.jobs_dir();
-    let store = JsonFileStore::<JobScheme>::new(&jobs_dir);
-    let records = match store.list() {
-        Ok(records) => records,
-        Err(error) => {
-            log_storage_error(quiet, &format!("Failed to read jobs directory: {error}"));
-            return Vec::new();
-        }
-    };
+/// Loads all jobs, returning an error when the storage cannot be read or the
+/// store contains duplicate job ids.
+pub fn get_jobs(quiet: bool) -> Result<Vec<Job>, AutoPilotError> {
+    let store = JsonFileStore::<JobScheme>::new(paths()?.jobs_dir());
+    let records = store.list()?;
 
     let mut job_objects: Vec<Job> = Vec::new();
     let mut jobs_ids: Vec<String> = Vec::new();
@@ -42,18 +28,22 @@ pub fn get_jobs(quiet: bool) -> Vec<Job> {
         job_objects.push(job_object);
     }
 
-    log_all_duplicates(&jobs_ids, &jobs_dir);
-    job_objects
-}
-
-fn log_storage_error(quiet: bool, message: &str) {
-    if !quiet {
-        if log::log_enabled!(log::Level::Error) {
-            error!("{message}");
-        } else {
-            eprintln!("{message}");
+    let duplicates = duplicate_ids(&jobs_ids);
+    if !duplicates.is_empty() {
+        for id in &duplicates {
+            eprintln!(
+                "{} {}",
+                "[CRITICAL] Duplicate job id found: ".yellow(),
+                id.red()
+            );
         }
+        return Err(AutoPilotError::InvalidJob(format!(
+            "Duplicate job ids must be resolved before running autopilot: {}",
+            duplicates.join(", ")
+        )));
     }
+
+    Ok(job_objects)
 }
 
 #[cfg(test)]
@@ -62,29 +52,18 @@ fn parse_job(content: &str) -> Result<JobScheme, serde_json::Error> {
         .or_else(|_| serde_json::from_str(&autopilot_core_fs::jsonc_parse(content)))
 }
 
-fn log_all_duplicates(jobs_ids: &[String], jobs_path: &Path) {
+fn duplicate_ids(jobs_ids: &[String]) -> Vec<String> {
     let mut seen = HashSet::new();
-    let mut dupes = HashSet::new();
+    let mut duplicates = Vec::new();
 
     for id in jobs_ids {
-        if !seen.insert(id.clone()) && dupes.insert(id.clone()) {
-            eprintln!(
-                "{} {}",
-                "[WARNING] Duplicate job id found: ".yellow(),
-                id.red()
-            );
-            search_directory(jobs_path, id).unwrap()
+        if !seen.insert(id.clone()) && !duplicates.contains(id) {
+            duplicates.push(id.clone());
         }
     }
 
-    if !dupes.is_empty() {
-        eprintln!(
-            "{}",
-            "[CRITICAL] Duplicates should be resolved before running autopilot".red()
-        );
-
-        exit(1);
-    }
+    duplicates.sort();
+    duplicates
 }
 
 pub fn get_jobs_paths() -> Vec<PathBuf> {
