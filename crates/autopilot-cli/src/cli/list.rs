@@ -54,7 +54,7 @@ pub async fn list_interactive() -> Result<(), AutoPilotError> {
             .map_err(|err| AutoPilotError::InvalidJob(err.to_string()))?;
         let selected_action = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Select an action:")
-            .items(&["View Details", "Delete"])
+            .items(["View Details", "Delete"])
             .default(0)
             .interact()
             .map_err(|err| AutoPilotError::InvalidJob(err.to_string()))?;

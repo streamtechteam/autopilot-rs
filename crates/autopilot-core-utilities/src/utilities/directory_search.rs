@@ -19,15 +19,15 @@ pub fn search_directory(dir: &Path, pattern: &str) -> std::io::Result<()> {
             let path = entry.path();
             if let Ok(file) = File::open(path) {
                 let reader = BufReader::new(file);
-                for (_, line) in reader.lines().enumerate() {
-                    if let Ok(line) = line {
-                        if regex.is_match(&line) {
-                            println!(
-                                "This job file has this id '{}' : {}",
-                                pattern,
-                                path.display()
-                            );
-                        }
+                for line in reader.lines() {
+                    if let Ok(line) = line
+                        && regex.is_match(&line)
+                    {
+                        println!(
+                            "This job file has this id '{}' : {}",
+                            pattern,
+                            path.display()
+                        );
                     }
                 }
             }

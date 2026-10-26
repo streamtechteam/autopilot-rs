@@ -13,7 +13,7 @@ pub fn init_logging(verbose: bool) {
 pub fn init_logger(verbose: bool, logs_dir: impl AsRef<Path>) {
     let logs_dir = logs_dir.as_ref().to_path_buf();
     let log_level = if verbose { "debug" } else { "info" };
-    match Logger::try_with_str(&log_level)
+    match Logger::try_with_str(log_level)
         .expect("Failed to init logger")
         .log_to_file(FileSpec::default().directory(&logs_dir))
         .duplicate_to_stdout(Duplicate::All)
