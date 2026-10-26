@@ -9,6 +9,6 @@ fn fail_condition_always_fails() {
 
 #[test]
 fn fail_condition_default_is_constructible() {
-    let condition = FailCondition::default();
+    let condition = <FailCondition as Default>::default();
     assert!(!condition.check());
 }

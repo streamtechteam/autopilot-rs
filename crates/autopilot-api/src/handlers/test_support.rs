@@ -1,14 +1,15 @@
-use std::sync::{Mutex, MutexGuard, Once};
+use std::sync::Once;
 
 use autopilot_core::autopilot::AutoPilot;
 use autopilot_core::job::{Job, JobScheme};
+use tokio::sync::{Mutex, MutexGuard};
 
 use crate::state::AppState;
 
 static CONFIG_INIT: Once = Once::new();
-static CONFIG_LOCK: Mutex<()> = Mutex::new(());
+static CONFIG_LOCK: Mutex<()> = Mutex::const_new(());
 
-pub(crate) fn config_lock() -> MutexGuard<'static, ()> {
+pub(crate) async fn config_lock() -> MutexGuard<'static, ()> {
     CONFIG_INIT.call_once(|| {
         let dir = std::env::temp_dir().join(format!(
             "autopilot-api-spec-{}-{}",
@@ -21,9 +22,7 @@ pub(crate) fn config_lock() -> MutexGuard<'static, ()> {
         autopilot_core::fs::init(Some(dir)).unwrap();
     });
 
-    CONFIG_LOCK
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
+    CONFIG_LOCK.lock().await
 }
 
 pub(crate) fn job(id: &str, name: &str) -> Job {

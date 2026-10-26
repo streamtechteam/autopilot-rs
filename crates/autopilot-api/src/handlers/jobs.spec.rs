@@ -12,7 +12,7 @@ use crate::handlers::test_support::{config_lock, payload, state_with_jobs};
 
 #[tokio::test]
 async fn jobs_getbyid_finds_jobs_on_disk() {
-    let _guard = config_lock();
+    let _guard = config_lock().await;
     let path = add_job(
         Some("Find".to_string()),
         Some("Find description".to_string()),
@@ -45,7 +45,7 @@ async fn jobs_getbyid_finds_jobs_on_disk() {
 
 #[tokio::test]
 async fn jobs_list_merges_live_statuses() {
-    let _guard = config_lock();
+    let _guard = config_lock().await;
     let path = add_job(
         Some("List Live".to_string()),
         Some("List description".to_string()),
@@ -81,7 +81,7 @@ async fn jobs_list_merges_live_statuses() {
 
 #[tokio::test]
 async fn jobs_create_writes_a_job_file() {
-    let _guard = config_lock();
+    let _guard = config_lock().await;
     let response = jobs_create(Json(payload("job_create_spec", "Create Spec")))
         .await
         .unwrap()
@@ -97,7 +97,7 @@ async fn jobs_create_writes_a_job_file() {
 
 #[tokio::test]
 async fn jobs_delete_removes_a_job_file() {
-    let _guard = config_lock();
+    let _guard = config_lock().await;
     let path = add_job(
         Some("Delete Spec".to_string()),
         None,
@@ -116,7 +116,7 @@ async fn jobs_delete_removes_a_job_file() {
 
 #[tokio::test]
 async fn jobs_delete_reports_unknown_ids() {
-    let _guard = config_lock();
+    let _guard = config_lock().await;
 
     assert_eq!(
         jobs_delete(Path("job_does_not_exist".to_string()))
@@ -128,7 +128,7 @@ async fn jobs_delete_reports_unknown_ids() {
 
 #[tokio::test]
 async fn jobs_update_replaces_an_existing_job() {
-    let _guard = config_lock();
+    let _guard = config_lock().await;
     let path = add_job(
         Some("Update Spec".to_string()),
         Some("before".to_string()),
@@ -165,7 +165,7 @@ async fn jobs_update_replaces_an_existing_job() {
 
 #[tokio::test]
 async fn jobs_update_reports_missing_jobs_as_not_found() {
-    let _guard = config_lock();
+    let _guard = config_lock().await;
     let state = state_with_jobs(vec![]).await;
 
     let error = jobs_update(
