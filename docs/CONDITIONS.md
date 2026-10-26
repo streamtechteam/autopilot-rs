@@ -2,9 +2,13 @@
 
 This guide explains all available condition types and how to use them in your automation jobs.
 
+For the surrounding job format, schedules, and runtime behavior, see [Job files and schedules](JOBS.md). For the HTTP API, see the [API reference](API.md).
+
 ## Overview
 
-Conditions are checks that must pass before a job's tasks are executed. A job with multiple conditions requires **ALL** conditions to be true before running.
+Conditions are checks that must pass before a job's tasks are executed. A job with multiple conditions requires **ALL** conditions to be true before running. Use the [Logical Condition](#13-logical-condition-composite) when you need OR or NOR logic.
+
+Conditions are synchronous `check() -> bool` implementations. A condition that cannot complete its backend check generally returns `false`; it does not raise a structured error into the job runner.
 
 ## Condition Types
 
@@ -37,8 +41,8 @@ Conditions are checks that must pass before a job's tasks are executed. A job wi
 **Platform Support:**
 
 - **Linux:** Uses `nmcli` (NetworkManager) or `iwgetid`
-- **macOS:** Uses `airport -I` command
-- **Windows:** Uses `netsh wlan show interfaces`
+- **macOS:** Uses `networksetup` and falls back to the `airport` utility
+- **Windows:** Uses `netsh wlan show interfaces`, with a profile-based fallback
 
 **Use Cases:**
 
@@ -93,8 +97,8 @@ _Match by MAC address:_
 **Platform Support:**
 
 - **Linux:** Uses `bluetoothctl` or `hcitool`
-- **macOS:** Uses defaults/Bluetooth framework
-- **Windows:** Uses PowerShell Get-CimInstance
+- **macOS:** Uses `system_profiler`, with a `defaults` fallback
+- **Windows:** Uses PowerShell `Get-CimInstance`
 
 **Use Cases:**
 
@@ -158,9 +162,8 @@ _Check command output:_
 
 **Shell Platform Notes:**
 
-- **Linux:** Uses `sh` (POSIX shell)
-- **macOS:** Uses `sh`
-- **Windows:** Uses windows default shell
+- **Linux/macOS:** Uses `sh -c`
+- **Windows:** Uses `cmd /C`
 
 ---
 
@@ -418,11 +421,13 @@ _Run only if no browser is open:_
 {
   "type": "diskspace",
   "condition": {
-    "path": "/home",
+    "path": "/",
     "min_free_gb": 5
   }
 }
 ```
+
+The current implementation compares `path` against the beginning of each detected disk mount point. Use a mount point such as `/` or `C:\`; an arbitrary subdirectory such as `/home/user` will not match unless the filesystem is actually mounted at that path.
 
 **Use Cases:**
 
@@ -445,10 +450,12 @@ _Run only if no browser is open:_
     "path": "/path/to/file", // Required: File or directory path
     "check_type": "exists", // Required: "exists", "modified_recently", or "size_changed"
     "time_threshold": 300, // Optional: Seconds for "modified_recently" (default: 300)
-    "size_threshold": 1024 // Optional: Bytes for "size_changed"
+    "size_threshold": 1024 // Optional: Minimum size in bytes for "size_changed" (default: 0)
   }
 }
 ```
+
+> **Current behavior:** `size_changed` is a minimum-size check, not change detection. It passes when the file exists and its current size is greater than or equal to `size_threshold`. It does not compare against a previous size. With no threshold, any existing file passes. See issue #42 for the planned change-detection fix.
 
 **Examples:**
 
@@ -477,11 +484,24 @@ _Check if file was recently modified:_
 }
 ```
 
+_Check that a file has reached at least 1 MiB (current `size_changed` behavior):_
+
+```jsonc
+{
+  "type": "file",
+  "condition": {
+    "path": "/tmp/export.zip",
+    "check_type": "size_changed",
+    "size_threshold": 1048576
+  }
+}
+```
+
 **Use Cases:**
 
 - Wait for a file to appear
-- React to file changes
-- Trigger on log activity
+- Trigger on recent log activity with `modified_recently`
+- Wait for a download or export to reach a minimum size with `size_changed`
 
 ---
 
@@ -608,7 +628,7 @@ _Combine multiple screen checks:_
 
 **Important Notes:**
 
-- All fields are **optional**, but **at least one** must be specified
+- All fields are **optional**, but at least one check should be specified. The interactive form enforces this; an empty raw JSON condition has no constraints and currently passes.
 - The condition passes only if **all specified checks** are met (AND logic)
 - Screen names are platform-specific (e.g., "HDMI-1", "eDP-1" on Linux)
 - If `screen_names` is specified, all listed screens must be present
@@ -816,7 +836,7 @@ This runs if:
 
 ### Performance
 
-- **Avoid expensive commands** in conditions (they run before each task)
+- **Avoid expensive commands** in conditions (they run before a job executes)
 - **Use platform-native conditions** (WiFi, Bluetooth, Process) instead of shell commands when possible
 - **Use appropriate intervals** - don't check conditions every millisecond
 
@@ -837,8 +857,11 @@ This runs if:
 
 ### Debugging
 
-- **Enable verbose logging** with `--verbose` flag
-- **Check logs** in your configured log directory
+- **Enable verbose logging** with the global `--verbose` option, before the subcommand:
+  ```bash
+  autopilot-rs --verbose serve
+  ```
+- **Check logs** in your configured `logs/` directory
 - **Test conditions in isolation** using the shell manually
 
 ---
@@ -930,18 +953,16 @@ This runs if:
 
 ## Error Handling
 
-If a condition fails to parse or execute:
+Conditions are boolean checks, and most built-in conditions return `false` when their backend command or platform API cannot provide an answer. A `false` condition prevents the job from running; that is the safe default.
 
-- The job **will not run** (safe default)
-- An error is logged with details
-- Execution continues to the next job
+Other failure modes to be aware of:
 
-Example logs:
+- **Invalid job file:** the loader skips files that fail to deserialize. There is no per-file error surfaced in the CLI today; validate the file manually and check the loaded job list.
+- **Duplicate job IDs:** job loading fails and jobs do not start. Resolve duplicate IDs across files.
+- **Condition panic:** a panic in a condition check is not a supported failure path. Unscheduled jobs may terminate their job task; scheduled jobs treat a panicked check as `false`.
+- **Task failure:** a failed task is logged, the remaining tasks still run, and the job currently reports `Completed`. The failure is not converted into a job-level `Failed` status.
 
-```
-Error parsing condition: Invalid command syntax
-Error executing condition command 'bad syntax': (error details)
-```
+Use verbose logging and the [API status](API.md#health-and-status) endpoints when diagnosing a job that does not run.
 
 ---
 
@@ -968,4 +989,8 @@ Error executing condition command 'bad syntax': (error details)
 
 ## See Also
 
-- [Example Jobs](../templates/)
+- [Job files and schedules](JOBS.md)
+- [CLI reference](CLI.md)
+- [API reference](API.md)
+- [Example jobs](../examples/)
+- [Job templates](../templates/)
