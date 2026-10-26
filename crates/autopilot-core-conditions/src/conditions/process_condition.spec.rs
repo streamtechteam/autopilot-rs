@@ -18,7 +18,7 @@ fn from_scheme_defaults_to_should_be_running() {
     assert_eq!(condition.process_name, "bash");
     assert!(condition.should_be_running);
 }
-
+#[cfg(target_os = "linux")]
 #[test]
 fn detects_the_current_process_by_comm_name() {
     let current = std::fs::read_to_string(format!("/proc/{}/comm", std::process::id())).unwrap();
