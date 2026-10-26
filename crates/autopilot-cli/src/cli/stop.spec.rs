@@ -35,9 +35,21 @@ fn stop_sends_a_shutdown_request() {
 
     let server = std::thread::spawn(move || {
         let (mut stream, _) = listener.accept().unwrap();
-        let mut request = [0_u8; 1024];
-        let read = stream.read(&mut request).unwrap();
-        let request = String::from_utf8_lossy(&request[..read]).to_string();
+        // A single read() may return a partial request since TCP is a byte
+        // stream, so keep reading until the end of the HTTP headers arrives.
+        let mut request = Vec::new();
+        let mut chunk = [0_u8; 1024];
+        loop {
+            let read = stream.read(&mut chunk).unwrap();
+            if read == 0 {
+                break;
+            }
+            request.extend_from_slice(&chunk[..read]);
+            if request.windows(4).any(|w| w == b"\r\n\r\n") {
+                break;
+            }
+        }
+        let request = String::from_utf8_lossy(&request).to_string();
         stream
             .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
             .unwrap();
