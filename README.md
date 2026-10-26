@@ -355,6 +355,8 @@ Tasks run with `sh -c` on Unix and `cmd /C` on Windows. Use syntax supported by 
 - [API reference](docs/API.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Contributing](docs/CONTRIBUTING.md)
+- [AI agent guide](AGENTS.md)
+- [LLM index](llms.txt)
 - [AI-powered documentation](https://deepwiki.com/streamtechteam/autopilot-rs)
 
 ## Development

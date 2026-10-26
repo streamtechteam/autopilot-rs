@@ -86,6 +86,8 @@ Documentation lives in:
 - `docs/API.md` — HTTP API and security.
 - `docs/ARCHITECTURE.md` — codebase overview.
 - `docs/CONTRIBUTING.md` — this file.
+- `AGENTS.md` — instructions and guardrails for AI coding agents.
+- `llms.txt` — compact documentation index for LLM tools.
 
 When changing behavior, update the relevant document and examples. Keep JSONC snippets valid, use relative links, and call out current limitations rather than documenting behavior that does not exist yet.
 
