@@ -12,10 +12,7 @@ pub fn stop(quiet: bool) -> Result<(), std::io::Error> {
         info!("{}", language::en_us::AUTOPILOT_SHUTDOWN.yellow());
     }
     let address = address();
-    let mut stream = match TcpStream::connect(&address) {
-        Ok(stream) => stream,
-        Err(err) => return Err(err),
-    };
+    let mut stream = TcpStream::connect(&address)?;
     let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(2)));
     let _ = stream.set_write_timeout(Some(std::time::Duration::from_secs(2)));
 
