@@ -1,0 +1,68 @@
+# AutoPilot-rs
+
+> AutoPilot-rs is a cross-platform, local-first task scheduler written in Rust. It runs shell tasks when configurable conditions (WiFi, Bluetooth, power, CPU/memory, processes, files, disks, screens, and others) are satisfied. It ships a CLI, an HTTP API, and a native GUI.
+
+## Start here
+
+- [README](README.md): project overview, installation, quick start, configuration, and troubleshooting.
+- [Documentation index](docs/README.md): map of all user and contributor documentation.
+- [LLM and agent index](llms.txt): this file.
+- [Coding-agent instructions](AGENTS.md): repository conventions, commands, guardrails, and validation steps.
+
+## User documentation
+
+- [Job files and schedules](docs/JOBS.md): JSON/JSONC job schema, schedule types, runtime behavior, status values, and storage.
+- [Conditions guide](docs/CONDITIONS.md): all condition types, JSON schemas, platform support, examples, and current limitations.
+- [CLI reference](docs/CLI.md): commands, global options, interactive workflows, signals, and environment variables.
+- [API reference](docs/API.md): endpoints, request/response examples, reload behavior, and security guidance.
+
+## Contributor documentation
+
+- [Architecture](docs/ARCHITECTURE.md): workspace crate map, startup flow, job runtime, API architecture, storage, and tests.
+- [Contributing](docs/CONTRIBUTING.md): build, test, format, clippy, schema generation, documentation workflow, and pull requests.
+
+## Examples and schema
+
+- [Job templates](templates/): starter job files.
+- [Example jobs](examples/): WiFi, Bluetooth, file, disk, process, time, internet, and combined-condition examples.
+- [Job JSON schema](json_schema/schema.json): generated schema for `JobScheme`.
+- [Workspace manifest](Cargo.toml): workspace members and shared dependencies.
+
+## Key source paths
+
+- [CLI entry point](crates/autopilot-cli/src/main.rs): binary entry.
+- [CLI commands](crates/autopilot-cli/src/cli): argument parsing, serve/stop/status/list/create/remove/gui.
+- [HTTP routes](crates/autopilot-api/src/routes.rs): Axum routes and bind address.
+- [API handlers](crates/autopilot-api/src/handlers): health, lifecycle, and job CRUD handlers.
+- [Runtime facade](crates/autopilot-core/src/autopilot/mod.rs): `AutoPilot`, start/stop/reload, job loading.
+- [Job model and runtime](crates/autopilot-core-job/src/job/mod.rs): job scheme, condition evaluation, task execution, status updates.
+- [Conditions](crates/autopilot-core-conditions/src/conditions): condition implementations and schemas.
+- [Task execution](crates/autopilot-core-task/src/task): shell command runner.
+- [Schedules](crates/autopilot-core-time/src/time/mod.rs): `When` variants and cron expressions.
+- [Configuration paths and storage](crates/autopilot-core-fs/src): config root, jobs directory, JSON/JSONC store.
+- [Health checks](crates/autopilot-core-checks/src/checks.rs): API address, defaults, and `/health` client.
+
+## Important facts
+
+- Default API address: `http://127.0.0.1:7883`.
+- Environment variables: `AUTOPILOT_HOST` (default `127.0.0.1`) and `AUTOPILOT_PORT` (default `7883`).
+- `autopilot-rs serve` always starts the API; `--api` only suppresses automatic job start.
+- The API is unauthenticated and uses plain HTTP. Keep it on loopback.
+- API job CRUD writes files; `POST /reload` or `POST /restart` applies changes to the live runtime.
+- Reload/restart failures currently return HTTP `200` with `"success": false`.
+- Invalid job files are skipped by the loader; duplicate job IDs prevent the job set from loading.
+- `file` condition `size_changed` currently checks a minimum size threshold; it does not detect a change from a previous size.
+- A failed task is logged, but the job currently reports `Completed`.
+- The Unix signal handler processes one `SIGHUP`; `SIGINT`/`SIGTERM` exit directly.
+
+## Development commands
+
+```bash
+cargo fmt --all -- --check
+cargo check --workspace --all-targets --locked
+cargo test --workspace --locked
+cargo clippy -p autopilot-api --all-targets --locked
+cargo run -p autopilot-rs -- --help
+```
+
+The workspace contains both `autopilot-rs` and `autopilot-gui`; always pass `-p autopilot-rs` when running the CLI with Cargo.

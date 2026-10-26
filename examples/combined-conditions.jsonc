@@ -26,7 +26,7 @@
   ],
   "tasks": [
     {
-      "command": "notify-send 'You are home, phone is nearby, and it\\'s evening!'"
+      "command": "notify-send \"You are home, phone is nearby, and it's evening!\""
     },
     {
       "command": "mpv /path/to/music/playlist.m3u"

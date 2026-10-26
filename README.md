@@ -1,100 +1,116 @@
 <!--![autopilot-rs](assets/logo.png)-->
-<img src="assets/logo.png" alt="Alt Text" width="500">
+<img src="assets/logo.png" alt="AutoPilot-rs logo" width="500">
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/streamtechteam/autopilot-rs)
+
 # AutoPilot-rs
 
-A cross-platform automation tool that runs tasks when conditions are met. Write once, run on Linux, macOS, and Windows.
+A cross-platform automation tool that runs tasks when conditions are met. Write a job once and run it on Linux, macOS, and Windows.
 
-## What It Does
+AutoPilot-rs is a small, local-first scheduler for things like "sync my files when I am on my home WiFi", "open my work apps on weekday mornings", or "run a backup when the machine is idle and charging".
 
-Define a job, set conditions, list tasks. AutoPilot does the rest.
+## Features
+
+- **Condition-based jobs** — 14 condition types covering WiFi, Bluetooth, power, CPU/memory, processes, files, disks, screens, and more.
+- **Flexible schedules** — run immediately, once, daily, weekly, monthly, yearly, or with a cron expression.
+- **Parallel tasks** — a job's shell commands run concurrently; one failing task does not stop the others.
+- **JSON/JSONC job files** — human-readable files stored under your configuration directory.
+- **Three interfaces** — CLI, HTTP API, and a native GUI.
+- **Cross-platform** — Linux, macOS, and Windows backends for the built-in conditions.
+
+## How it works
 
 ```jsonc
 {
   "id": "morning-setup",
-  "name": "Setup my workday",
-  "when": {
-    "type": "daily",
-    "trigger": { "time": "08:00" },
-  },
+  "name": "Set up my workday",
+  "when": { "type": "daily", "trigger": { "time": "08:00" } },
   "conditions": [
     { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } },
-    { "type": "bluetooth", "condition": { "device": "My Headphones" } },
+    { "type": "power", "condition": { "check_charging": true } }
   ],
   "tasks": [
     { "command": "open /Applications/Slack.app" },
-    { "command": "open /Applications/VSCode.app" },
-    { "command": "notify-send 'Good morning!'" },
-  ],
+    { "command": "open /Applications/VSCode.app" }
+  ]
 }
 ```
 
-AutoPilot checks: Are you on office WiFi? Are your headphones connected? If both yes, run the tasks. Simple.
+At 08:00, AutoPilot checks the WiFi and power conditions. If both are true, the tasks run.
 
 ## Installation
 
-### Release
+### Prebuilt binaries
 
-Download latest released version from [GitHub Releases](https://github.com/streamtechteam/autopilot-rs/releases)
+Download the latest release for your platform from [GitHub Releases](https://github.com/streamtechteam/autopilot-rs/releases).
 
-### macOS
+### Build from source
 
-```bash
-# not available right now, but hopefully available someday
-brew install autopilot-rs
-# or build from source
-cargo build --release
-./target/release/autopilot-rs --help
-```
-
-### Linux
+Install a current Rust toolchain, then:
 
 ```bash
 cargo build --release
 ./target/release/autopilot-rs --help
 ```
 
-### Windows
+On Linux, building the GUI requires the XCB/XRandR development packages. On Debian/Ubuntu:
 
 ```bash
-cargo build --release
-.\target\release\autopilot-rs.exe --help
+sudo apt-get install libxcb1-dev libxau-dev libxrandr-dev
 ```
 
-## Quick Start
+On Windows, use `.\target\release\autopilot-rs.exe`.
 
-### 1. Create a Job
+## Quick start
+
+### 1. Create a job
+
+Run the interactive form:
 
 ```bash
 autopilot-rs create
 ```
 
-Or manually create a JSON file in your AutoPilot configuration directory, such as
-`~/.config/autopilot/jobs/my-job.jsonc` on Linux/macOS or
-`%APPDATA%\autopilot\jobs\my-job.jsonc` on Windows.
+Or create a JSONC file manually in your jobs directory:
 
-### 2. Start the Daemon
+```text
+~/.config/autopilot/jobs/my-job.jsonc
+%APPDATA%\autopilot\jobs\my-job.jsonc   # Windows
+```
+
+See [Job files and schedules](docs/JOBS.md) for the full format.
+
+### 2. Start the daemon
 
 ```bash
 autopilot-rs serve
 ```
 
-AutoPilot runs in the background, checking conditions and running tasks.
+By default `serve` starts the API and immediately starts the configured jobs. The API listens on `127.0.0.1:7883`.
 
-### 3. List Jobs
+To start the API without starting jobs automatically, use:
+
+```bash
+autopilot-rs serve --api
+```
+
+The API still starts; jobs remain stopped until you call `POST /start`.
+
+### 3. Check whether it is running
+
+```bash
+autopilot-rs status
+```
+
+`status` calls the daemon's `/health` endpoint. `list`, by contrast, only reads job files and works whether or not the daemon is running.
+
+### 4. Browse jobs
 
 ```bash
 autopilot-rs list
 ```
 
-See all configured jobs.
-
-### 4. Remove job
-
-```bash
-autopilot-rs remove
-```
+This opens an interactive job browser. It reads files from the jobs directory and does not require the daemon.
 
 ### 5. Stop AutoPilot
 
@@ -102,188 +118,139 @@ autopilot-rs remove
 autopilot-rs stop
 ```
 
-## Condition Types
+This sends a shutdown request to the running daemon and exits the process.
 
-AutoPilot supports 14 condition types for flexible automation. For complete documentation on each condition type, see [docs/CONDITIONS.md](docs/CONDITIONS.md).
+## HTTP API quick start
 
-### Basic Condition Examples
-
-WiFi - Run when connected to a specific network:
-
-```jsonc
-{
-  "type": "wifi",
-  "condition": { "ssid": "HomeNetwork" },
-}
-```
-
-Bluetooth - Run when a device is connected:
-
-```jsonc
-{
-  "type": "bluetooth",
-  "condition": {
-    "device": "My Headphones",
-    "match_by_mac": false,
-  },
-}
-```
-
-Command - Run a shell command and check the result:
-
-```jsonc
-{
-  "type": "command",
-  "condition": {
-    "command": "test -f /tmp/trigger-file",
-    "check_exit_code": true,
-  },
-}
-```
-
-Variable - Check environment variables:
-
-```jsonc
-{
-  "type": "variable",
-  "condition": {
-    "variable": "USER",
-    "target": "alice",
-  },
-}
-```
-
-Power - Check battery status or charging:
-
-```jsonc
-{
-  "type": "power",
-  "condition": {
-    "check_charging": true,
-  },
-}
-```
-
-### Other Conditions
-
-For more other condition types like Screen, Logical, and others, please refer to the complete documentation in [docs/CONDITIONS.md](docs/CONDITIONS.md).
-
-### Multiple Conditions
-
-All conditions must be true (AND logic):
-
-```jsonc
-{
-  "conditions": [
-    { "type": "wifi", "condition": { "ssid": "Office" } },
-    { "type": "bluetooth", "condition": { "device": "My Headphones" } },
-    { "type": "power", "condition": { "check_charging": true } },
-  ],
-}
-```
-
-If any condition fails, the task doesn't run.
-
-## Job Structure
-
-```jsonc
-{
-  "id": "unique-job-id",
-  "name": "Human readable name",
-  "description": "What this job does",
-  "when": {
-    "type": "daily",
-    "trigger": { "time": "08:00" },
-  },
-  // check conditions every 1000 milliseconds (1 second)
-  "check_interval": "1000",
-  "conditions": [
-    // Zero or more conditions
-  ],
-  "tasks": [
-    // One or more tasks
-    { "command": "echo 'Hello'" },
-    { "command": "touch /tmp/file" },
-  ],
-}
-```
-
-- **id:** Unique identifier (required)
-- **name:** Display name for humans (optional)
-- **description:** What this job does (optional)
-- **when:** When to run the job (optional, defaults to run at autopilot startup)
-- **check_interval:** If a condition fails, autopilot will check it again every x milliseconds
-- **conditions:** List of conditions to check (optional, defaults to always run)
-- **tasks:** List of commands to execute (required)
-
-## JSON Schema
-
-`json_schema/schema.json` is generated from the Rust `JobScheme` types. Regenerate it after changing job, schedule, task, or condition fields:
+> **Security warning:** the API has no authentication or TLS. It binds to loopback by default. Do not expose it to an untrusted network. See [docs/API.md](docs/API.md) for the full security guidance.
 
 ```bash
-cargo run -p autopilot-core --example schema > json_schema/schema.json
+# Start the API without auto-starting jobs
+autopilot-rs serve --api
+
+# Check the daemon
+curl http://127.0.0.1:7883/health
+
+# Start jobs through the API
+curl -X POST http://127.0.0.1:7883/start
+
+# List configured jobs
+curl http://127.0.0.1:7883/jobs
 ```
 
-The core test suite checks that the committed schema matches the Rust definitions.
+The API supports health/status checks, job listing and CRUD, lifecycle controls, and shutdown. Job CRUD writes files; use `POST /reload` or `POST /restart` to apply changes to the running daemon.
 
-## Tasks
+See the [API reference](docs/API.md).
 
-Each task is a shell command:
+## Job format
+
+A job requires an `id`, a `conditions` array, and a `tasks` array. A minimal job with no conditions runs when the job runtime starts:
 
 ```jsonc
 {
-  "command": "ls -la /home",
+  "id": "hello",
+  "name": "Say hello",
+  "conditions": [],
+  "tasks": [{ "command": "echo hello" }]
 }
 ```
 
-Or multi-step with pipes:
+| Field | Required | Description |
+| --- | --- | --- |
+| `id` | yes | Unique job identifier. |
+| `name` | no | Display name. Defaults to `job_<id>`. |
+| `description` | no | Human-readable description. |
+| `when` | no | Schedule. Omit to check conditions when jobs start. |
+| `check_interval` | no | String of milliseconds between condition retries for unscheduled jobs. |
+| `conditions` | yes | Array of conditions. May be empty. All must pass. |
+| `tasks` | yes | Array of `{ "command": "..." }` objects. May be empty. |
 
-```jsonc
-{
-  "command": "cat /var/log/system.log | grep ERROR | wc -l",
-}
+For schedule types, condition composition, and runtime details, see [Job files and schedules](docs/JOBS.md).
+
+## Conditions
+
+All conditions in a job use AND logic. Use a `logical` condition for OR/NOR combinations.
+
+| Type | What it checks |
+| --- | --- |
+| `wifi` | Connected WiFi SSID |
+| `bluetooth` | Connected Bluetooth device name or MAC |
+| `command` | Shell command exit code or output |
+| `variable` | Environment variable value |
+| `power` | Charging state or battery percentage |
+| `resource` | CPU or memory usage |
+| `internet` | Reachability of a host with `ping` |
+| `process` | Whether a process is running |
+| `diskspace` | Free/used space on a path |
+| `file` | File existence, recent modification, or size threshold |
+| `externaldevice` | Mounted external device |
+| `screen` | Number of screens, active screen, or screen names |
+| `logical` | AND/OR/NOR composition of other conditions |
+| `desktopenv` | Current desktop environment |
+
+See the [conditions guide](docs/CONDITIONS.md) for schemas, examples, platform notes, and common patterns.
+
+## CLI
+
+```text
+autopilot-rs [OPTIONS] [COMMAND]
 ```
 
-Tasks run concurrently as parallel shell commands. If one task fails, the remaining tasks still run; the failure is logged.
+| Command | Purpose |
+| --- | --- |
+| `serve [--api]` | Start the API daemon. Without `--api`, jobs start immediately. With `--api`, wait for `POST /start`. |
+| `status` | Check the daemon through `/health`. |
+| `stop` | Send `POST /shutdown` to the daemon. |
+| `list` | Interactive job browser; reads job files only. |
+| `create` | Interactive job creation. |
+| `remove` | Interactive job removal. |
+| `gui` | Launch the native GUI. |
 
-## CLI Commands
+Global options:
 
-```bash
-autopilot-rs serve              # Start daemon
-autopilot-rs stop               # Stop daemon
-autopilot-rs list               # List all jobs
-autopilot-rs create             # Create new job
-autopilot-rs remove             # Remove a job
-autopilot-rs --verbose          # Verbose logging
-autopilot-rs --help             # Show help
-```
+- `--config-path <PATH>` — use a custom configuration root. Place global options before the subcommand.
+- `-v, --verbose` — enable debug logging.
+- `-h, --help` — show help.
+- `-V, --version` — show the version.
+
+See the [CLI reference](docs/CLI.md) for details.
 
 ## Configuration
 
-AutoPilot reads from its configuration directory, defaulting to:
+The configuration root defaults to:
 
-```
+```text
 ~/.config/autopilot/
+├── autopilot.jsonc
 ├── jobs/
-│   ├── morning.jsonc
-│   ├── evening.jsonc
-│   └── cleanup.jsonc
-│
-└── logs/
-    └── <autopilot-log>.log
-```
-
-Status is held in memory while AutoPilot is running and is exposed through the API at `/status`.
-
-On Windows, the default configuration directory is:
-
-```
-%APPDATA%\autopilot/
-├── jobs/
+│   └── *.jsonc
 └── logs/
 ```
+
+On Windows the default is `%APPDATA%\autopilot\`.
+
+Use `--config-path` to override the root:
+
+```bash
+autopilot-rs --config-path /tmp/autopilot-dev serve
+```
+
+The API listens on loopback by default. These environment variables control the address used by the server, health checks, and CLI client:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `AUTOPILOT_HOST` | `127.0.0.1` | Host or IP the API binds to. |
+| `AUTOPILOT_PORT` | `7883` | Port the API listens on. |
+
+```bash
+AUTOPILOT_PORT=9000 autopilot-rs serve
+```
+
+Only change `AUTOPILOT_HOST` when you intentionally want remote access. See [API security](docs/API.md#security).
 
 ## Examples
+
+More examples live in [`examples/`](examples/) and job templates in [`templates/`](templates/).
 
 ### Sync files only on home WiFi
 
@@ -292,7 +259,7 @@ On Windows, the default configuration directory is:
   "id": "sync-home-wifi",
   "name": "Sync files when on home network",
   "conditions": [{ "type": "wifi", "condition": { "ssid": "HomeNetwork" } }],
-  "tasks": [{ "command": "rsync -av ~/Documents /mnt/nas" }],
+  "tasks": [{ "command": "rsync -av ~/Documents /mnt/nas" }]
 }
 ```
 
@@ -302,39 +269,19 @@ On Windows, the default configuration directory is:
 {
   "id": "morning-routine",
   "name": "Morning setup",
-  "when": {
-    "type": "daily",
-    "trigger": { "time": "08:00" },
-  },
+  "when": { "type": "daily", "trigger": { "time": "08:00" } },
   "conditions": [
     { "type": "bluetooth", "condition": { "device": "Headphones" } },
-    { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
+    { "type": "wifi", "condition": { "ssid": "HomeNetwork" } }
   ],
   "tasks": [
-    { "command": "brew update" },
     { "command": "notify-send 'Good morning!'" },
-    { "command": "open /Applications/Mail.app" },
-  ],
+    { "command": "open /Applications/Mail.app" }
+  ]
 }
 ```
 
-### Run when device connects
-
-```jsonc
-{
-  "id": "headphones-connected",
-  "name": "Play sound when headphones connect",
-  "conditions": [
-    { "type": "bluetooth", "condition": { "device": "Sony Headphones" } },
-  ],
-  "tasks": [
-    { "command": "pactl set-default-sink 'Sony Headphones'" },
-    { "command": "speaker-test -t sine -f 1000 -l 1" },
-  ],
-}
-```
-
-### Run only when system is idle
+### Backup when the machine is idle and charging
 
 ```jsonc
 {
@@ -343,166 +290,95 @@ On Windows, the default configuration directory is:
   "conditions": [
     {
       "type": "resource",
-      "condition": {
-        "resource_type": "cpu",
-        "threshold": 20,
-        "operator": "less",
-      },
+      "condition": { "resource_type": "cpu", "threshold": 20, "operator": "less" }
     },
-    {
-      "type": "power",
-      "condition": { "check_charging": true },
-    },
+    { "type": "power", "condition": { "check_charging": true } }
   ],
-  "tasks": [{ "command": "backup.sh" }],
-}
-```
-
-### Conditional based on file
-
-```jsonc
-{
-  "id": "process-if-ready",
-  "name": "Process when trigger file exists",
-  "conditions": [
-    {
-      "type": "file",
-      "condition": {
-        "path": "/tmp/ready-to-process",
-        "check_type": "exists",
-      },
-    },
-  ],
-  "tasks": [
-    { "command": "process_data.sh" },
-    { "command": "rm /tmp/ready-to-process" },
-  ],
+  "tasks": [{ "command": "backup.sh" }]
 }
 ```
 
 ## Troubleshooting
 
-### Jobs not running
+### Jobs are not running
 
-**Check if daemon is running:**
+1. Check whether the daemon is running:
+
+   ```bash
+   autopilot-rs status
+   ```
+
+2. Start it if needed:
+
+   ```bash
+   autopilot-rs serve
+   ```
+
+3. Check the logs in your configuration's `logs/` directory.
+4. Enable debug logging. Global options go before the subcommand:
+
+   ```bash
+   autopilot-rs --verbose serve
+   ```
+
+### A job does not appear in `list`
+
+`list` reads job files from disk. Check that the file is in `<config-root>/jobs/`, that it is valid JSON/JSONC, and that its job ID is unique. Invalid files are skipped by the loader; duplicate IDs prevent jobs from loading.
+
+### A condition is not behaving as expected
+
+- Test the underlying command manually in a shell.
+- Use absolute paths; `~` is not expanded by every backend.
+- Check the exact field names and values in the [conditions guide](docs/CONDITIONS.md).
+- Remember that job-level conditions are ANDed. Use a `logical` condition for OR/NOR.
+
+### API changes do not affect running jobs
+
+Job CRUD writes files. Apply them with:
 
 ```bash
-autopilot-rs list
+curl -X POST http://127.0.0.1:7883/reload
 ```
 
-If it is not responding, start the daemon:
+or restart the daemon. See [API lifecycle](docs/API.md#lifecycle-and-reload-behavior).
 
-```bash
-autopilot-rs serve
-```
+### Tasks fail
 
-**Check condition logic:**
-
-Run conditions manually to debug:
-
-```bash
-# Test WiFi
-nmcli dev show | grep CONNECTION
-
-# Test custom command
-test -f /tmp/file && echo "Exists" || echo "Missing"
-```
-
-**Check logs:**
-
-```bash
-tail -f ~/.config/autopilot/logs/<logdate>.log
-```
-
-**Enable verbose mode:**
-
-```bash
-autopilot-rs serve --verbose
-```
-
-### Condition not working
-
-1. Test the command manually in your shell
-2. Check exact paths (use absolute paths, not `~`)
-3. Check file permissions
-4. Check environment variables are set
-5. See the issue tracker and condition reference for further debugging guidance.
-
-### Task execution issues
-
-- Commands must be shell-compatible (sh, zsh, PowerShell depending on OS)
-- Use absolute paths for commands
-- Redirect errors to see what went wrong: `command 2>&1`
-- Test commands manually first
-
-## Platform Support
-
-| Feature             | Linux | macOS | Windows |
-| ------------------- | ----- | ----- | ------- |
-| WiFi detection      | ✅    | ✅    | ✅      |
-| Bluetooth detection | ✅    | ✅    | ✅      |
-| Command execution   | ✅    | ✅    | ✅      |
-| Variables           | ✅    | ✅    | ✅      |
-| Power/Battery       | ✅    | ✅    | ✅      |
-| Resource (CPU/RAM)  | ✅    | ✅    | ✅      |
-| Internet check      | ✅    | ✅    | ✅      |
-| Process monitoring  | ✅    | ✅    | ✅      |
-| Disk space          | ✅    | ✅    | ✅      |
-| File monitoring     | ✅    | ✅    | ✅      |
-| External devices    | ✅    | ✅    | ✅      |
-| Screen/Monitor      | ✅    | ✅    | ✅      |
-| Logical             | ✅    | ✅    | ✅      |
-
-All 14 user-facing condition types are supported.
+Tasks run with `sh -c` on Unix and `cmd /C` on Windows. Use syntax supported by those shells, test commands manually, and redirect errors while debugging (`command 2>&1`). Failed tasks are logged; the other tasks in the job still run.
 
 ## Documentation
 
-- **[CONDITIONS.md](docs/CONDITIONS.md)** - Detailed condition reference (14 user-facing types)
+- [Documentation index](docs/README.md)
+- [Job files and schedules](docs/JOBS.md)
+- [Conditions guide](docs/CONDITIONS.md)
+- [CLI reference](docs/CLI.md)
+- [API reference](docs/API.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Contributing](docs/CONTRIBUTING.md)
+- [AI agent guide](AGENTS.md)
+- [LLM index](llms.txt)
+- [AI-powered documentation](https://deepwiki.com/streamtechteam/autopilot-rs)
 
-### AI powered docs
+## Development
 
-- https://deepwiki.com/streamtechteam/autopilot-rs
-- https://github.com/streamtechteam/autopilot-rs
+```bash
+cargo fmt --all -- --check
+cargo check --workspace --all-targets --locked
+cargo test --workspace --locked
+cargo clippy -p autopilot-api --all-targets --locked
+```
 
-## Contributing
+See [Contributing](docs/CONTRIBUTING.md) for the full development workflow, test layout, and schema regeneration.
 
-1. Check existing issues
-2. Open an issue or PR on GitHub
-3. Follow the code style (cargo fmt, cargo clippy)
+## Roadmap
+
+- [x] REST API for job management
+- [x] 14 user-facing condition types
+- [ ] Plugin system for custom conditions
+- [ ] Web dashboard
+- [ ] Built-in API authentication
+- [ ] Metrics and monitoring
 
 ## License
 
 MIT
-
-## Roadmap
-
-- [ ] Plugin system for custom conditions
-- [x] REST API for job management
-- [ ] Web dashboard
-- [ ] Performance optimizations
-- [ ] Metrics and monitoring
-- [x] 14 user-facing condition types (WiFi, Bluetooth, Command, Variable, DesktopEnv, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, Screen, Logical)
-
-## FAQ
-
-**Q: Can I run multiple jobs?**  
-A: Yes. Define as many jobs as you need. All conditions are checked independently.
-
-**Q: What happens if a task fails?**  
-A: Tasks run concurrently; the remaining tasks still run. The failed task's error is logged.
-
-**Q: Can I use environment variables in commands?**  
-A: Yes. Shell expands them: `{ "command": "$HOME/backup.sh" }`
-
-**Q: Does it work on minimal systems?**  
-A: Mostly. Dependencies are minimal. Check docs for platform-specific requirements.
-
-**Q: Can I use this with cron?**  
-A: Yes, but AutoPilot is designed to replace constant cron tasks with condition-based execution.
-
-**Q: How many condition types are supported?**  
-A: 14 user-facing condition types: WiFi, Bluetooth, Command, Variable, DesktopEnv, Power, Resource, Internet, Process, DiskSpace, File, ExternalDevice, Screen, and Logical.
-
----
-
-Built with Rust.
