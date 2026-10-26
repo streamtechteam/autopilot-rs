@@ -29,8 +29,12 @@ pub struct Job {
     pub name: String,
     pub description: String,
     pub when: Option<When>,
+    //  TODO
+    // i should probably make check_interval condition specific
     pub check_interval: Option<String>,
     pub conditions: Vec<Box<dyn Condition>>,
+    //  TODO - IMPORTANT
+    // i should add a toggle for tasks running method (concurrent, sequential)
     pub tasks: Vec<Task>,
     pub loaded: bool,
 }
@@ -222,3 +226,6 @@ mod spec;
 
 #[cfg(test)]
 pub(crate) mod test_support;
+
+//  TODO
+// this module is getting very long and big, can probably benefit some small improvments and refactors
