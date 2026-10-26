@@ -8,6 +8,7 @@ use autopilot_core_error::AutoPilotError;
 use crate::job::JobScheme;
 
 #[async_trait]
+#[allow(clippy::double_must_use)]
 pub trait JobRepository: Send + Sync {
     async fn list_jobs(&self) -> Result<Vec<JobScheme>, AutoPilotError>;
     async fn get_job(&self, id: &str) -> Result<Option<JobScheme>, AutoPilotError>;
