@@ -31,23 +31,17 @@ pub fn get_supported_editors() -> Vec<&'static str> {
         .filter(|&editor| {
             #[cfg(target_os = "windows")]
             {
-                match duct_sh::sh_dangerous(format!("where {}", editor))
+                duct_sh::sh_dangerous(format!("where {}", editor))
                     .stdout_null()
                     .stderr_null()
                     .run()
-                {
-                    Ok(_) => return true,
-                    Err(_) => return false,
-                }
+                    .is_ok()
             }
-            match duct_sh::sh_dangerous(format!("which {}", editor))
+            duct_sh::sh_dangerous(format!("which {}", editor))
                 .stdout_null()
                 .stderr_null()
                 .run()
-            {
-                Ok(_) => true,
-                Err(_) => false,
-            }
+                .is_ok()
         })
         .collect()
 }

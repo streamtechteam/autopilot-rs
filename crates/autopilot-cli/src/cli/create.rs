@@ -215,21 +215,20 @@ async fn create_interactive() -> Result<PathBuf, AutoPilotError> {
             .map_err(|err| AutoPilotError::InvalidJob(err.to_string()))?;
 
         let desired_editor = supported_editors[desired_editor];
-        let command;
-        if desired_editor == "Inline" {
-            command = Input::with_theme(&ColorfulTheme::default())
+        let command = if desired_editor == "Inline" {
+            Input::with_theme(&ColorfulTheme::default())
                 .with_prompt("Enter command to execute:")
                 .interact_text()
                 .map_err(|err| {
                     AutoPilotError::InvalidJob(format!("Failed to get command: {}", err))
-                })?;
+                })?
         } else {
-            command = Editor::new()
+            Editor::new()
                 .executable(desired_editor)
                 .edit("")
                 .map_err(|err| AutoPilotError::InvalidJob(err.to_string()))?
-                .ok_or_else(|| AutoPilotError::Command("Command not provided".to_string()))?;
-        }
+                .ok_or_else(|| AutoPilotError::Command("Command not provided".to_string()))?
+        };
         tasks.push(TaskScheme { command });
     }
 

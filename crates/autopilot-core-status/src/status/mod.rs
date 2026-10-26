@@ -73,6 +73,12 @@ impl StateManager {
     }
 }
 
+impl Default for StateManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct JobStatusStruct {
     pub id: String,
