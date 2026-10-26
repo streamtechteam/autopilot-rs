@@ -60,6 +60,21 @@ fn truncated_linux_comm_names_match_longer_configured_names() {
     assert!(process_name_matches("telegram-deskto", "telegram-desktop"));
 }
 
+#[cfg(target_os = "macos")]
+#[test]
+fn detects_the_current_process_by_executable_name() {
+    let exe_name = std::env::current_exe()
+        .expect("test executable path")
+        .file_name()
+        .expect("test executable name")
+        .to_string_lossy()
+        .into_owned();
+    let condition = ProcessCondition::new(exe_name.clone(), true);
+
+    assert!(condition.check());
+    assert!(!ProcessCondition::new(exe_name, false).check());
+}
+
 #[test]
 fn reports_name_and_clones() {
     let condition = ProcessCondition::new("bash".to_string(), true);
