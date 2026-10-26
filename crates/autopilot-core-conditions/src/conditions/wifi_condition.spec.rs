@@ -1,5 +1,6 @@
 use super::*;
 
+#[cfg(target_os = "linux")]
 #[test]
 fn parses_connected_network_from_nmcli() {
     let output = "no:Other Network\nyes:Home WiFi\n";

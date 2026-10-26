@@ -37,11 +37,15 @@ pub fn get_supported_editors() -> Vec<&'static str> {
                     .run()
                     .is_ok()
             }
-            duct_sh::sh_dangerous(format!("which {}", editor))
-                .stdout_null()
-                .stderr_null()
-                .run()
-                .is_ok()
+
+            #[cfg(not(target_os = "windows"))]
+            {
+                duct_sh::sh_dangerous(format!("which {}", editor))
+                    .stdout_null()
+                    .stderr_null()
+                    .run()
+                    .is_ok()
+            }
         })
         .collect()
 }

@@ -1,6 +1,7 @@
-use std::time::Duration;
-
 use autopilot_core::task::Task;
+
+#[cfg(unix)]
+use std::time::Duration;
 
 #[tokio::test]
 async fn failing_task_returns_error() {

@@ -27,6 +27,7 @@ impl InternetCondition {
 
 impl Condition for InternetCondition {
     fn check(&self) -> bool {
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
         let timeout_str = self.timeout.to_string();
 
         #[cfg(target_os = "windows")]
@@ -34,7 +35,7 @@ impl Condition for InternetCondition {
             // Windows ping: -n is count, -w is timeout in ms
             let ms_timeout = (self.timeout * 1000).to_string();
             duct_sh::sh_dangerous(
-                vec!["ping", "-n", "1", "-w", &ms_timeout, &self.host]
+                ["ping", "-n", "1", "-w", &ms_timeout, &self.host]
                     .join(" ")
                     .to_string(),
             )
@@ -46,7 +47,7 @@ impl Condition for InternetCondition {
         {
             // macOS ping: -c is count, -t is timeout in seconds
             duct_sh::sh_dangerous(
-                vec!["ping", "-c", "1", "-t", &timeout_str, &self.host]
+                ["ping", "-c", "1", "-t", &timeout_str, &self.host]
                     .join(" ")
                     .to_string(),
             )

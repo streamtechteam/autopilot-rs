@@ -67,19 +67,18 @@ pub fn sync_condition(target_ssid: &str) -> bool {
                 None
             };
 
-        if let Some(ssid) = _ssid {
-            if ssid == target_ssid {
-                return true;
-            }
+        if let Some(ssid) = _ssid
+            && ssid == target_ssid
+        {
+            return true;
         }
 
         // Fallback for other interfaces if en0 fails
         if let Ok(output) = cmd("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", vec!["-I"])
             .read()
+            && let Some(ssid) = get_connected_wifi_macos_airport(&output)
         {
-            if let Some(ssid) = get_connected_wifi_macos_airport(&output) {
-                return ssid == target_ssid;
-            }
+            return ssid == target_ssid;
         }
         false
     }
@@ -87,18 +86,18 @@ pub fn sync_condition(target_ssid: &str) -> bool {
     #[cfg(target_os = "windows")]
     {
         // Windows: use netsh
-        if let Ok(output) = cmd("netsh", vec!["wlan", "show", "interfaces"]).read() {
-            if let Some(ssid) = get_connected_wifi_windows(&output) {
-                return ssid == target_ssid;
-            }
+        if let Ok(output) = cmd("netsh", vec!["wlan", "show", "interfaces"]).read()
+            && let Some(ssid) = get_connected_wifi_windows(&output)
+        {
+            return ssid == target_ssid;
         }
 
         // Fallback for Windows: try parsing netsh show current profile
-        if let Ok(output) = cmd("netsh", vec!["wlan", "show", "profiles"]).read() {
+        if let Ok(output) = cmd("netsh", vec!["wlan", "show", "profiles"]).read()
+            && output.contains(target_ssid)
+        {
             // This is less reliable but might help in some environments
-            if output.contains(target_ssid) {
-                return true;
-            }
+            return true;
         }
         false
     }
