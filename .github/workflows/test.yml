@@ -34,61 +34,35 @@ jobs:
         run: cargo clippy --workspace --locked -- -D warnings
 
       - name: Run tests
-        # TEMP-DIAG: report test failures as annotations. REVERT before merge.
+        # TEMP-DIAG: dump raw test output tails as annotations. REVERT before merge.
         timeout-minutes: 15
         run: |
           status=0
-          cargo test --workspace --locked --message-format=json -- --format json > /tmp/test.json 2>/tmp/test.err || status=$?
-          python3 - <<'PYEOF'
-          import json
-          n = 0
+          cargo test --workspace --locked > /tmp/test.out 2>/tmp/test.err || status=$?
+          python3 - "$status" <<'PYEOF'
+          import sys
+          status = sys.argv[1]
+          def clean(lines):
+              out = []
+              for l in lines:
+                  s = ' '.join(l.split())[:220]
+                  if s:
+                      out.append(s)
+              return out
           try:
-              lines = open('/tmp/test.json', errors='replace').read().splitlines()
+              out = clean(open('/tmp/test.out', errors='replace').read().splitlines())
           except OSError:
-              lines = []
-          for raw in lines:
-              raw = raw.strip()
-              if not raw.startswith('{'):
-                  continue
-              try:
-                  msg = json.loads(raw)
-              except ValueError:
-                  continue
-              if msg.get('type') == 'test' and msg.get('event') == 'failed':
-                  name = msg.get('name', '?')
-                  out = ' '.join((msg.get('stdout') or '').split())[:400]
-                  print(f"::error title=test-failed::{name} :: {out}", flush=True)
-                  n += 1
-              if msg.get('reason') == 'compiler-message':
-                  m = msg.get('message', {})
-                  if m.get('level') != 'error':
-                      continue
-                  code = (m.get('code') or {}).get('code', 'rustc')
-                  text = ' '.join((m.get('message') or '').split())[:300]
-                  shown = False
-                  for s in m.get('spans', []) or []:
-                      if not s.get('is_primary'):
-                          continue
-                      f = s.get('file_name', '')
-                      if '/registry/' in f or not f.endswith('.rs'):
-                          continue
-                      print(f"::error file={f},line={s.get('line_start', 1)},title={code}::{text}", flush=True)
-                      n += 1
-                      shown = True
-                      break
-                  if not shown:
-                      print(f"::error title={code}::{text}", flush=True)
-                      n += 1
-              if n >= 12:
-                  break
+              out = ['<no stdout>']
           try:
-              err = open('/tmp/test.err', errors='replace').read().splitlines()
+              err = clean(open('/tmp/test.err', errors='replace').read().splitlines())
           except OSError:
-              err = []
-          for l in err:
-              s = l.strip()
-              if any(k in s for k in ('FAILED', 'failures:', 'panicked', 'test result', 'error[')):
-                  print(f"::notice title=cargo-stderr::{s[:250]}", flush=True)
-          print(f"::notice title=test-diag-count::emitted {n} annotations, exit={open('/tmp/test.exit').read() if False else '?'}", flush=True)
+              err = ['<no stderr>']
+          print(f"::notice title=diag-status::exit={status} stdout_lines={len(out)} stderr_lines={len(err)}", flush=True)
+          for i in range(0, min(len(out[-32:]), 32), 8):
+              chunk = ' // '.join(out[-32:][i:i+8])
+              print(f"::notice title=diag-out-{i}::{chunk[:1500]}", flush=True)
+          for i in range(0, min(len(err[-32:]), 32), 8):
+              chunk = ' // '.join(err[-32:][i:i+8])
+              print(f"::notice title=diag-err-{i}::{chunk[:1500]}", flush=True)
           PYEOF
           exit $status
