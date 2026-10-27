@@ -7,7 +7,6 @@ fn preserves_device_and_lowercases_identifier() {
     let from_scheme = ExternalDeviceCondition::from_scheme(ExternalDeviceConditionScheme {
         device_identifier: "My Disk".to_string(),
         check_by_name: None,
-        check_interval: None,
     });
 
     assert_eq!(by_name.device_identifier, "usb stick");

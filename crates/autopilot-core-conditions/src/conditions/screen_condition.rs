@@ -10,9 +10,6 @@ pub struct ScreenCondition {
     pub screen_count: Option<u16>,
     pub active_screen_name: Option<String>,
     pub screen_names: Option<Vec<String>>,
-    /// Per-condition polling interval override in milliseconds.
-    /// `None` means the job-level `check_interval` applies.
-    pub check_interval: Option<String>,
 }
 
 impl ScreenCondition {
@@ -25,7 +22,6 @@ impl ScreenCondition {
             screen_count,
             active_screen_name,
             screen_names,
-            check_interval: None,
         }
     }
 
@@ -34,7 +30,6 @@ impl ScreenCondition {
             screen_count: scheme.screen_count,
             active_screen_name: scheme.active_screen_name,
             screen_names: scheme.screen_names,
-            check_interval: scheme.check_interval,
         }
     }
 }
@@ -54,9 +49,6 @@ impl Condition for ScreenCondition {
 
     fn name(&self) -> &str {
         "Screen"
-    }
-    fn check_interval(&self) -> Option<&str> {
-        self.check_interval.as_deref()
     }
 }
 
@@ -159,12 +151,6 @@ pub struct ScreenConditionScheme {
         )
     )]
     pub screen_names: Option<Vec<String>>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schemars(
-        title = "Check interval",
-        description = "Milliseconds between checks. Overrides the job-level check_interval."
-    )]
-    pub check_interval: Option<String>,
 }
 
 impl ConditionConfig for ScreenConditionScheme {

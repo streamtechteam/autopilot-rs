@@ -8,21 +8,14 @@ use crate::conditions::Condition;
 #[derive(Clone)]
 pub struct DesktopEnvCondition {
     target: String,
-    /// Per-condition polling interval override in milliseconds.
-    /// `None` means the job-level `check_interval` applies.
-    check_interval: Option<String>,
 }
 impl DesktopEnvCondition {
     pub fn new(target: String) -> Self {
-        Self {
-            target,
-            check_interval: None,
-        }
+        Self { target }
     }
     pub fn from_scheme(scheme: DesktopEnvConditionScheme) -> Self {
         Self {
             target: scheme.target,
-            check_interval: scheme.check_interval,
         }
     }
 }
@@ -37,9 +30,6 @@ impl Condition for DesktopEnvCondition {
 
     fn name(&self) -> &str {
         "Desktop Environment"
-    }
-    fn check_interval(&self) -> Option<&str> {
-        self.check_interval.as_deref()
     }
 }
 
@@ -68,12 +58,6 @@ pub struct DesktopEnvConditionScheme {
         extend("x-autopilot" = {"required": true})
     )]
     target: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schemars(
-        title = "Check interval",
-        description = "Milliseconds between checks. Overrides the job-level check_interval."
-    )]
-    check_interval: Option<String>,
 }
 
 /// Detects the current Desktop Environment using a robust fallback chain.

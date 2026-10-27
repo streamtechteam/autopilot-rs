@@ -2,6 +2,7 @@ use super::*;
 use crate::job::test_support;
 use autopilot_core_conditions::ConditionScheme;
 use autopilot_core_conditions::fail_condition::FailCondition;
+use autopilot_core_conditions::polling_condition::PollingCondition;
 use autopilot_core_task::TaskScheme;
 
 fn scheme(id: &str) -> JobScheme {
@@ -120,10 +121,7 @@ async fn run_marks_unsatisfied_without_retry_interval() {
     scheduler.shutdown().await.unwrap();
 }
 
-struct EventuallyTrue(
-    std::sync::Arc<std::sync::atomic::AtomicUsize>,
-    Option<String>,
-);
+struct EventuallyTrue(std::sync::Arc<std::sync::atomic::AtomicUsize>);
 
 impl Condition for EventuallyTrue {
     fn check(&self) -> bool {
@@ -131,15 +129,11 @@ impl Condition for EventuallyTrue {
     }
 
     fn clone_box(&self) -> Box<dyn Condition> {
-        Box::new(Self(self.0.clone(), self.1.clone()))
+        Box::new(Self(self.0.clone()))
     }
 
     fn name(&self) -> &str {
         "EventuallyTrue"
-    }
-
-    fn check_interval(&self) -> Option<&str> {
-        self.1.as_deref()
     }
 }
 
@@ -151,7 +145,7 @@ async fn run_retries_until_the_condition_passes() {
     let mut job = Job::from_scheme(input);
     let checks = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     job.conditions
-        .push(Box::new(EventuallyTrue(checks.clone(), None)));
+        .push(Box::new(EventuallyTrue(checks.clone())));
     let state = StateManager::new();
     let mut scheduler = autopilot_core_time::init::init_time_check().await.unwrap();
 
@@ -171,8 +165,8 @@ async fn run_retries_on_condition_override_without_global_interval() {
     input.conditions.clear();
     let mut job = Job::from_scheme(input);
     let checks = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
-    job.conditions.push(Box::new(EventuallyTrue(
-        checks.clone(),
+    job.conditions.push(Box::new(PollingCondition::new(
+        Box::new(EventuallyTrue(checks.clone())),
         Some("10".to_string()),
     )));
     let state = StateManager::new();

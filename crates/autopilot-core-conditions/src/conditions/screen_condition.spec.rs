@@ -6,7 +6,6 @@ fn from_scheme_preserves_screen_values() {
         screen_count: Some(2),
         active_screen_name: Some("DP-1".to_string()),
         screen_names: Some(vec!["HDMI-1".to_string()]),
-        check_interval: None,
     });
 
     assert_eq!(condition.screen_count, Some(2));

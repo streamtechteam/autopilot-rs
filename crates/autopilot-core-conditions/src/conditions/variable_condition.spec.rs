@@ -35,7 +35,6 @@ fn condition_uses_scheme_values() {
     let condition = VariableCondition::from_scheme(VariableConditionScheme {
         variable: "SOME_VAR".to_string(),
         target: "some-value".to_string(),
-        check_interval: None,
     });
 
     assert_eq!(condition.variable, "SOME_VAR");

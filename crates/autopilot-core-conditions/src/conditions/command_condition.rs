@@ -12,9 +12,6 @@ pub struct CommandCondition {
     pub check_exit_code: bool,
     /// Optional target output to match (only used if check_exit_code is false)
     pub target_output: Option<String>,
-    /// Per-condition polling interval override in milliseconds.
-    /// `None` means the job-level `check_interval` applies.
-    pub check_interval: Option<String>,
 }
 
 impl CommandCondition {
@@ -24,7 +21,6 @@ impl CommandCondition {
             command,
             check_exit_code: true,
             target_output: None,
-            check_interval: None,
         }
     }
 
@@ -34,7 +30,6 @@ impl CommandCondition {
             command,
             check_exit_code: false,
             target_output: Some(target_output),
-            check_interval: None,
         }
     }
 
@@ -44,7 +39,6 @@ impl CommandCondition {
             command: scheme.command,
             check_exit_code: scheme.check_exit_code.unwrap_or(true),
             target_output: scheme.target_output,
-            check_interval: scheme.check_interval,
         }
     }
 }
@@ -64,9 +58,6 @@ impl Condition for CommandCondition {
 
     fn name(&self) -> &str {
         "Command"
-    }
-    fn check_interval(&self) -> Option<&str> {
-        self.check_interval.as_deref()
     }
 }
 
@@ -129,12 +120,6 @@ pub struct CommandConditionScheme {
         extend("x-autopilot" = {"widget": "editor", "provider": "editors"})
     )]
     pub target_output: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schemars(
-        title = "Check interval",
-        description = "Milliseconds between checks. Overrides the job-level check_interval."
-    )]
-    pub check_interval: Option<String>,
 }
 
 #[cfg(test)]

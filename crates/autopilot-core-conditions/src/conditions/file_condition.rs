@@ -17,9 +17,6 @@ pub struct FileCondition {
     pub time_threshold: Option<i64>,
     /// Size threshold for "size_changed" in bytes
     pub size_threshold: Option<u64>,
-    /// Per-condition polling interval override in milliseconds.
-    /// `None` means the job-level `check_interval` applies.
-    pub check_interval: Option<String>,
 }
 
 impl FileCondition {
@@ -34,7 +31,6 @@ impl FileCondition {
             check_type: check_type.to_lowercase(),
             time_threshold,
             size_threshold,
-            check_interval: None,
         }
     }
 
@@ -44,7 +40,6 @@ impl FileCondition {
             check_type: scheme.check_type.to_lowercase(),
             time_threshold: scheme.time_threshold,
             size_threshold: scheme.size_threshold,
-            check_interval: scheme.check_interval,
         }
     }
 }
@@ -106,9 +101,6 @@ impl Condition for FileCondition {
     fn name(&self) -> &str {
         "File"
     }
-    fn check_interval(&self) -> Option<&str> {
-        self.check_interval.as_deref()
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
@@ -151,12 +143,6 @@ pub struct FileConditionScheme {
         extend("x-autopilot" = {"unit": "bytes"})
     )]
     pub size_threshold: Option<u64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schemars(
-        title = "Check interval",
-        description = "Milliseconds between checks. Overrides the job-level check_interval."
-    )]
-    pub check_interval: Option<String>,
 }
 
 #[cfg(test)]

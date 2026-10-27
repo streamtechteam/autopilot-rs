@@ -11,9 +11,6 @@ pub struct ExternalDeviceCondition {
     pub device_identifier: String,
     /// Whether to check by name (true) or mount point (false)
     pub check_by_name: bool,
-    /// Per-condition polling interval override in milliseconds.
-    /// `None` means the job-level `check_interval` applies.
-    pub check_interval: Option<String>,
 }
 
 impl ExternalDeviceCondition {
@@ -21,7 +18,6 @@ impl ExternalDeviceCondition {
         Self {
             device_identifier: device_identifier.to_lowercase(),
             check_by_name,
-            check_interval: None,
         }
     }
 
@@ -29,7 +25,6 @@ impl ExternalDeviceCondition {
         Self {
             device_identifier: scheme.device_identifier.to_lowercase(),
             check_by_name: scheme.check_by_name.unwrap_or(false),
-            check_interval: scheme.check_interval,
         }
     }
 }
@@ -69,9 +64,6 @@ impl Condition for ExternalDeviceCondition {
     fn name(&self) -> &str {
         "External Device"
     }
-    fn check_interval(&self) -> Option<&str> {
-        self.check_interval.as_deref()
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
@@ -95,12 +87,6 @@ pub struct ExternalDeviceConditionScheme {
     #[serde(default)]
     #[schemars(title = "Check by device name")]
     pub check_by_name: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schemars(
-        title = "Check interval",
-        description = "Milliseconds between checks. Overrides the job-level check_interval."
-    )]
-    pub check_interval: Option<String>,
 }
 
 #[cfg(test)]

@@ -7,9 +7,6 @@ use crate::conditions::{Condition, ConditionScheme};
 pub struct LogicalCondition {
     operator: LogicalOperator,
     conditions: Vec<Box<dyn Condition>>,
-    /// Per-condition polling interval override in milliseconds.
-    /// `None` means the job-level `check_interval` applies.
-    check_interval: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default, Deserialize, Serialize, JsonSchema)]
@@ -44,7 +41,6 @@ impl LogicalCondition {
         LogicalCondition {
             operator,
             conditions,
-            check_interval: None,
         }
     }
 
@@ -56,7 +52,6 @@ impl LogicalCondition {
                 .into_iter()
                 .map(|c| c.to_condition())
                 .collect::<Vec<_>>(),
-            check_interval: scheme.check_interval,
         }
     }
 }
@@ -78,9 +73,6 @@ impl Condition for LogicalCondition {
 
     fn name(&self) -> &str {
         "Logical"
-    }
-    fn check_interval(&self) -> Option<&str> {
-        self.check_interval.as_deref()
     }
 }
 
@@ -107,12 +99,6 @@ pub struct LogicalConditionScheme {
         )
     )]
     conditions: Vec<ConditionScheme>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schemars(
-        title = "Check interval",
-        description = "Milliseconds between checks. Overrides the job-level check_interval."
-    )]
-    check_interval: Option<String>,
 }
 
 #[cfg(test)]

@@ -14,6 +14,7 @@ pub mod fail_condition;
 pub mod file_condition;
 pub mod internet_condition;
 pub mod logical_condition;
+pub mod polling_condition;
 pub mod power_condition;
 pub mod process_condition;
 pub mod resource_condition;
@@ -78,6 +79,14 @@ pub enum ConditionScheme {
     // Nor(nor_condition::NorConditionScheme),
     Screen(screen_condition::ScreenConditionScheme),
     Logical(logical_condition::LogicalConditionScheme),
+    /// Polling wrapper: re-checks the inner condition on its own interval
+    Polling(polling_condition::PollingConditionScheme),
+}
+
+impl Default for ConditionScheme {
+    fn default() -> Self {
+        ConditionScheme::Fail(fail_condition::FailCondition)
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -165,6 +174,7 @@ impl ConditionScheme {
             ConditionScheme::Fail(_) => "fail",
             ConditionScheme::Screen(_) => "screen",
             ConditionScheme::Logical(_) => "logical",
+            ConditionScheme::Polling(_) => "polling",
         }
     }
 
@@ -187,6 +197,9 @@ impl ConditionScheme {
             )),
             ConditionScheme::Screen(scheme) => scheme.to_form_values(),
             ConditionScheme::Logical(scheme) => scheme.to_form_values(),
+            ConditionScheme::Polling(_) => Err(FormError::Unsupported(
+                "polling conditions cannot be created from a form".to_string(),
+            )),
         }
     }
 
@@ -309,6 +322,9 @@ impl ConditionScheme {
             ),
             ConditionScheme::Screen(scheme) => Box::new(
                 screen_condition::ScreenCondition::from_scheme(scheme.clone()),
+            ),
+            ConditionScheme::Polling(scheme) => Box::new(
+                polling_condition::PollingCondition::from_scheme(scheme.clone()),
             ),
         }
     }

@@ -9,26 +9,17 @@ use crate::conditions::Condition;
 pub struct WifiCondition {
     /// The SSID (network name) to check for
     pub ssid: String,
-    /// Per-condition polling interval override in milliseconds.
-    /// `None` means the job-level `check_interval` applies.
-    pub check_interval: Option<String>,
 }
 
 impl WifiCondition {
     /// Create a new WiFi condition for a specific SSID
     pub fn new(ssid: String) -> Self {
-        WifiCondition {
-            ssid,
-            check_interval: None,
-        }
+        WifiCondition { ssid }
     }
 
     /// Create from a scheme (used for deserialization)
     pub fn from_scheme(scheme: WifiConditionScheme) -> Self {
-        Self {
-            ssid: scheme.ssid,
-            check_interval: scheme.check_interval,
-        }
+        Self { ssid: scheme.ssid }
     }
 }
 
@@ -43,9 +34,6 @@ impl Condition for WifiCondition {
 
     fn name(&self) -> &str {
         "WiFi"
-    }
-    fn check_interval(&self) -> Option<&str> {
-        self.check_interval.as_deref()
     }
 }
 
@@ -200,12 +188,6 @@ pub struct WifiConditionScheme {
         )
     )]
     pub ssid: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schemars(
-        title = "Check interval",
-        description = "Milliseconds between checks. Overrides the job-level check_interval."
-    )]
-    pub check_interval: Option<String>,
 }
 
 #[cfg(test)]

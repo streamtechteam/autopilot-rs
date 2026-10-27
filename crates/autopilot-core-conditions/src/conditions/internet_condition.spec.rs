@@ -13,7 +13,6 @@ fn from_scheme_uses_supplied_values() {
     let condition = InternetCondition::from_scheme(InternetConditionScheme {
         host: Some("127.0.0.1".to_string()),
         timeout: Some(5),
-        check_interval: None,
     });
 
     assert_eq!(condition.host, "127.0.0.1");

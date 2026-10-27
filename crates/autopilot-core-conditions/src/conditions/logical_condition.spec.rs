@@ -37,14 +37,12 @@ fn nor_requires_no_condition() {
 fn evaluates_scheme_conditions() {
     let condition = LogicalCondition::from_scheme(LogicalConditionScheme {
         operator: LogicalOperator::Or,
-        check_interval: None,
         conditions: vec![
             ConditionScheme::Fail(FailCondition),
             ConditionScheme::Command(CommandConditionScheme {
                 command: "exit 0".to_string(),
                 check_exit_code: None,
                 target_output: None,
-                check_interval: None,
             }),
         ],
     });

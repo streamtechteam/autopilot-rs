@@ -16,7 +16,6 @@ fn parses_connected_network_from_nmcli() {
 fn condition_keeps_ssid_and_reports_name() {
     let condition = WifiCondition::from_scheme(WifiConditionScheme {
         ssid: "Home WiFi".to_string(),
-        check_interval: None,
     });
 
     assert_eq!(condition.ssid, "Home WiFi");

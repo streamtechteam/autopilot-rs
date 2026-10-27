@@ -12,9 +12,6 @@ pub struct ProcessCondition {
     pub process_name: String,
     /// Whether the process should be running (true) or not running (false)
     pub should_be_running: bool,
-    /// Per-condition polling interval override in milliseconds.
-    /// `None` means the job-level `check_interval` applies.
-    pub check_interval: Option<String>,
 }
 
 impl ProcessCondition {
@@ -22,7 +19,6 @@ impl ProcessCondition {
         Self {
             process_name: process_name.to_lowercase(),
             should_be_running,
-            check_interval: None,
         }
     }
 
@@ -30,7 +26,6 @@ impl ProcessCondition {
         Self {
             process_name: scheme.process_name.to_lowercase(),
             should_be_running: scheme.should_be_running.unwrap_or(true),
-            check_interval: scheme.check_interval,
         }
     }
 }
@@ -106,9 +101,6 @@ impl Condition for ProcessCondition {
     fn name(&self) -> &str {
         "Process"
     }
-    fn check_interval(&self) -> Option<&str> {
-        self.check_interval.as_deref()
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
@@ -131,12 +123,6 @@ pub struct ProcessConditionScheme {
     #[serde(default)]
     #[schemars(title = "Should be running")]
     pub should_be_running: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schemars(
-        title = "Check interval",
-        description = "Milliseconds between checks. Overrides the job-level check_interval."
-    )]
-    pub check_interval: Option<String>,
 }
 
 #[cfg(test)]

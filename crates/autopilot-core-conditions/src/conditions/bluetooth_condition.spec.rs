@@ -7,7 +7,6 @@ fn constructors_choose_name_or_mac_matching() {
     let defaulted = BluetoothCondition::from_scheme(BluetoothConditionScheme {
         device: "Keyboard".to_string(),
         match_by_mac: None,
-        check_interval: None,
     });
 
     assert_eq!(by_name.device, "Headphones");

@@ -4,7 +4,6 @@ use super::*;
 fn scheme_values_are_preserved() {
     let condition = DesktopEnvCondition::from_scheme(DesktopEnvConditionScheme {
         target: "GNOME".to_string(),
-        check_interval: None,
     });
 
     assert_eq!(condition.target, "GNOME");

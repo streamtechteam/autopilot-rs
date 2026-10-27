@@ -12,9 +12,6 @@ pub struct PowerCondition {
     pub threshold: Option<f32>,
     /// Comparison operator: "greater" or "less"
     pub operator: Option<String>,
-    /// Per-condition polling interval override in milliseconds.
-    /// `None` means the job-level `check_interval` applies.
-    pub check_interval: Option<String>,
 }
 
 impl PowerCondition {
@@ -23,7 +20,6 @@ impl PowerCondition {
             check_charging: true,
             threshold: None,
             operator: None,
-            check_interval: None,
         }
     }
 
@@ -32,7 +28,6 @@ impl PowerCondition {
             check_charging: false,
             threshold: Some(threshold),
             operator: Some(operator.to_lowercase()),
-            check_interval: None,
         }
     }
 
@@ -41,7 +36,6 @@ impl PowerCondition {
             check_charging: scheme.check_charging.unwrap_or(false),
             threshold: scheme.threshold,
             operator: scheme.operator.map(|s| s.to_lowercase()),
-            check_interval: scheme.check_interval,
         }
     }
 }
@@ -166,9 +160,6 @@ impl Condition for PowerCondition {
     fn name(&self) -> &str {
         "Power"
     }
-    fn check_interval(&self) -> Option<&str> {
-        self.check_interval.as_deref()
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
@@ -199,12 +190,6 @@ pub struct PowerConditionScheme {
         )
     )]
     pub operator: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schemars(
-        title = "Check interval",
-        description = "Milliseconds between checks. Overrides the job-level check_interval."
-    )]
-    pub check_interval: Option<String>,
 }
 
 #[cfg(test)]

@@ -28,7 +28,6 @@ fn from_scheme_preserves_values_and_reports_name() {
         path: "/tmp".to_string(),
         min_free_gb: 1.5,
         max_used_gb: Some(100.0),
-        check_interval: None,
     });
 
     assert_eq!(condition.path, "/tmp");

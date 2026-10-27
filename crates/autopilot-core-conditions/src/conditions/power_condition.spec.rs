@@ -18,7 +18,6 @@ fn from_scheme_defaults_and_lowercases_operator() {
         check_charging: None,
         threshold: Some(75.0),
         operator: Some("GREATER".to_string()),
-        check_interval: None,
     });
 
     assert!(!condition.check_charging);

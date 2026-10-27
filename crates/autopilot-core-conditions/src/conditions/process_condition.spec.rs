@@ -13,7 +13,6 @@ fn from_scheme_defaults_to_should_be_running() {
     let condition = ProcessCondition::from_scheme(ProcessConditionScheme {
         process_name: "BASH".to_string(),
         should_be_running: None,
-        check_interval: None,
     });
 
     assert_eq!(condition.process_name, "bash");

@@ -107,7 +107,6 @@ fn from_scheme_lowercases_check_type() {
         check_type: "EXISTS".to_string(),
         time_threshold: Some(10),
         size_threshold: Some(20),
-        check_interval: None,
     });
 
     assert_eq!(condition.check_type, "exists");
