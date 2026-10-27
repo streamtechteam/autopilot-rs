@@ -33,8 +33,8 @@ jobs:
         run: |
           status=0
           output=$(cargo fmt --check 2>&1) || status=$?
-          echo "$output" | grep '^Diff in ' | sed -E "s|^Diff in $GITHUB_WORKSPACE/([^ ]+) at line ([0-9]+):.*|::error file=\1,line=\2,title=Needs formatting::rustfmt reports a diff here|"
-          echo "$output" | grep -v '^Diff in ' | head -5 | tr '\n' ';' | sed 's/^/::notice title=fmt-other-output::/'
+          echo "$output" | grep '^Diff in ' | sed -E -e "s|^Diff in $GITHUB_WORKSPACE/([^ ]+) at line ([0-9]+):.*|::error file=\1,line=\2,title=Needs formatting::rustfmt reports a diff here|" -e 's|^Diff in ([^ /][^ ]*) at line ([0-9]+):.*|::error file=\1,line=\2,title=Needs formatting::rustfmt reports a diff here|'
+          echo "$output" | tr '\n' ';' | head -c 3000 | sed 's/^/::notice title=fmt-full-output::/'
           echo "::notice title=fmt-exit-status::cargo fmt --check exited with status $status"
           exit $status
 
