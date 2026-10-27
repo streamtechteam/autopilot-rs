@@ -59,25 +59,107 @@ fn builds_cron_expressions_for_recurring_schedules() {
         "0 5 9 * * *"
     );
     assert_eq!(
-        to_cron_expression(When::Weekly(TimeScheme {
-            time: "18:30".to_string()
+        to_cron_expression(When::Weekly(WeeklyScheme {
+            time: "18:30".to_string(),
+            weekday: 1,
         }))
         .unwrap(),
         "0 30 18 * * 1"
     );
     assert_eq!(
-        to_cron_expression(When::Monthly(TimeScheme {
-            time: "01:02".to_string()
+        to_cron_expression(When::Monthly(MonthlyScheme {
+            time: "01:02".to_string(),
+            day: 1,
         }))
         .unwrap(),
         "0 2 1 1 * *"
     );
     assert_eq!(
-        to_cron_expression(When::Yearly(TimeScheme {
-            time: "23:59".to_string()
+        to_cron_expression(When::Yearly(YearlyScheme {
+            time: "23:59".to_string(),
+            month: 1,
+            day: 1,
         }))
         .unwrap(),
         "0 59 23 1 1 *"
+    );
+}
+
+#[test]
+fn builds_cron_expressions_for_custom_dates() {
+    assert_eq!(
+        to_cron_expression(When::Weekly(WeeklyScheme {
+            time: "18:30".to_string(),
+            weekday: 5,
+        }))
+        .unwrap(),
+        "0 30 18 * * 5"
+    );
+    assert_eq!(
+        to_cron_expression(When::Weekly(WeeklyScheme {
+            time: "18:30".to_string(),
+            weekday: 7,
+        }))
+        .unwrap(),
+        "0 30 18 * * 0"
+    );
+    assert_eq!(
+        to_cron_expression(When::Monthly(MonthlyScheme {
+            time: "01:02".to_string(),
+            day: 15,
+        }))
+        .unwrap(),
+        "0 2 1 15 * *"
+    );
+    assert_eq!(
+        to_cron_expression(When::Yearly(YearlyScheme {
+            time: "23:59".to_string(),
+            month: 6,
+            day: 20,
+        }))
+        .unwrap(),
+        "0 59 23 20 6 *"
+    );
+}
+
+#[test]
+fn rejects_out_of_range_schedule_fields() {
+    assert!(
+        to_cron_expression(When::Weekly(WeeklyScheme {
+            time: "18:30".to_string(),
+            weekday: 8,
+        }))
+        .is_err()
+    );
+    assert!(
+        to_cron_expression(When::Monthly(MonthlyScheme {
+            time: "01:02".to_string(),
+            day: 0,
+        }))
+        .is_err()
+    );
+    assert!(
+        to_cron_expression(When::Monthly(MonthlyScheme {
+            time: "01:02".to_string(),
+            day: 32,
+        }))
+        .is_err()
+    );
+    assert!(
+        to_cron_expression(When::Yearly(YearlyScheme {
+            time: "23:59".to_string(),
+            month: 13,
+            day: 1,
+        }))
+        .is_err()
+    );
+    assert!(
+        to_cron_expression(When::Yearly(YearlyScheme {
+            time: "23:59".to_string(),
+            month: 1,
+            day: 0,
+        }))
+        .is_err()
     );
 }
 
@@ -107,4 +189,76 @@ fn when_uses_tagged_serde_representation() {
     assert!(matches!(once, When::Once(_)));
     assert!(matches!(daily, When::Daily(_)));
     assert!(matches!(cron, When::Cron(value) if value == "0 0 * * * *"));
+}
+
+#[test]
+fn recurring_schedule_fields_are_optional_and_default_to_existing_behavior() {
+    let weekly: When =
+        serde_json::from_str(r#"{"type":"weekly","trigger":{"time":"18:30"}}"#).unwrap();
+    let monthly: When =
+        serde_json::from_str(r#"{"type":"monthly","trigger":{"time":"01:02"}}"#).unwrap();
+    let yearly: When =
+        serde_json::from_str(r#"{"type":"yearly","trigger":{"time":"23:59"}}"#).unwrap();
+
+    assert!(matches!(
+        weekly,
+        When::Weekly(WeeklyScheme { weekday: 1, .. })
+    ));
+    assert!(matches!(
+        monthly,
+        When::Monthly(MonthlyScheme { day: 1, .. })
+    ));
+    assert!(matches!(
+        yearly,
+        When::Yearly(YearlyScheme {
+            month: 1,
+            day: 1,
+            ..
+        })
+    ));
+}
+
+#[test]
+fn rejects_unknown_schedule_fields() {
+    let unknown_schedules = [
+        r#"{"type":"once","trigger":{"date":"2030/01/02","time":"03:04","zone":"UTC"}}"#,
+        r#"{"type":"daily","trigger":{"time":"03:04","interval":1}}"#,
+        r#"{"type":"weekly","trigger":{"time":"18:30","weekdays":5}}"#,
+        r#"{"type":"monthly","trigger":{"time":"01:02","day_of_month":15}}"#,
+        r#"{"type":"yearly","trigger":{"time":"23:59","month":6,"day":20,"year":2030}}"#,
+    ];
+
+    for schedule in unknown_schedules {
+        assert!(
+            serde_json::from_str::<When>(schedule).is_err(),
+            "schedule accepted an unknown field: {schedule}"
+        );
+    }
+}
+
+#[test]
+fn recurring_schedule_fields_round_trip() {
+    let weekly = When::Weekly(WeeklyScheme {
+        time: "18:30".to_string(),
+        weekday: 5,
+    });
+    let monthly = When::Monthly(MonthlyScheme {
+        time: "01:02".to_string(),
+        day: 15,
+    });
+    let yearly = When::Yearly(YearlyScheme {
+        time: "23:59".to_string(),
+        month: 6,
+        day: 20,
+    });
+
+    for schedule in [weekly, monthly, yearly] {
+        let json = serde_json::to_string(&schedule).unwrap();
+        let parsed: When = serde_json::from_str(&json).unwrap();
+        assert_eq!(
+            serde_json::to_string(&parsed).unwrap(),
+            json,
+            "schedule did not round-trip: {json}"
+        );
+    }
 }

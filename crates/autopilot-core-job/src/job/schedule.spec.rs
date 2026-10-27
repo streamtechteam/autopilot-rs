@@ -1,5 +1,5 @@
 use super::*;
-use crate::job::Job;
+use crate::job::{Job, TaskMode};
 use autopilot_core_status::StateManager;
 
 fn job(id: &str, when: Option<When>) -> Job {
@@ -11,6 +11,7 @@ fn job(id: &str, when: Option<When>) -> Job {
         when,
         vec![],
         vec![],
+        TaskMode::Concurrent,
     )
 }
 
