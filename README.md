@@ -9,6 +9,10 @@ A cross-platform automation tool that runs tasks when conditions are met. Write 
 
 AutoPilot-rs is a small, local-first scheduler for things like "sync my files when I am on my home WiFi", "open my work apps on weekday mornings", or "run a backup when the machine is idle and charging".
 
+## Important Note
+
+Project licence was been changed to GPL v3 from MIT
+
 ## Features
 
 - **Condition-based jobs** — 14 condition types covering WiFi, Bluetooth, power, CPU/memory, processes, files, disks, screens, and more.
@@ -27,12 +31,12 @@ AutoPilot-rs is a small, local-first scheduler for things like "sync my files wh
   "when": { "type": "daily", "trigger": { "time": "08:00" } },
   "conditions": [
     { "type": "wifi", "condition": { "ssid": "OfficeNetwork" } },
-    { "type": "power", "condition": { "check_charging": true } }
+    { "type": "power", "condition": { "check_charging": true } },
   ],
   "tasks": [
     { "command": "open /Applications/Slack.app" },
-    { "command": "open /Applications/VSCode.app" }
-  ]
+    { "command": "open /Applications/VSCode.app" },
+  ],
 }
 ```
 
@@ -151,19 +155,19 @@ A job requires an `id`, a `conditions` array, and a `tasks` array. A minimal job
   "id": "hello",
   "name": "Say hello",
   "conditions": [],
-  "tasks": [{ "command": "echo hello" }]
+  "tasks": [{ "command": "echo hello" }],
 }
 ```
 
-| Field | Required | Description |
-| --- | --- | --- |
-| `id` | yes | Unique job identifier. |
-| `name` | no | Display name. Defaults to `job_<id>`. |
-| `description` | no | Human-readable description. |
-| `when` | no | Schedule. Omit to check conditions when jobs start. |
-| `check_interval` | no | String of milliseconds between condition retries for unscheduled jobs. |
-| `conditions` | yes | Array of conditions. May be empty. All must pass. |
-| `tasks` | yes | Array of `{ "command": "..." }` objects. May be empty. |
+| Field            | Required | Description                                                            |
+| ---------------- | -------- | ---------------------------------------------------------------------- |
+| `id`             | yes      | Unique job identifier.                                                 |
+| `name`           | no       | Display name. Defaults to `job_<id>`.                                  |
+| `description`    | no       | Human-readable description.                                            |
+| `when`           | no       | Schedule. Omit to check conditions when jobs start.                    |
+| `check_interval` | no       | String of milliseconds between condition retries for unscheduled jobs. |
+| `conditions`     | yes      | Array of conditions. May be empty. All must pass.                      |
+| `tasks`          | yes      | Array of `{ "command": "..." }` objects. May be empty.                 |
 
 For schedule types, condition composition, and runtime details, see [Job files and schedules](docs/JOBS.md).
 
@@ -171,22 +175,22 @@ For schedule types, condition composition, and runtime details, see [Job files a
 
 All conditions in a job use AND logic. Use a `logical` condition for OR/NOR combinations.
 
-| Type | What it checks |
-| --- | --- |
-| `wifi` | Connected WiFi SSID |
-| `bluetooth` | Connected Bluetooth device name or MAC |
-| `command` | Shell command exit code or output |
-| `variable` | Environment variable value |
-| `power` | Charging state or battery percentage |
-| `resource` | CPU or memory usage |
-| `internet` | Reachability of a host with `ping` |
-| `process` | Whether a process is running |
-| `diskspace` | Free/used space on a path |
-| `file` | File existence, recent modification, or size threshold |
-| `externaldevice` | Mounted external device |
-| `screen` | Number of screens, active screen, or screen names |
-| `logical` | AND/OR/NOR composition of other conditions |
-| `desktopenv` | Current desktop environment |
+| Type             | What it checks                                         |
+| ---------------- | ------------------------------------------------------ |
+| `wifi`           | Connected WiFi SSID                                    |
+| `bluetooth`      | Connected Bluetooth device name or MAC                 |
+| `command`        | Shell command exit code or output                      |
+| `variable`       | Environment variable value                             |
+| `power`          | Charging state or battery percentage                   |
+| `resource`       | CPU or memory usage                                    |
+| `internet`       | Reachability of a host with `ping`                     |
+| `process`        | Whether a process is running                           |
+| `diskspace`      | Free/used space on a path                              |
+| `file`           | File existence, recent modification, or size threshold |
+| `externaldevice` | Mounted external device                                |
+| `screen`         | Number of screens, active screen, or screen names      |
+| `logical`        | AND/OR/NOR composition of other conditions             |
+| `desktopenv`     | Current desktop environment                            |
 
 See the [conditions guide](docs/CONDITIONS.md) for schemas, examples, platform notes, and common patterns.
 
@@ -196,15 +200,15 @@ See the [conditions guide](docs/CONDITIONS.md) for schemas, examples, platform n
 autopilot-rs [OPTIONS] [COMMAND]
 ```
 
-| Command | Purpose |
-| --- | --- |
+| Command         | Purpose                                                                                              |
+| --------------- | ---------------------------------------------------------------------------------------------------- |
 | `serve [--api]` | Start the API daemon. Without `--api`, jobs start immediately. With `--api`, wait for `POST /start`. |
-| `status` | Check the daemon through `/health`. |
-| `stop` | Send `POST /shutdown` to the daemon. |
-| `list` | Interactive job browser; reads job files only. |
-| `create` | Interactive job creation. |
-| `remove` | Interactive job removal. |
-| `gui` | Launch the native GUI. |
+| `status`        | Check the daemon through `/health`.                                                                  |
+| `stop`          | Send `POST /shutdown` to the daemon.                                                                 |
+| `list`          | Interactive job browser; reads job files only.                                                       |
+| `create`        | Interactive job creation.                                                                            |
+| `remove`        | Interactive job removal.                                                                             |
+| `gui`           | Launch the native GUI.                                                                               |
 
 Global options:
 
@@ -237,10 +241,10 @@ autopilot-rs --config-path /tmp/autopilot-dev serve
 
 The API listens on loopback by default. These environment variables control the address used by the server, health checks, and CLI client:
 
-| Variable | Default | Description |
-| --- | --- | --- |
+| Variable         | Default     | Description                  |
+| ---------------- | ----------- | ---------------------------- |
 | `AUTOPILOT_HOST` | `127.0.0.1` | Host or IP the API binds to. |
-| `AUTOPILOT_PORT` | `7883` | Port the API listens on. |
+| `AUTOPILOT_PORT` | `7883`      | Port the API listens on.     |
 
 ```bash
 AUTOPILOT_PORT=9000 autopilot-rs serve
@@ -259,7 +263,7 @@ More examples live in [`examples/`](examples/) and job templates in [`templates/
   "id": "sync-home-wifi",
   "name": "Sync files when on home network",
   "conditions": [{ "type": "wifi", "condition": { "ssid": "HomeNetwork" } }],
-  "tasks": [{ "command": "rsync -av ~/Documents /mnt/nas" }]
+  "tasks": [{ "command": "rsync -av ~/Documents /mnt/nas" }],
 }
 ```
 
@@ -272,12 +276,12 @@ More examples live in [`examples/`](examples/) and job templates in [`templates/
   "when": { "type": "daily", "trigger": { "time": "08:00" } },
   "conditions": [
     { "type": "bluetooth", "condition": { "device": "Headphones" } },
-    { "type": "wifi", "condition": { "ssid": "HomeNetwork" } }
+    { "type": "wifi", "condition": { "ssid": "HomeNetwork" } },
   ],
   "tasks": [
     { "command": "notify-send 'Good morning!'" },
-    { "command": "open /Applications/Mail.app" }
-  ]
+    { "command": "open /Applications/Mail.app" },
+  ],
 }
 ```
 
@@ -290,11 +294,15 @@ More examples live in [`examples/`](examples/) and job templates in [`templates/
   "conditions": [
     {
       "type": "resource",
-      "condition": { "resource_type": "cpu", "threshold": 20, "operator": "less" }
+      "condition": {
+        "resource_type": "cpu",
+        "threshold": 20,
+        "operator": "less",
+      },
     },
-    { "type": "power", "condition": { "check_charging": true } }
+    { "type": "power", "condition": { "check_charging": true } },
   ],
-  "tasks": [{ "command": "backup.sh" }]
+  "tasks": [{ "command": "backup.sh" }],
 }
 ```
 
