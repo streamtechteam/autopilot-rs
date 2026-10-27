@@ -13,12 +13,9 @@ pub async fn serve(verbose: bool, api: bool) {
             std::process::exit(1);
         }
     };
-    match auto_pilot.write().await.init(verbose).await {
-        Err(err) => {
-            error!("Failed to initialize autopilot: {}", err);
-            std::process::exit(1);
-        }
-        Ok(_) => {}
+    if let Err(err) = auto_pilot.write().await.init(verbose).await {
+        error!("Failed to initialize autopilot: {}", err);
+        std::process::exit(1);
     }
     if !api {
         auto_pilot.write().await.start();

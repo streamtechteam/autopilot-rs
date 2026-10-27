@@ -103,12 +103,19 @@ fn get_current_de() -> Option<String> {
 
     // 8. Windows / macOS Handling
     #[cfg(target_os = "windows")]
-    return Some("WINDOWS".to_string());
+    {
+        Some("WINDOWS".to_string())
+    }
 
     #[cfg(target_os = "macos")]
-    return Some("MACOS".to_string());
+    {
+        Some("MACOS".to_string())
+    }
 
-    None
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    {
+        None
+    }
 }
 
 #[cfg(test)]

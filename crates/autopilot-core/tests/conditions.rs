@@ -1,6 +1,9 @@
+#[cfg(unix)]
+use autopilot_core::conditions::disk_space_condition::DiskSpaceCondition;
+#[cfg(target_os = "linux")]
+use autopilot_core::conditions::process_condition::ProcessCondition;
 use autopilot_core::conditions::{
-    Condition, command_condition::CommandCondition, disk_space_condition::DiskSpaceCondition,
-    process_condition::ProcessCondition, resource_condition::ResourceCondition,
+    Condition, command_condition::CommandCondition, resource_condition::ResourceCondition,
     variable_condition::VariableCondition,
 };
 

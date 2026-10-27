@@ -18,9 +18,7 @@ impl Task {
     }
     pub fn run(&self) -> JoinHandle<Result<(), AutoPilotError>> {
         let command = self.command.clone();
-        tokio::task::spawn(async move {
-            return runner::async_run(command).await;
-        })
+        tokio::task::spawn(async move { runner::async_run(command).await })
     }
     pub fn run_sync(&self) -> Result<(), AutoPilotError> {
         runner::sync_run(self.command.clone())?;

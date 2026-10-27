@@ -1,141 +1,18 @@
-use super::*;
-use std::sync::{Mutex, MutexGuard, Once};
+use axum::{
+    Json,
+    extract::{Path, State},
+    http::StatusCode,
+};
 
-static CONFIG_INIT: Once = Once::new();
-static CONFIG_LOCK: Mutex<()> = Mutex::new(());
+use autopilot_core::job::set::add_job;
+use autopilot_core::status::JobStatusEnum;
 
-fn config_lock() -> MutexGuard<'static, ()> {
-    CONFIG_INIT.call_once(|| {
-        let dir = std::env::temp_dir().join(format!(
-            "autopilot-api-spec-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
-        ));
-        autopilot_core::fs::init(Some(dir)).unwrap();
-    });
-
-    CONFIG_LOCK
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
-}
-
-fn job(id: &str, name: &str) -> autopilot_core::job::Job {
-    autopilot_core::job::Job::new(
-        id.to_string(),
-        name.to_string(),
-        "Description".to_string(),
-        None,
-        None,
-        vec![],
-        vec![],
-    )
-}
-
-fn payload(id: &str, name: &str) -> JobScheme {
-    JobScheme {
-        id: id.to_string(),
-        name: Some(name.to_string()),
-        description: Some("description".to_string()),
-        when: None,
-        check_interval: None,
-        conditions: vec![],
-        tasks: vec![],
-    }
-}
-
-async fn state_with_jobs(jobs: Vec<autopilot_core::job::Job>) -> AppState {
-    let mut autopilot = autopilot_core::autopilot::AutoPilot::new().await.unwrap();
-    autopilot.jobs = jobs;
-    AppState {
-        auto_pilot: std::sync::Arc::new(tokio::sync::RwLock::new(autopilot)),
-    }
-}
-
-#[tokio::test]
-async fn health_reports_ok() {
-    let response = health().await.0;
-
-    assert_eq!(response.status, "ok");
-    assert_eq!(response.service, API_SERVICE_NAME);
-}
-
-#[tokio::test]
-async fn job_response_uses_the_live_status() {
-    let job = job("job_live", "Live");
-    let state = StateManager::new();
-
-    let response = JobResponse::from_job_and_sm(&job, state.clone()).await;
-    assert_eq!(response.id, "job_live");
-    assert_eq!(response.name, "Live");
-    assert_eq!(response.description, "Description");
-    assert!(!response.loaded);
-    assert_eq!(response.status, "None");
-
-    state
-        .set("job_live".to_string(), None, JobStatusEnum::Running)
-        .await;
-    let response = JobResponse::from_job_and_sm(&job, state).await;
-    assert_eq!(response.status, "Some(Running)");
-}
-
-#[test]
-fn job_response_converts_from_status_struct() {
-    let status = autopilot_core::status::JobStatusStruct::new(
-        "job_status".to_string(),
-        "Status".to_string(),
-        JobStatusEnum::Failed,
-    );
-
-    let response = JobResponse::from(&status);
-    assert_eq!(response.id, "job_status");
-    assert_eq!(response.name, "Status");
-    assert_eq!(response.description, "Status");
-    assert!(response.loaded);
-    assert_eq!(response.status, "Failed");
-}
-
-#[tokio::test]
-async fn jobs_status_reports_count_and_running_flag() {
-    let state = state_with_jobs(vec![job("job_1", "One"), job("job_2", "Two")]).await;
-
-    let response = jobs_status(State(state.clone())).await.0;
-    assert!(!response.running);
-    assert_eq!(response.job_count, 2);
-
-    state.auto_pilot.write().await.started = true;
-    let response = jobs_status(State(state.clone())).await.0;
-    assert!(response.running);
-
-    state.auto_pilot.write().await.shutdown().await.unwrap();
-}
-
-#[tokio::test]
-async fn jobs_stop_reports_conflict_when_already_stopped() {
-    let state = state_with_jobs(vec![]).await;
-
-    assert_eq!(
-        jobs_stop(State(state)).await.unwrap_err(),
-        StatusCode::CONFLICT
-    );
-}
-
-#[tokio::test]
-async fn jobs_stop_stops_a_started_instance() {
-    let state = state_with_jobs(vec![]).await;
-    state.auto_pilot.write().await.started = true;
-
-    let response = jobs_stop(State(state.clone())).await.unwrap().0;
-    assert_eq!(response["success"], true);
-    assert_eq!(response["message"], "Jobs stopped");
-    assert!(!state.auto_pilot.read().await.started);
-}
+use super::{jobs_create, jobs_delete, jobs_getbyid, jobs_list, jobs_update};
+use crate::handlers::test_support::{config_lock, payload, state_with_jobs};
 
 #[tokio::test]
 async fn jobs_getbyid_finds_jobs_on_disk() {
-    let _guard = config_lock();
+    let _guard = config_lock().await;
     let path = add_job(
         Some("Find".to_string()),
         Some("Find description".to_string()),
@@ -168,7 +45,7 @@ async fn jobs_getbyid_finds_jobs_on_disk() {
 
 #[tokio::test]
 async fn jobs_list_merges_live_statuses() {
-    let _guard = config_lock();
+    let _guard = config_lock().await;
     let path = add_job(
         Some("List Live".to_string()),
         Some("List description".to_string()),
@@ -204,7 +81,7 @@ async fn jobs_list_merges_live_statuses() {
 
 #[tokio::test]
 async fn jobs_create_writes_a_job_file() {
-    let _guard = config_lock();
+    let _guard = config_lock().await;
     let response = jobs_create(Json(payload("job_create_spec", "Create Spec")))
         .await
         .unwrap()
@@ -220,7 +97,7 @@ async fn jobs_create_writes_a_job_file() {
 
 #[tokio::test]
 async fn jobs_delete_removes_a_job_file() {
-    let _guard = config_lock();
+    let _guard = config_lock().await;
     let path = add_job(
         Some("Delete Spec".to_string()),
         None,
@@ -239,7 +116,7 @@ async fn jobs_delete_removes_a_job_file() {
 
 #[tokio::test]
 async fn jobs_delete_reports_unknown_ids() {
-    let _guard = config_lock();
+    let _guard = config_lock().await;
 
     assert_eq!(
         jobs_delete(Path("job_does_not_exist".to_string()))
@@ -251,7 +128,7 @@ async fn jobs_delete_reports_unknown_ids() {
 
 #[tokio::test]
 async fn jobs_update_replaces_an_existing_job() {
-    let _guard = config_lock();
+    let _guard = config_lock().await;
     let path = add_job(
         Some("Update Spec".to_string()),
         Some("before".to_string()),
@@ -288,7 +165,7 @@ async fn jobs_update_replaces_an_existing_job() {
 
 #[tokio::test]
 async fn jobs_update_reports_missing_jobs_as_not_found() {
-    let _guard = config_lock();
+    let _guard = config_lock().await;
     let state = state_with_jobs(vec![]).await;
 
     let error = jobs_update(

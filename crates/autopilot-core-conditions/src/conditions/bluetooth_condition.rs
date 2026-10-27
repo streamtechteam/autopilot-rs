@@ -1,3 +1,4 @@
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use duct::cmd;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -54,12 +55,12 @@ impl Condition for BluetoothCondition {
 }
 
 /// Check if a Bluetooth device is connected (synchronously)
-pub fn sync_condition(device: &str, match_by_mac: bool) -> bool {
+pub fn sync_condition(device: &str, _match_by_mac: bool) -> bool {
     #[cfg(target_os = "linux")]
     {
         // Try bluetoothctl first (most common)
         if let Ok(output) = cmd("bluetoothctl", vec!["devices", "Connected"]).read() {
-            return check_bluetooth_linux(&output, device, match_by_mac);
+            return check_bluetooth_linux(&output, device, _match_by_mac);
         }
 
         // Fallback to hcitool if bluetoothctl fails
@@ -124,6 +125,7 @@ pub async fn async_condition(device: &str, match_by_mac: bool) -> bool {
 }
 
 /// Parse Bluetooth devices from bluetoothctl output (Linux)
+#[cfg(target_os = "linux")]
 fn check_bluetooth_linux(output: &str, target_device: &str, match_by_mac: bool) -> bool {
     for line in output.lines() {
         let line = line.trim();

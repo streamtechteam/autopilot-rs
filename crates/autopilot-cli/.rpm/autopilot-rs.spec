@@ -6,7 +6,7 @@ Name: autopilot-rs
 Summary: A cross-platform automation tool that runs tasks when conditions are met
 Version: @@VERSION@@
 Release: @@RELEASE@@%{?dist}
-License: MIT
+License: GPL-3.0-or-later
 Group: Applications/System
 Source0: %{name}-%{version}.tar.gz
 

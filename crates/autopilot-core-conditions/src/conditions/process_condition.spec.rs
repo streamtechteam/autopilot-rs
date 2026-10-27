@@ -18,7 +18,7 @@ fn from_scheme_defaults_to_should_be_running() {
     assert_eq!(condition.process_name, "bash");
     assert!(condition.should_be_running);
 }
-
+#[cfg(target_os = "linux")]
 #[test]
 fn detects_the_current_process_by_comm_name() {
     let current = std::fs::read_to_string(format!("/proc/{}/comm", std::process::id())).unwrap();
@@ -58,6 +58,21 @@ fn short_process_names_do_not_match_longer_names_in_reverse() {
 fn truncated_linux_comm_names_match_longer_configured_names() {
     assert_eq!("telegram-deskto".len(), 15);
     assert!(process_name_matches("telegram-deskto", "telegram-desktop"));
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn detects_the_current_process_by_executable_name() {
+    let exe_name = std::env::current_exe()
+        .expect("test executable path")
+        .file_name()
+        .expect("test executable name")
+        .to_string_lossy()
+        .into_owned();
+    let condition = ProcessCondition::new(exe_name.clone(), true);
+
+    assert!(condition.check());
+    assert!(!ProcessCondition::new(exe_name, false).check());
 }
 
 #[test]

@@ -342,3 +342,6 @@ impl_condition_config!(
 #[cfg(test)]
 #[path = "conditions.spec.rs"]
 mod spec;
+
+//  TODO
+// Absolutly terrifing module, was to do everything manually and its fucking bad

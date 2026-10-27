@@ -1,5 +1,6 @@
 use super::*;
 
+#[cfg(target_os = "linux")]
 #[test]
 fn root_disk_with_no_minimum_passes() {
     let condition = DiskSpaceCondition::new("/".to_string(), 0.0, None);

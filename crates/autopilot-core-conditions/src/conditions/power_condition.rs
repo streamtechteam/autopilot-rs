@@ -99,7 +99,7 @@ impl Condition for PowerCondition {
         {
             if self.check_charging {
                 // 2 = AC, 1 = Battery
-                if let Ok(output) = duct::cmd(
+                let is_charging = if let Ok(output) = duct::cmd(
                     "powershell",
                     vec![
                         "-Command",
@@ -108,11 +108,18 @@ impl Condition for PowerCondition {
                 )
                 .read()
                 {
-                    return output.trim() == "2";
+                    output.trim() == "2"
+                } else {
+                    false
+                };
+
+                if is_charging {
+                    return true;
                 }
+
                 false
             } else if let Some(threshold) = self.threshold {
-                if let Ok(output) = duct::cmd(
+                let charge = if let Ok(output) = duct::cmd(
                     "powershell",
                     vec![
                         "-Command",
@@ -121,13 +128,18 @@ impl Condition for PowerCondition {
                 )
                 .read()
                 {
-                    if let Ok(val) = output.trim().parse::<f32>() {
-                        return match self.operator.as_deref() {
-                            Some("less") | Some("<") => val < threshold,
-                            _ => val > threshold,
-                        };
-                    }
+                    output.trim().parse::<f32>().ok()
+                } else {
+                    None
+                };
+
+                if let Some(val) = charge {
+                    return match self.operator.as_deref() {
+                        Some("less") | Some("<") => val < threshold,
+                        _ => val > threshold,
+                    };
                 }
+
                 false
             } else {
                 false

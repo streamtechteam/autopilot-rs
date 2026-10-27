@@ -38,5 +38,8 @@ fn result_alias_accepts_values_and_errors() {
     let error: Result<u8> = Err(AutoPilotError::Unknown("unknown".to_string()));
 
     assert!(value.is_ok());
-    assert_eq!(error.unwrap_err().to_string(), "Unknown error: unknown");
+    match error {
+        Ok(_) => panic!("expected an error"),
+        Err(error) => assert_eq!(error.to_string(), "Unknown error: unknown"),
+    }
 }

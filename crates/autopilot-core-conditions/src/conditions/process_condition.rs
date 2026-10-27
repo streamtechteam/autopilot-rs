@@ -74,7 +74,7 @@ fn is_process_running(name: &str) -> bool {
 #[cfg(not(target_os = "linux"))]
 fn is_process_running(name: &str) -> bool {
     let sys = System::new_with_specifics(
-        RefreshKind::nothing().with_processes(ProcessRefreshKind::nothing()),
+        RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()),
     );
 
     sys.processes().values().any(|process| {

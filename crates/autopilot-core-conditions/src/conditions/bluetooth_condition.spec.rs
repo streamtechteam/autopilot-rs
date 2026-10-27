@@ -18,6 +18,7 @@ fn constructors_choose_name_or_mac_matching() {
     assert_eq!(defaulted.clone_box().name(), "Bluetooth");
 }
 
+#[cfg(target_os = "linux")]
 #[test]
 fn parses_bluetoothctl_output() {
     let output = "Device AA:BB:CC:DD:EE:FF Headphones\nDevice 11:22:33:44:55:66 Keyboard";

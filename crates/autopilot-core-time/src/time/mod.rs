@@ -18,6 +18,8 @@ pub enum When {
     Yearly(TimeScheme),
     Cron(String),
 }
+//  TODO - IMPORTANT
+// should create a new scheme for Weekly/Monthly/Yearly (currently they only trigger on 1st of each)
 
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
 pub struct DateTimeScheme {

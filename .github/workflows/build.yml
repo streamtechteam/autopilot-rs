@@ -78,6 +78,12 @@ jobs:
       - name: Build
         run: cargo build --release -p autopilot-rs
 
+      - name: Check formatting
+        run: cargo fmt --check
+
+      - name: Run clippy
+        run: cargo clippy --release -p autopilot-rs --locked -- -D warnings
+
       - name: Prepare Artifact
         shell: bash
         run: |
