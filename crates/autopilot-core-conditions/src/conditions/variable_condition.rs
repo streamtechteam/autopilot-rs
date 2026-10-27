@@ -6,15 +6,23 @@ use crate::conditions::Condition;
 pub struct VariableCondition {
     variable: String,
     target: String,
+    /// Per-condition polling interval override in milliseconds.
+    /// `None` means the job-level `check_interval` applies.
+    check_interval: Option<String>,
 }
 impl VariableCondition {
     pub fn new(variable: String, target: String) -> Self {
-        Self { variable, target }
+        Self {
+            variable,
+            target,
+            check_interval: None,
+        }
     }
     pub fn from_scheme(scheme: VariableConditionScheme) -> Self {
         Self {
             variable: scheme.variable,
             target: scheme.target,
+            check_interval: scheme.check_interval,
         }
     }
 }
@@ -29,6 +37,9 @@ impl Condition for VariableCondition {
 
     fn name(&self) -> &str {
         "Variable"
+    }
+    fn check_interval(&self) -> Option<&str> {
+        self.check_interval.as_deref()
     }
 }
 
@@ -59,6 +70,12 @@ pub struct VariableConditionScheme {
         extend("x-autopilot" = {"required": true})
     )]
     target: String,
+    #[serde(default)]
+    #[schemars(
+        title = "Check interval",
+        description = "Milliseconds between checks. Overrides the job-level check_interval."
+    )]
+    check_interval: Option<String>,
 }
 
 #[cfg(test)]

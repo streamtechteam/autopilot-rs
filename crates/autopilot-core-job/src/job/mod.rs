@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use colored::Colorize;
 use futures::future::join_all;
@@ -15,10 +15,12 @@ use autopilot_core_task::{self, Task, TaskScheme};
 use autopilot_core_time::When;
 
 pub mod get;
+pub mod interval;
 pub mod repository;
 pub mod schedule;
 pub mod set;
 
+use interval::effective_check_interval;
 use schedule::add_job;
 
 pub use repository::{FsJobRepository, JobRepository};
@@ -43,8 +45,8 @@ pub struct Job {
     pub name: String,
     pub description: String,
     pub when: Option<When>,
-    //  TODO
-    // i should probably make check_interval condition specific
+    /// Default polling interval in milliseconds for all conditions.
+    /// Each condition may override this with its own `check_interval`.
     pub check_interval: Option<String>,
     pub conditions: Vec<Box<dyn Condition>>,
     pub tasks: Vec<Task>,
@@ -128,17 +130,52 @@ impl Job {
             .await;
 
         if self.when.is_none() {
+            let global_interval = self.check_interval.as_deref();
+            // Per-condition polling state: the last result plus the next due
+            // time. Conditions without an effective interval are checked once
+            // and their result is reused.
+            let mut states: Vec<(Box<dyn Condition>, Option<bool>, Option<Instant>)> = self
+                .conditions
+                .iter()
+                .map(|condition| (condition.clone(), None, None))
+                .collect();
+
             loop {
-                let mut result = true;
-                for condition in self.conditions.clone() {
-                    // Clone the whole vector per iteration (if conditions are Clone)
-                    // Run the heavy check on the blocking pool
-                    let condition_result = tokio::task::spawn_blocking(move || condition.check())
-                        .await
-                        .expect("condition check panicked");
-                    result = result && condition_result;
+                let mut all_satisfied = true;
+                let mut next_wakeup: Option<Instant> = None;
+                let mut any_polling = false;
+
+                for (condition, last_result, next_due) in states.iter_mut() {
+                    let interval = effective_check_interval(condition.as_ref(), global_interval);
+                    let due = if last_result.is_none() {
+                        true
+                    } else if let (Some(_), Some(due_at)) = (interval, *next_due) {
+                        Instant::now() >= due_at
+                    } else {
+                        interval.is_some()
+                    };
+
+                    if due {
+                        let check = condition.clone();
+                        // Run the heavy check on the blocking pool
+                        let result = tokio::task::spawn_blocking(move || check.check())
+                            .await
+                            .expect("condition check panicked");
+                        *last_result = Some(result);
+                        *next_due = interval.map(|wait| Instant::now() + wait);
+                    }
+
+                    all_satisfied &= last_result.unwrap_or(false);
+                    if interval.is_some() {
+                        any_polling = true;
+                    }
+                    if let Some(due_at) = *next_due {
+                        let earliest = next_wakeup.map_or(due_at, |w| w.min(due_at));
+                        next_wakeup = Some(earliest);
+                    }
                 }
-                if result {
+
+                if all_satisfied {
                     let all_tasks_succeeded = run_tasks(&self.tasks, self.task_mode).await;
                     if all_tasks_succeeded {
                         state_manager
@@ -156,12 +193,14 @@ impl Job {
                         }
                     }
                     break;
-                } else if let Some(interval) = &self.check_interval {
-                    let interval_ms = interval.parse::<u64>().unwrap_or_else(|_| {
-                        error!("check_interval value is not valid, using 1000ms as default");
-                        1000
-                    });
-                    tokio::time::sleep(Duration::from_millis(interval_ms)).await;
+                } else if any_polling {
+                    // Sleep until the next condition is due. The 1ms floor
+                    // keeps a 0ms interval from busy-looping.
+                    let delay = next_wakeup
+                        .map(|wakeup| wakeup.saturating_duration_since(Instant::now()))
+                        .unwrap_or(Duration::from_millis(1))
+                        .max(Duration::from_millis(1));
+                    tokio::time::sleep(delay).await;
                 } else {
                     state_manager
                         .set(self.id.clone(), None, JobStatusEnum::Unsatisfied)

@@ -13,6 +13,9 @@ pub struct DiskSpaceCondition {
     pub min_free_gb: f64,
     /// Maximum used space allowed in GB
     pub max_used_gb: Option<f64>,
+    /// Per-condition polling interval override in milliseconds.
+    /// `None` means the job-level `check_interval` applies.
+    pub check_interval: Option<String>,
 }
 
 impl DiskSpaceCondition {
@@ -21,6 +24,7 @@ impl DiskSpaceCondition {
             path,
             min_free_gb,
             max_used_gb,
+            check_interval: None,
         }
     }
 
@@ -29,6 +33,7 @@ impl DiskSpaceCondition {
             path: scheme.path,
             min_free_gb: scheme.min_free_gb,
             max_used_gb: scheme.max_used_gb,
+            check_interval: scheme.check_interval,
         }
     }
 }
@@ -75,6 +80,9 @@ impl Condition for DiskSpaceCondition {
     fn name(&self) -> &str {
         "Disk Space"
     }
+    fn check_interval(&self) -> Option<&str> {
+        self.check_interval.as_deref()
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
@@ -108,6 +116,12 @@ pub struct DiskSpaceConditionScheme {
         extend("x-autopilot" = {"unit": "GB"})
     )]
     pub max_used_gb: Option<f64>,
+    #[serde(default)]
+    #[schemars(
+        title = "Check interval",
+        description = "Milliseconds between checks. Overrides the job-level check_interval."
+    )]
+    pub check_interval: Option<String>,
 }
 
 #[cfg(test)]

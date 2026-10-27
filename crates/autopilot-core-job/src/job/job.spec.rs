@@ -120,7 +120,7 @@ async fn run_marks_unsatisfied_without_retry_interval() {
     scheduler.shutdown().await.unwrap();
 }
 
-struct EventuallyTrue(std::sync::Arc<std::sync::atomic::AtomicUsize>);
+struct EventuallyTrue(std::sync::Arc<std::sync::atomic::AtomicUsize>, Option<String>);
 
 impl Condition for EventuallyTrue {
     fn check(&self) -> bool {
@@ -128,11 +128,15 @@ impl Condition for EventuallyTrue {
     }
 
     fn clone_box(&self) -> Box<dyn Condition> {
-        Box::new(Self(self.0.clone()))
+        Box::new(Self(self.0.clone(), self.1.clone()))
     }
 
     fn name(&self) -> &str {
         "EventuallyTrue"
+    }
+
+    fn check_interval(&self) -> Option<&str> {
+        self.1.as_deref()
     }
 }
 
@@ -144,7 +148,7 @@ async fn run_retries_until_the_condition_passes() {
     let mut job = Job::from_scheme(input);
     let checks = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     job.conditions
-        .push(Box::new(EventuallyTrue(checks.clone())));
+        .push(Box::new(EventuallyTrue(checks.clone(), None)));
     let state = StateManager::new();
     let mut scheduler = autopilot_core_time::init::init_time_check().await.unwrap();
 
@@ -153,6 +157,27 @@ async fn run_retries_until_the_condition_passes() {
     assert!(checks.load(std::sync::atomic::Ordering::SeqCst) >= 2);
     assert_eq!(
         state.get_state_by_id("job_run_retry".to_string()).await,
+        Some(JobStatusEnum::Completed)
+    );
+    scheduler.shutdown().await.unwrap();
+}
+
+#[tokio::test]
+async fn run_retries_on_condition_override_without_global_interval() {
+    let mut input = scheme("job_run_override");
+    input.conditions.clear();
+    let mut job = Job::from_scheme(input);
+    let checks = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    job.conditions
+        .push(Box::new(EventuallyTrue(checks.clone(), Some("10".to_string()))));
+    let state = StateManager::new();
+    let mut scheduler = autopilot_core_time::init::init_time_check().await.unwrap();
+
+    job.run(state.clone(), &scheduler, true).await;
+
+    assert!(checks.load(std::sync::atomic::Ordering::SeqCst) >= 2);
+    assert_eq!(
+        state.get_state_by_id("job_run_override".to_string()).await,
         Some(JobStatusEnum::Completed)
     );
     scheduler.shutdown().await.unwrap();

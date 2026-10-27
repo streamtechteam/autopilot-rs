@@ -6,11 +6,13 @@ fn from_scheme_normalises_resource_and_operator() {
         resource_type: "CPU".to_string(),
         threshold: 10.0,
         operator: None,
+        check_interval: None,
     });
     let memory = ResourceCondition::from_scheme(ResourceConditionScheme {
         resource_type: "RAM".to_string(),
         threshold: 10.0,
         operator: Some("LESS".to_string()),
+        check_interval: None,
     });
 
     assert_eq!(condition.resource_type, "cpu");

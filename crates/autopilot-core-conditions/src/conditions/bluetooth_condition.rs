@@ -12,6 +12,9 @@ pub struct BluetoothCondition {
     pub device: String,
     /// Check by MAC address (true) or device name (false)
     pub match_by_mac: bool,
+    /// Per-condition polling interval override in milliseconds.
+    /// `None` means the job-level `check_interval` applies.
+    pub check_interval: Option<String>,
 }
 
 impl BluetoothCondition {
@@ -20,6 +23,7 @@ impl BluetoothCondition {
         BluetoothCondition {
             device,
             match_by_mac: false,
+            check_interval: None,
         }
     }
 
@@ -28,6 +32,7 @@ impl BluetoothCondition {
         BluetoothCondition {
             device: mac_address,
             match_by_mac: true,
+            check_interval: None,
         }
     }
 
@@ -36,6 +41,7 @@ impl BluetoothCondition {
         Self {
             device: scheme.device,
             match_by_mac: scheme.match_by_mac.unwrap_or(false),
+            check_interval: scheme.check_interval,
         }
     }
 }
@@ -51,6 +57,9 @@ impl Condition for BluetoothCondition {
 
     fn name(&self) -> &str {
         "Bluetooth"
+    }
+    fn check_interval(&self) -> Option<&str> {
+        self.check_interval.as_deref()
     }
 }
 
@@ -168,6 +177,12 @@ pub struct BluetoothConditionScheme {
     #[serde(default)]
     #[schemars(title = "Match by MAC address")]
     pub match_by_mac: Option<bool>,
+    #[serde(default)]
+    #[schemars(
+        title = "Check interval",
+        description = "Milliseconds between checks. Overrides the job-level check_interval."
+    )]
+    pub check_interval: Option<String>,
 }
 
 #[cfg(test)]

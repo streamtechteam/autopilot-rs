@@ -324,6 +324,16 @@ fn conditions_run_tasks_and_gate_on_failures() {
                 vec![json!({"command": format!("touch {}", marker("resource"))})],
             ),
         ),
+        (
+            "cmd_interval.jsonc",
+            job(
+                "job_cmd_interval",
+                vec![json!({"type": "command", "condition": {
+                    "command": "true", "check_interval": "50"
+                }})],
+                vec![json!({"command": format!("touch {}", marker("cmd_interval"))})],
+            ),
+        ),
     ];
 
     let mut daemon = Daemon::start(&jobs);
@@ -345,6 +355,7 @@ fn conditions_run_tasks_and_gate_on_failures() {
         ("job_disk", "Completed"),
         ("job_disk_fail", "Unsatisfied"),
         ("job_resource", "Completed"),
+        ("job_cmd_interval", "Completed"),
     ]);
 
     for name in [
@@ -355,6 +366,7 @@ fn conditions_run_tasks_and_gate_on_failures() {
         "process_not_running",
         "disk",
         "resource",
+        "cmd_interval",
     ] {
         assert!(dir.join(name).exists(), "task did not run: {name}");
     }

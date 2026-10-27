@@ -25,6 +25,7 @@ fn from_scheme_defaults_to_exit_code_check() {
         command: "echo ok".to_string(),
         check_exit_code: None,
         target_output: Some("ignored".to_string()),
+        check_interval: None,
     });
 
     assert!(condition.check_exit_code);

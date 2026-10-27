@@ -13,6 +13,9 @@ pub struct ResourceCondition {
     pub threshold: f32,
     /// Comparison operator: "greater" or "less"
     pub operator: String,
+    /// Per-condition polling interval override in milliseconds.
+    /// `None` means the job-level `check_interval` applies.
+    pub check_interval: Option<String>,
 }
 
 impl ResourceCondition {
@@ -21,6 +24,7 @@ impl ResourceCondition {
             resource_type: resource_type.to_lowercase(),
             threshold,
             operator: operator.to_lowercase(),
+            check_interval: None,
         }
     }
 
@@ -32,6 +36,7 @@ impl ResourceCondition {
                 .operator
                 .unwrap_or_else(|| "greater".to_string())
                 .to_lowercase(),
+            check_interval: scheme.check_interval,
         }
     }
 }
@@ -79,6 +84,9 @@ impl Condition for ResourceCondition {
     fn name(&self) -> &str {
         "Resource"
     }
+    fn check_interval(&self) -> Option<&str> {
+        self.check_interval.as_deref()
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
@@ -121,6 +129,12 @@ pub struct ResourceConditionScheme {
         )
     )]
     pub operator: Option<String>,
+    #[serde(default)]
+    #[schemars(
+        title = "Check interval",
+        description = "Milliseconds between checks. Overrides the job-level check_interval."
+    )]
+    pub check_interval: Option<String>,
 }
 
 #[cfg(test)]

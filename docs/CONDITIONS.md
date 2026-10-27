@@ -10,6 +10,8 @@ Conditions are checks that must pass before a job's tasks are executed. A job wi
 
 Conditions are synchronous `check() -> bool` implementations. A condition that cannot complete its backend check generally returns `false`; it does not raise a structured error into the job runner.
 
+Every condition object also accepts an optional `check_interval` (milliseconds, as a string) that overrides the job-level `check_interval` for that condition, so each condition in an unscheduled job can be retried on its own cadence. The override only applies to top-level job conditions; intervals on conditions nested inside a `logical` condition are ignored.
+
 ## Condition Types
 
 ### 1. WiFi Condition

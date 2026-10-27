@@ -30,6 +30,12 @@ pub trait Condition: Send + Sync {
     fn clone_box(&self) -> Box<dyn Condition>;
 
     fn name(&self) -> &str;
+
+    /// Per-condition polling interval override in milliseconds, as configured.
+    /// `None` means the job-level `check_interval` applies.
+    fn check_interval(&self) -> Option<&str> {
+        None
+    }
 }
 
 /// Implement Clone for Box<dyn Condition>
