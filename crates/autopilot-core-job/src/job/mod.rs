@@ -54,6 +54,9 @@ pub struct Job {
     pub loaded: bool,
 }
 
+/// Per-condition polling state: the condition plus its cached result and next due time.
+type ConditionState = (Box<dyn Condition>, Option<bool>, Option<Instant>);
+
 impl Job {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -134,7 +137,7 @@ impl Job {
             // Per-condition polling state: the last result plus the next due
             // time. Conditions without an effective interval are checked once
             // and their result is reused.
-            let mut states: Vec<(Box<dyn Condition>, Option<bool>, Option<Instant>)> = self
+            let mut states: Vec<ConditionState> = self
                 .conditions
                 .iter()
                 .map(|condition| (condition.clone(), None, None))
