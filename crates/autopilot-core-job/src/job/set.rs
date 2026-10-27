@@ -11,7 +11,7 @@ use autopilot_core_error::AutoPilotError;
 use autopilot_core_task::TaskScheme;
 use autopilot_core_time::When;
 
-use crate::job::JobScheme;
+use crate::job::{JobScheme, TaskMode};
 
 pub fn add_job(
     name: Option<String>,
@@ -20,6 +20,7 @@ pub fn add_job(
     check_interval: Option<String>,
     conditions: Vec<ConditionScheme>,
     tasks: Vec<TaskScheme>,
+    task_mode: TaskMode,
 ) -> Result<PathBuf, AutoPilotError> {
     let id = next_job_id();
 
@@ -31,6 +32,7 @@ pub fn add_job(
         check_interval,
         conditions,
         tasks,
+        task_mode,
     };
 
     let store = JsonFileStore::<JobScheme>::new(paths()?.jobs_dir());
@@ -48,6 +50,7 @@ fn next_job_id() -> String {
     format!("job_{nanosecond}_{sequence}")
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn update_job(
     id: &str,
     name: Option<String>,
@@ -56,6 +59,7 @@ pub fn update_job(
     check_interval: Option<String>,
     conditions: Vec<ConditionScheme>,
     tasks: Vec<TaskScheme>,
+    task_mode: Option<TaskMode>,
 ) -> Result<PathBuf, AutoPilotError> {
     let store = JsonFileStore::<JobScheme>::new(paths()?.jobs_dir());
 
@@ -71,6 +75,9 @@ pub fn update_job(
     job.check_interval = check_interval;
     job.conditions = conditions;
     job.tasks = tasks;
+    if let Some(task_mode) = task_mode {
+        job.task_mode = task_mode;
+    }
 
     store.write_path(&path, &job)?;
     Ok(path)

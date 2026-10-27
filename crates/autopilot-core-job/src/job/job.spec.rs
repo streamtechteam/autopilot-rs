@@ -13,6 +13,7 @@ fn scheme(id: &str) -> JobScheme {
         check_interval: None,
         conditions: vec![ConditionScheme::Fail(FailCondition)],
         tasks: vec![TaskScheme::new("true".to_string())],
+        task_mode: TaskMode::Concurrent,
     }
 }
 
@@ -27,6 +28,7 @@ fn from_scheme_applies_defaults() {
     assert_eq!(job.conditions.len(), 1);
     assert_eq!(job.tasks.len(), 1);
     assert_eq!(job.tasks[0].command, "true");
+    assert_eq!(job.task_mode, TaskMode::Concurrent);
 }
 
 #[test]
@@ -40,6 +42,31 @@ fn from_scheme_preserves_optional_fields() {
     assert_eq!(job.name, "Named Job");
     assert_eq!(job.description, "Description");
     assert_eq!(job.check_interval.as_deref(), Some("250"));
+}
+
+#[test]
+fn task_mode_defaults_to_concurrent() {
+    let job = Job::from_scheme(scheme("job_task_mode_default"));
+
+    assert_eq!(job.task_mode, TaskMode::Concurrent);
+}
+
+#[test]
+fn task_mode_deserializes_from_job_json() {
+    let concurrent =
+        Job::from_json(r#"{"id":"a","conditions":[],"tasks":[],"task_mode":"concurrent"}"#)
+            .unwrap();
+    let sequential =
+        Job::from_json(r#"{"id":"b","conditions":[],"tasks":[],"task_mode":"sequential"}"#)
+            .unwrap();
+    let stop = Job::from_json(
+        r#"{"id":"c","conditions":[],"tasks":[],"task_mode":"sequential_stop_on_failure"}"#,
+    )
+    .unwrap();
+
+    assert_eq!(concurrent.task_mode, TaskMode::Concurrent);
+    assert_eq!(sequential.task_mode, TaskMode::Sequential);
+    assert_eq!(stop.task_mode, TaskMode::SequentialStopOnFailure);
 }
 
 #[test]
@@ -148,16 +175,73 @@ async fn run_job_marks_completed_or_unsatisfied() {
         state.get_state_by_id("job_run_job_pass".to_string()).await,
         Some(JobStatusEnum::Completed)
     );
+
+    let mut failing = scheme("job_run_job_fail");
+    failing.conditions.clear();
+    failing.tasks = vec![TaskScheme::new("exit 1".to_string())];
+    run_job(Job::from_scheme(failing), state.clone()).await;
+    assert_eq!(
+        state.get_state_by_id("job_run_job_fail".to_string()).await,
+        Some(JobStatusEnum::Failed)
+    );
 }
 
 #[tokio::test]
-async fn run_tasks_ignores_individual_failures() {
+async fn run_tasks_reports_individual_failures_but_runs_all_concurrent_tasks() {
     let tasks = vec![
         autopilot_core_task::Task::new("exit 0".to_string()),
         autopilot_core_task::Task::new("exit 1".to_string()),
     ];
 
-    run_tasks(&tasks).await;
+    assert!(!run_tasks(&tasks, TaskMode::Concurrent).await);
+}
+
+fn sequential_test_file() -> std::path::PathBuf {
+    let unique = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    std::env::temp_dir().join(format!(
+        "autopilot-sequential-{}-{unique}",
+        std::process::id()
+    ))
+}
+
+fn create_file_command(path: &std::path::Path) -> String {
+    if cfg!(windows) {
+        format!("type nul > \"{}\"", path.display())
+    } else {
+        format!("touch '{}'", path.display())
+    }
+}
+
+#[tokio::test]
+async fn sequential_task_mode_continues_after_failure() {
+    let path = sequential_test_file();
+    let _ = std::fs::remove_file(&path);
+    let tasks = vec![
+        autopilot_core_task::Task::new("exit 1".to_string()),
+        autopilot_core_task::Task::new(create_file_command(&path)),
+    ];
+
+    assert!(!run_tasks(&tasks, TaskMode::Sequential).await);
+
+    assert!(path.exists());
+    std::fs::remove_file(path).unwrap();
+}
+
+#[tokio::test]
+async fn sequential_stop_on_failure_skips_remaining_tasks() {
+    let path = sequential_test_file();
+    let _ = std::fs::remove_file(&path);
+    let tasks = vec![
+        autopilot_core_task::Task::new("exit 1".to_string()),
+        autopilot_core_task::Task::new(create_file_command(&path)),
+    ];
+
+    assert!(!run_tasks(&tasks, TaskMode::SequentialStopOnFailure).await);
+
+    assert!(!path.exists());
 }
 
 #[tokio::test]

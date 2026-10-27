@@ -1,6 +1,6 @@
 use super::*;
 use autopilot_core_conditions::ConditionScheme;
-use autopilot_core_job::{Job, JobScheme};
+use autopilot_core_job::{Job, JobScheme, TaskMode};
 use autopilot_core_task::TaskScheme;
 
 fn job(id: &str) -> Job {
@@ -12,6 +12,7 @@ fn job(id: &str) -> Job {
         check_interval: None,
         conditions: vec![],
         tasks: vec![TaskScheme::new("true".to_string())],
+        task_mode: TaskMode::Concurrent,
     })
 }
 

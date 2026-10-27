@@ -33,5 +33,5 @@ pub use crate::{
     },
     status::{JobStatusEnum, JobStatusStruct, StateManager, StatusLog},
     task::Task,
-    time::{DateTimeScheme, TimeScheme, When},
+    time::{DateTimeScheme, MonthlyScheme, TimeScheme, WeeklyScheme, When, YearlyScheme},
 };

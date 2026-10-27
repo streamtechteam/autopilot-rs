@@ -5,7 +5,7 @@ use futures::future::join_all;
 use log::{error, info};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use tokio::task::JoinHandle;
+use tokio::task::{JoinError, JoinHandle};
 use tokio_cron_scheduler::JobScheduler;
 
 use autopilot_core_conditions::{Condition, ConditionScheme};
@@ -23,6 +23,20 @@ use schedule::add_job;
 
 pub use repository::{FsJobRepository, JobRepository};
 
+/// How the tasks in a job are executed.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+#[schemars(title = "Task mode")]
+pub enum TaskMode {
+    /// Run all tasks at the same time. This is the default.
+    #[default]
+    Concurrent,
+    /// Run tasks one at a time and continue after a task fails.
+    Sequential,
+    /// Run tasks one at a time and stop after the first failure.
+    SequentialStopOnFailure,
+}
+
 #[derive(Clone)]
 pub struct Job {
     pub id: String,
@@ -33,13 +47,13 @@ pub struct Job {
     // i should probably make check_interval condition specific
     pub check_interval: Option<String>,
     pub conditions: Vec<Box<dyn Condition>>,
-    //  TODO - IMPORTANT
-    // i should add a toggle for tasks running method (concurrent, sequential)
     pub tasks: Vec<Task>,
+    pub task_mode: TaskMode,
     pub loaded: bool,
 }
 
 impl Job {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: String,
         name: String,
@@ -48,6 +62,7 @@ impl Job {
         when: Option<When>,
         conditions: Vec<Box<dyn Condition>>,
         tasks: Vec<Task>,
+        task_mode: TaskMode,
     ) -> Self {
         Job {
             id,
@@ -57,6 +72,7 @@ impl Job {
             check_interval,
             conditions,
             tasks,
+            task_mode,
             loaded: false,
         }
     }
@@ -83,6 +99,7 @@ impl Job {
             check_interval: scheme.check_interval,
             conditions,
             tasks,
+            task_mode: scheme.task_mode,
             loaded: false,
         }
     }
@@ -122,12 +139,21 @@ impl Job {
                     result = result && condition_result;
                 }
                 if result {
-                    run_tasks(&self.tasks).await;
-                    state_manager
-                        .set(self.id.clone(), None, JobStatusEnum::Completed)
-                        .await;
-                    if !quiet {
-                        info!("{} : {}", "Job Completed".green(), self.name);
+                    let all_tasks_succeeded = run_tasks(&self.tasks, self.task_mode).await;
+                    if all_tasks_succeeded {
+                        state_manager
+                            .set(self.id.clone(), None, JobStatusEnum::Completed)
+                            .await;
+                        if !quiet {
+                            info!("{} : {}", "Job Completed".green(), self.name);
+                        }
+                    } else {
+                        state_manager
+                            .set(self.id.clone(), None, JobStatusEnum::Failed)
+                            .await;
+                        if !quiet {
+                            info!("{} : {}", "Job Failed".red(), self.name);
+                        }
                     }
                     break;
                 } else if let Some(interval) = &self.check_interval {
@@ -175,10 +201,13 @@ pub async fn run_job(job: Job, state_manager: StateManager) {
     let all_ok = results.into_iter().all(|res| res.unwrap_or(false));
 
     if all_ok {
-        run_tasks(&job.tasks).await;
-        state_manager
-            .set(job.id.clone(), None, JobStatusEnum::Completed)
-            .await;
+        let all_tasks_succeeded = run_tasks(&job.tasks, job.task_mode).await;
+        let status = if all_tasks_succeeded {
+            JobStatusEnum::Completed
+        } else {
+            JobStatusEnum::Failed
+        };
+        state_manager.set(job.id.clone(), None, status).await;
     } else {
         state_manager
             .set(job.id, None, JobStatusEnum::Unsatisfied)
@@ -186,25 +215,45 @@ pub async fn run_job(job: Job, state_manager: StateManager) {
     }
 }
 
-pub async fn run_tasks(tasks: &[Task]) {
-    let mut handles: Vec<JoinHandle<Result<(), AutoPilotError>>> = vec![];
-    for task in tasks {
-        handles.push(task.run());
-    }
-    join_all(handles)
-        .await
-        .iter()
-        .for_each(|handle| match handle {
-            Ok(handle) => match handle {
-                Ok(_) => {}
-                Err(err) => {
-                    error!("{}", err)
-                }
-            },
-            Err(err) => {
-                error!("Failed to join handles : {}", err);
+/// Runs the tasks in the requested mode and reports whether every task succeeded.
+pub async fn run_tasks(tasks: &[Task], mode: TaskMode) -> bool {
+    match mode {
+        TaskMode::Concurrent => {
+            let handles: Vec<JoinHandle<Result<(), AutoPilotError>>> =
+                tasks.iter().map(Task::run).collect();
+            let mut all_succeeded = true;
+            for result in join_all(handles).await {
+                all_succeeded &= log_task_result(result);
             }
-        });
+            all_succeeded
+        }
+        TaskMode::Sequential | TaskMode::SequentialStopOnFailure => {
+            let mut all_succeeded = true;
+            for task in tasks {
+                let result = task.run().await;
+                let succeeded = log_task_result(result);
+                all_succeeded &= succeeded;
+                if !succeeded && mode == TaskMode::SequentialStopOnFailure {
+                    break;
+                }
+            }
+            all_succeeded
+        }
+    }
+}
+
+fn log_task_result(result: Result<Result<(), AutoPilotError>, JoinError>) -> bool {
+    match result {
+        Ok(Ok(())) => true,
+        Ok(Err(err)) => {
+            error!("{err}");
+            false
+        }
+        Err(err) => {
+            error!("Failed to join task: {err}");
+            false
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -218,6 +267,8 @@ pub struct JobScheme {
     pub check_interval: Option<String>,
     pub conditions: Vec<ConditionScheme>,
     pub tasks: Vec<TaskScheme>,
+    #[serde(default)]
+    pub task_mode: TaskMode,
 }
 
 #[cfg(test)]

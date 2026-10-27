@@ -7,9 +7,11 @@ use std::path::PathBuf;
 use autopilot_core::conditions::ConditionScheme;
 use autopilot_core::cross_platform::get::get_supported_editors;
 use autopilot_core::error::AutoPilotError;
-use autopilot_core::job::JobScheme;
+use autopilot_core::job::{JobScheme, TaskMode};
 use autopilot_core::task::TaskScheme;
-use autopilot_core::time::{DateTimeScheme, TimeScheme, When};
+use autopilot_core::time::{
+    DateTimeScheme, MonthlyScheme, TimeScheme, WeeklyScheme, When, YearlyScheme,
+};
 
 use autopilot_core::job::{FsJobRepository, JobRepository};
 
@@ -34,6 +36,54 @@ fn validate_cron_expression(cron_exp: &str) -> Result<When, AutoPilotError> {
     }
 
     Ok(When::Cron(cron_exp.to_string()))
+}
+
+fn prompt_schedule_number(
+    prompt: &str,
+    default: u8,
+    min: u8,
+    max: u8,
+) -> Result<u8, AutoPilotError> {
+    let input: String = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt(prompt)
+        .default(default.to_string())
+        .interact_text()
+        .map_err(|err| {
+            AutoPilotError::InvalidJob(format!("Failed to get schedule value: {err}"))
+        })?;
+    let value = input.trim().parse::<u8>().map_err(|_| {
+        AutoPilotError::InvalidJob(format!(
+            "Schedule value must be a number from {min} to {max}"
+        ))
+    })?;
+
+    if !(min..=max).contains(&value) {
+        return Err(AutoPilotError::InvalidJob(format!(
+            "Schedule value must be between {min} and {max}, got {value}"
+        )));
+    }
+
+    Ok(value)
+}
+
+fn prompt_task_mode() -> Result<TaskMode, AutoPilotError> {
+    let modes = vec![
+        "Concurrent (default)",
+        "Sequential",
+        "Sequential, stop after the first failure",
+    ];
+    let selected = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Choose how tasks should run:")
+        .items(&modes)
+        .default(0)
+        .interact()
+        .map_err(|err| AutoPilotError::InvalidJob(format!("Failed to select task mode: {err}")))?;
+
+    Ok(match selected {
+        0 => TaskMode::Concurrent,
+        1 => TaskMode::Sequential,
+        _ => TaskMode::SequentialStopOnFailure,
+    })
 }
 
 async fn create_interactive() -> Result<PathBuf, AutoPilotError> {
@@ -118,7 +168,7 @@ async fn create_interactive() -> Result<PathBuf, AutoPilotError> {
                 }))
             }
             1..=4 => {
-                // Daily, Weekly, Monthly, Yearly (all use TimeScheme)
+                // Daily, Weekly, Monthly, Yearly
                 let time_input: String = Input::with_theme(&ColorfulTheme::default())
                     .with_prompt("Enter time of day (HH:MM):")
                     .interact_text()
@@ -130,13 +180,28 @@ async fn create_interactive() -> Result<PathBuf, AutoPilotError> {
                     AutoPilotError::InvalidJob("Invalid time format. Please use HH:MM".to_string())
                 })?;
 
-                let time_scheme = TimeScheme { time: time_input };
+                let time = time_input;
 
                 match selected_index {
-                    1 => Some(When::Daily(time_scheme)),
-                    2 => Some(When::Weekly(time_scheme)),
-                    3 => Some(When::Monthly(time_scheme)),
-                    4 => Some(When::Yearly(time_scheme)),
+                    1 => Some(When::Daily(TimeScheme { time })),
+                    2 => {
+                        let weekday = prompt_schedule_number(
+                            "Enter weekday (0/7 = Sunday, 1 = Monday, ..., 6 = Saturday):",
+                            1,
+                            0,
+                            7,
+                        )?;
+                        Some(When::Weekly(WeeklyScheme { time, weekday }))
+                    }
+                    3 => {
+                        let day = prompt_schedule_number("Enter day of month (1-31):", 1, 1, 31)?;
+                        Some(When::Monthly(MonthlyScheme { time, day }))
+                    }
+                    4 => {
+                        let month = prompt_schedule_number("Enter month (1-12):", 1, 1, 12)?;
+                        let day = prompt_schedule_number("Enter day of month (1-31):", 1, 1, 31)?;
+                        Some(When::Yearly(YearlyScheme { time, month, day }))
+                    }
                     _ => unreachable!(),
                 }
             }
@@ -232,6 +297,8 @@ async fn create_interactive() -> Result<PathBuf, AutoPilotError> {
         tasks.push(TaskScheme { command });
     }
 
+    let task_mode = prompt_task_mode()?;
+
     let check_interval = if Confirm::with_theme(&ColorfulTheme::default())
         .with_prompt("Do you want to add a check interval (autopilot will only check once on startup by default)?")
         .interact_opt()
@@ -260,6 +327,7 @@ async fn create_interactive() -> Result<PathBuf, AutoPilotError> {
         check_interval,
         conditions,
         tasks,
+        task_mode,
     };
 
     FsJobRepository::new()?.save_job(job).await

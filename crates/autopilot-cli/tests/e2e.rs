@@ -413,7 +413,7 @@ fn cron_ticks_and_failing_tasks_are_logged() {
         .unwrap_or(0);
     assert!(count >= 2, "cron only ticked {count} times");
 
-    daemon.wait_for_jobs(&[("job_fail", "Completed")]);
+    daemon.wait_for_jobs(&[("job_fail", "Failed")]);
 
     let deadline = Instant::now() + Duration::from_secs(5);
     while Instant::now() < deadline && !daemon.logs().contains("exit status: 7") {
@@ -423,6 +423,87 @@ fn cron_ticks_and_failing_tasks_are_logged() {
         daemon.logs().contains("exit status: 7"),
         "failing task error was not logged"
     );
+
+    daemon.post("/stop", None);
+    daemon.shutdown();
+    fs::remove_dir_all(&dir).unwrap();
+}
+
+#[test]
+fn task_modes_and_custom_schedules_work() {
+    let dir = unique_dir();
+    fs::create_dir_all(&dir).unwrap();
+    let marker = |name: &str| dir.join(name).display().to_string();
+
+    let jobs = vec![
+        (
+            "stop_on_failure.jsonc",
+            json!({
+                "id": "job_stop_on_failure",
+                "name": "stop on failure",
+                "conditions": [],
+                "task_mode": "sequential_stop_on_failure",
+                "tasks": [
+                    {"command": "exit 1"},
+                    {"command": format!("touch {}", marker("stop_on_failure"))}
+                ]
+            }),
+        ),
+        (
+            "continue_after_failure.jsonc",
+            json!({
+                "id": "job_continue_after_failure",
+                "name": "continue after failure",
+                "conditions": [],
+                "task_mode": "sequential",
+                "tasks": [
+                    {"command": "exit 1"},
+                    {"command": format!("touch {}", marker("continue_after_failure"))}
+                ]
+            }),
+        ),
+        (
+            "custom_weekly.jsonc",
+            json!({
+                "id": "job_custom_weekly",
+                "name": "custom weekly",
+                "when": {
+                    "type": "weekly",
+                    "trigger": {"time": "23:59", "weekday": 5}
+                },
+                "conditions": [],
+                "tasks": []
+            }),
+        ),
+        (
+            "invalid_weekly.jsonc",
+            json!({
+                "id": "job_invalid_weekly",
+                "name": "invalid weekly",
+                "when": {
+                    "type": "weekly",
+                    "trigger": {"time": "23:59", "weekdays": 5}
+                },
+                "conditions": [],
+                "tasks": []
+            }),
+        ),
+    ];
+
+    let mut daemon = Daemon::start(&jobs);
+    let startup = daemon.jobs();
+    assert_eq!(startup.len(), 3);
+    assert!(!startup.iter().any(|job| job["id"] == "job_invalid_weekly"));
+
+    assert_eq!(daemon.post("/start", None).0, 200);
+    daemon.wait_for_jobs(&[
+        ("job_stop_on_failure", "Failed"),
+        ("job_continue_after_failure", "Failed"),
+        ("job_custom_weekly", "Scheduled"),
+    ]);
+
+    assert!(dir.join("continue_after_failure").exists());
+    assert!(!dir.join("stop_on_failure").exists());
 
     daemon.post("/stop", None);
     daemon.shutdown();

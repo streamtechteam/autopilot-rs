@@ -32,7 +32,7 @@ The loader currently **skips job files that fail to parse** and **rejects duplic
 }
 ```
 
-`id`, `conditions`, and `tasks` are required. `name`, `description`, `when`, and `check_interval` are optional.
+`id`, `conditions`, and `tasks` are required. `name`, `description`, `when`, `check_interval`, and `task_mode` are optional.
 
 ## Fields
 
@@ -45,6 +45,7 @@ The loader currently **skips job files that fail to parse** and **rejects duplic
 | `check_interval` | string | no | Milliseconds between retries for an unscheduled job whose conditions are not yet satisfied. Invalid values fall back to 1000 ms. |
 | `conditions` | array | yes | Conditions that must all pass. May be empty. |
 | `tasks` | array | yes | Tasks to run. May be empty. |
+| `task_mode` | string | no | How tasks run: `concurrent` (default), `sequential`, or `sequential_stop_on_failure`. |
 
 The job schema rejects unknown fields.
 
@@ -65,10 +66,12 @@ A schedule uses a `type` and a `trigger`:
 | --- | --- | --- |
 | `once` | `{ "date": "YYYY/MM/DD", "time": "HH:MM" }` | Run once at a local date and time. |
 | `daily` | `{ "time": "HH:MM" }` | Run every day at the given local time. |
-| `weekly` | `{ "time": "HH:MM" }` | Run every Monday at the given local time. |
-| `monthly` | `{ "time": "HH:MM" }` | Run on the first day of every month. |
-| `yearly` | `{ "time": "HH:MM" }` | Run on January 1 every year. |
+| `weekly` | `{ "time": "HH:MM", "weekday": 1 }` | Run on a weekday at the given local time. `weekday` is optional and defaults to `1` (Monday); `0` or `7` is Sunday, `1`–`6` are Monday–Saturday. |
+| `monthly` | `{ "time": "HH:MM", "day": 1 }` | Run on a day of every month. `day` is optional and defaults to `1`. |
+| `yearly` | `{ "time": "HH:MM", "month": 1, "day": 1 }` | Run on a month/day every year. `month` and `day` are optional and default to January 1. |
 | `cron` | `"0 0 8 * * *"` | Run on a cron schedule. |
+
+The `weekday`, `day`, and `month` fields are validated when the scheduler is built. Out-of-range values are rejected. A monthly or yearly day that does not exist in a given month is skipped by the cron scheduler.
 
 Cron expressions are passed to `tokio-cron-scheduler`; use a seconds-first expression with six fields unless your expression intentionally includes a year field.
 
@@ -123,9 +126,12 @@ Each task is a shell command:
 
 - Unix: commands run with `sh -c`.
 - Windows: commands run with `cmd /C`.
-- Tasks in one job run concurrently.
-- A failing task is logged; the remaining tasks still run.
-- **Current behavior:** the job status becomes `Completed` after tasks are launched even if an individual task fails. The task error is still logged. This is tracked as a known limitation.
+- `task_mode` controls execution:
+  - `concurrent` (default): all tasks start together.
+  - `sequential`: tasks run one at a time; a failure is logged and the next task still runs.
+  - `sequential_stop_on_failure`: tasks run one at a time and the remaining tasks are skipped after the first failure.
+- A failing task is logged, and the job status becomes `Failed` after tasks finish if any task failed.
+- The task error is still logged.
 
 Use absolute paths and quote arguments carefully. Commands are passed to a shell, so do not interpolate untrusted input.
 
@@ -140,7 +146,8 @@ The API and status manager use these values:
 | `Completed` | Tasks were launched after conditions passed. |
 | `Unsatisfied` | Conditions did not pass. |
 | `Scheduled` | Job is waiting for its schedule. |
-| `Failed`, `Pending`, `Waiting`, `Cancelled` | Defined in the status enum but not currently produced by the job runtime. |
+| `Failed` | A task failed during job execution. |
+| `Pending`, `Waiting`, `Cancelled` | Defined in the status enum but not currently produced by the job runtime. |
 
 `GET /jobs` reports `status` as the debug representation of this value, or `"None"` when the live status manager has no entry.
 

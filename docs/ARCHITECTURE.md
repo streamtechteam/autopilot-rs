@@ -60,7 +60,7 @@ Tasks are shell commands:
 - Unix: `sh -c`
 - Windows: `cmd /C`
 
-Tasks within a job are spawned concurrently and joined. A task failure is logged and does not prevent the other tasks from running. The job status is set to `Completed` after all task handles are joined, even if a task failed; this is tracked as a known limitation.
+The job's `task_mode` controls execution. `concurrent` (the default) spawns all tasks and joins them. `sequential` runs tasks one at a time and continues after a failure. `sequential_stop_on_failure` runs tasks one at a time and skips the remaining tasks after the first failure. A task failure is logged, and the job status is set to `Failed` after execution finishes.
 
 `StateManager` is an in-memory, cloneable status store. API handlers read it through the shared `AppState`. Status is not persisted across daemon restarts.
 
