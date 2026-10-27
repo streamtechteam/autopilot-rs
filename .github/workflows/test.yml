@@ -34,15 +34,4 @@ jobs:
         run: cargo clippy --workspace --locked -- -D warnings
 
       - name: Run tests
-        # TEMP-DIAG: dump raw test output tails as annotations. REVERT before merge.
-        timeout-minutes: 15
-        shell: bash
-        run: |
-          status=0
-          cargo test --workspace --locked > /tmp/test.out 2>/tmp/test.err || status=$?
-          echo "::notice title=diag-status::exit=$status"
-          strip='s/\x1b\[[0-9;]*m//g'
-          grep -aE 'FAILED|failures:|panicked|test result|error: test failed|recursion limit|could not compile' /tmp/test.out /tmp/test.err 2>/dev/null | tr -d '\r' | tr '\n' ';' | sed -e "$strip" | head -c 2500 | sed 's/^/::notice title=diag-failures::/'
-          tail -n 60 /tmp/test.out | tr -d '\r' | tr '\n' ';' | sed -e "$strip" | head -c 2500 | sed 's/^/::notice title=diag-out::/'
-          tail -n 60 /tmp/test.err | tr -d '\r' | tr '\n' ';' | sed -e "$strip" | head -c 2500 | sed 's/^/::notice title=diag-err::/'
-          exit $status
+        run: cargo test --workspace --locked
