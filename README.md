@@ -11,7 +11,7 @@ AutoPilot-rs is a small, local-first scheduler for things like "sync my files wh
 
 ## Important Note
 
-Project licence was been changed to GPL v3 from MIT
+The project license changed from MIT to GPL-3.0-or-later.
 
 ## Features
 
@@ -389,4 +389,4 @@ See [Contributing](docs/CONTRIBUTING.md) for the full development workflow, test
 
 ## License
 
-MIT
+AutoPilot-rs is licensed under the GNU General Public License, version 3 or later (`GPL-3.0-or-later`). See [LICENSE](LICENSE) for the full text.

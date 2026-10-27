@@ -129,4 +129,4 @@ The API is currently unauthenticated. Do not add documentation or examples that 
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the MIT license.
+By contributing, you agree that your contributions are licensed under the GNU General Public License, version 3 or later (`GPL-3.0-or-later`).

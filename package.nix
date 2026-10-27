@@ -74,7 +74,7 @@ rustPlatform.buildRustPackage {
   meta = {
     description = "A cross-platform automation tool that runs tasks when conditions are met";
     homepage = "https://github.com/streamtechteam/autopilot-rs";
-    license = lib.licenses.mit;
+    license = lib.licenses.gpl3Plus;
     mainProgram = "autopilot-rs";
     platforms = lib.platforms.linux;
   };
