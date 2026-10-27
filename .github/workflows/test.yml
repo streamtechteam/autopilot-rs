@@ -31,7 +31,46 @@ jobs:
         run: cargo fmt --check
 
       - name: Run clippy
-        run: cargo clippy --workspace --locked -- -D warnings
+        # TEMP-DIAG: report clippy messages as annotations. REVERT before merge.
+        run: |
+          status=0
+          cargo clippy --workspace --locked --message-format=json -- -D warnings > /tmp/clippy.json 2>/tmp/clippy.err || status=$?
+          python3 - <<'PYEOF'
+          import json
+          n = 0
+          try:
+              lines = open('/tmp/clippy.json', errors='replace').read().splitlines()
+          except OSError:
+              lines = []
+          for raw in lines:
+              raw = raw.strip()
+              if not raw.startswith('{'):
+                  continue
+              try:
+                  msg = json.loads(raw)
+              except ValueError:
+                  continue
+              if msg.get('reason') != 'compiler-message':
+                  continue
+              m = msg.get('message', {})
+              if m.get('level') not in ('warning', 'error'):
+                  continue
+              code = (m.get('code') or {}).get('code', 'clippy')
+              text = ' '.join((m.get('message') or '').split())[:300]
+              for s in m.get('spans', []) or []:
+                  if not s.get('is_primary'):
+                      continue
+                  f = s.get('file_name', '')
+                  if '/registry/' in f or not f.endswith('.rs'):
+                      continue
+                  print(f"::error file={f},line={s.get('line_start', 1)},title={code}::{text}", flush=True)
+                  n += 1
+                  break
+              if n >= 15:
+                  break
+          print(f"::notice title=clippy-diag-count::emitted {n} annotations", flush=True)
+          PYEOF
+          exit $status
 
       - name: Run tests
         run: cargo test --workspace --locked
