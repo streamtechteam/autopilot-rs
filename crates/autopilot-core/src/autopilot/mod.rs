@@ -31,10 +31,9 @@ impl AutoPilot {
             status_manager: StateManager::new(),
         })
     }
-
     pub async fn init(&mut self, verbose: bool) -> Result<(), AutoPilotError> {
         Self::prepare_logging(verbose);
-        if Self::check_instance() {
+        if check_if_running() {
             return Err(AutoPilotError::Autopilot(
                 "Instance already running".to_string(),
             ));
@@ -56,7 +55,6 @@ impl AutoPilot {
         info!("{}", "Autopilot reloaded successfully!".green());
         Ok(())
     }
-
     pub async fn restart(&mut self) -> Result<(), AutoPilotError> {
         self.stop_jobs().await?;
         self.load_jobs().await?;
@@ -70,9 +68,9 @@ impl AutoPilot {
         self.started = true;
         info!("{}", "Autopilot served!".green());
     }
-    pub fn check_instance() -> bool {
-        check_if_running()
-    }
+    // pub fn check_instance() -> bool {
+    //     check_if_running()
+    // }
     pub async fn init_status(&mut self) -> Result<(), AutoPilotError> {
         let entries: Vec<(String, String)> = self
             .jobs
