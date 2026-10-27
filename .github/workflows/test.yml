@@ -28,7 +28,15 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Check formatting
-        run: cargo fmt --check
+        # TEMP-DIAG: emit per-file fmt failures as annotations (sandbox can't
+        # fetch CI logs). REVERT before merge.
+        run: |
+          status=0
+          output=$(cargo fmt --check 2>&1) || status=$?
+          echo "$output" | grep '^Diff in ' | sed -E "s|^Diff in $GITHUB_WORKSPACE/([^ ]+) at line ([0-9]+):.*|::error file=\1,line=\2,title=Needs formatting::rustfmt reports a diff here|"
+          echo "$output" | grep -v '^Diff in ' | head -5 | tr '\n' ';' | sed 's/^/::notice title=fmt-other-output::/'
+          echo "::notice title=fmt-exit-status::cargo fmt --check exited with status $status"
+          exit $status
 
       - name: Run clippy
         run: cargo clippy --workspace --locked -- -D warnings
