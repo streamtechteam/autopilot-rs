@@ -120,7 +120,10 @@ async fn run_marks_unsatisfied_without_retry_interval() {
     scheduler.shutdown().await.unwrap();
 }
 
-struct EventuallyTrue(std::sync::Arc<std::sync::atomic::AtomicUsize>, Option<String>);
+struct EventuallyTrue(
+    std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    Option<String>,
+);
 
 impl Condition for EventuallyTrue {
     fn check(&self) -> bool {
@@ -168,8 +171,10 @@ async fn run_retries_on_condition_override_without_global_interval() {
     input.conditions.clear();
     let mut job = Job::from_scheme(input);
     let checks = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
-    job.conditions
-        .push(Box::new(EventuallyTrue(checks.clone(), Some("10".to_string()))));
+    job.conditions.push(Box::new(EventuallyTrue(
+        checks.clone(),
+        Some("10".to_string()),
+    )));
     let state = StateManager::new();
     let mut scheduler = autopilot_core_time::init::init_time_check().await.unwrap();
 
