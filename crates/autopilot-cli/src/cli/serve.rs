@@ -18,7 +18,7 @@ pub async fn serve(verbose: bool, api: bool) {
         std::process::exit(1);
     }
     if !api {
-        auto_pilot.write().await.start();
+        auto_pilot.write().await.start_all();
     }
     let state = AppState {
         auto_pilot: auto_pilot.clone(),
