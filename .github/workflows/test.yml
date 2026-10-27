@@ -36,6 +36,7 @@ jobs:
       - name: Run tests
         # TEMP-DIAG: dump raw test output tails as annotations. REVERT before merge.
         timeout-minutes: 15
+        shell: bash
         run: |
           status=0
           cargo test --workspace --locked > /tmp/test.out 2>/tmp/test.err || status=$?
