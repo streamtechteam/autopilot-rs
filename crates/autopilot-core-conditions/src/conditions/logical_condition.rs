@@ -107,7 +107,7 @@ pub struct LogicalConditionScheme {
         )
     )]
     conditions: Vec<ConditionScheme>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(
         title = "Check interval",
         description = "Milliseconds between checks. Overrides the job-level check_interval."

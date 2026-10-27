@@ -34,35 +34,4 @@ jobs:
         run: cargo clippy --workspace --locked -- -D warnings
 
       - name: Run tests
-        # TEMP-DIAG: dump raw test output tails as annotations. REVERT before merge.
-        timeout-minutes: 15
-        run: |
-          status=0
-          cargo test --workspace --locked > /tmp/test.out 2>/tmp/test.err || status=$?
-          python3 - "$status" <<'PYEOF'
-          import sys
-          status = sys.argv[1]
-          def clean(lines):
-              out = []
-              for l in lines:
-                  s = ' '.join(l.split())[:220]
-                  if s:
-                      out.append(s)
-              return out
-          try:
-              out = clean(open('/tmp/test.out', errors='replace').read().splitlines())
-          except OSError:
-              out = ['<no stdout>']
-          try:
-              err = clean(open('/tmp/test.err', errors='replace').read().splitlines())
-          except OSError:
-              err = ['<no stderr>']
-          print(f"::notice title=diag-status::exit={status} stdout_lines={len(out)} stderr_lines={len(err)}", flush=True)
-          for i in range(0, min(len(out[-32:]), 32), 8):
-              chunk = ' // '.join(out[-32:][i:i+8])
-              print(f"::notice title=diag-out-{i}::{chunk[:1500]}", flush=True)
-          for i in range(0, min(len(err[-32:]), 32), 8):
-              chunk = ' // '.join(err[-32:][i:i+8])
-              print(f"::notice title=diag-err-{i}::{chunk[:1500]}", flush=True)
-          PYEOF
-          exit $status
+        run: cargo test --workspace --locked

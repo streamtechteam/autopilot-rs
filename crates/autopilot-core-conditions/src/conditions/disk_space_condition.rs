@@ -116,7 +116,7 @@ pub struct DiskSpaceConditionScheme {
         extend("x-autopilot" = {"unit": "GB"})
     )]
     pub max_used_gb: Option<f64>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(
         title = "Check interval",
         description = "Milliseconds between checks. Overrides the job-level check_interval."

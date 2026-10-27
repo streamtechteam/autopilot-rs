@@ -151,7 +151,7 @@ pub struct FileConditionScheme {
         extend("x-autopilot" = {"unit": "bytes"})
     )]
     pub size_threshold: Option<u64>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(
         title = "Check interval",
         description = "Milliseconds between checks. Overrides the job-level check_interval."

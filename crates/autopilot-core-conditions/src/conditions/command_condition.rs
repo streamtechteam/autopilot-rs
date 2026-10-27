@@ -129,7 +129,7 @@ pub struct CommandConditionScheme {
         extend("x-autopilot" = {"widget": "editor", "provider": "editors"})
     )]
     pub target_output: Option<String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(
         title = "Check interval",
         description = "Milliseconds between checks. Overrides the job-level check_interval."
