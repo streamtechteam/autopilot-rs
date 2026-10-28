@@ -13,7 +13,6 @@ jobs:
     name: Test - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
@@ -35,9 +34,4 @@ jobs:
         run: cargo clippy --workspace --locked -- -D warnings
 
       - name: Run tests
-        shell: bash
-        run: |
-          CODE=0
-          cargo test --workspace --locked > /tmp/test.txt 2>&1 || CODE=$?
-          sed 's/\x1b\[[0-9;]*m//g' /tmp/test.txt | tr -d '\r' | grep -aE 'FAILED|failures:|panicked|^error(\[|:)| --> ' | head -20 | while IFS= read -r line; do echo "::error::TEST $line"; done || true
-          exit $CODE
+        run: cargo test --workspace --locked
