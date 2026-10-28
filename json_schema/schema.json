@@ -395,6 +395,7 @@
           "type": "string"
         }
       },
+      "additionalProperties": false,
       "required": [
         "date",
         "time"
@@ -638,6 +639,7 @@
           "type": "string"
         }
       },
+      "additionalProperties": false,
       "required": [
         "time"
       ]
@@ -866,6 +868,7 @@
           "type": "string"
         }
       },
+      "additionalProperties": false,
       "required": [
         "time"
       ]
@@ -910,6 +913,7 @@
           "minimum": 0
         }
       },
+      "additionalProperties": false,
       "required": [
         "time"
       ]
@@ -1065,6 +1069,7 @@
           "type": "string"
         }
       },
+      "additionalProperties": false,
       "required": [
         "time"
       ]
