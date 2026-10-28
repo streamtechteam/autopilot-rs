@@ -110,6 +110,7 @@ fn decorator_delegates_to_the_inner_condition() {
 #[test]
 fn schema_documents_the_override() {
     let schema = schemars::schema_for!(ConditionEntry);
+    let rendered = serde_json::to_string(&schema).unwrap();
 
-    assert!(serde_json::to_string(&schema).unwrap().contains("check_interval"));
+    assert!(rendered.contains("check_interval"));
 }
