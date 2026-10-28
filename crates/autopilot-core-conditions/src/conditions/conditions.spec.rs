@@ -1,6 +1,7 @@
 use super::*;
 use crate::conditions::fail_condition::FailCondition;
 use serde_json::json;
+use strum::IntoEnumIterator;
 
 #[test]
 fn deserialises_condition_schemes() {
@@ -32,8 +33,10 @@ fn rejects_unknown_condition_types_and_fields() {
 }
 
 #[test]
-fn variant_names_cover_every_variant() {
-    let names = ConditionScheme::varient_names();
+fn every_variant_converts_to_a_named_condition() {
+    let names = ConditionScheme::iter()
+        .map(|variant| variant.to_condition().name().to_string())
+        .collect::<Vec<_>>();
 
     assert_eq!(names.len(), ConditionScheme::iter().count());
     assert!(names.iter().all(|name| !name.is_empty()));
