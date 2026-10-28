@@ -22,6 +22,8 @@ pub mod screen_condition;
 pub mod variable_condition;
 pub mod wifi_condition;
 
+pub use interval_override::ConditionEntry;
+
 /// Base trait for all condition types
 pub trait Condition: Send + Sync {
     /// Check if the condition is satisfied
