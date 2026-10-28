@@ -34,8 +34,4 @@ jobs:
         run: cargo clippy --workspace --locked -- -D warnings
 
       - name: Run tests
-        shell: bash
-        run: |
-          cargo test --workspace --locked > /tmp/test.txt 2>&1 || true
-          sed 's/\x1b\[[0-9;]*m//g' /tmp/test.txt | tr -d '\r' | grep -aE 'FAILED|failures:|panicked|test result|^error(\[|:)| --> ' | head -40 | while IFS= read -r line; do echo "::error::TEST $line"; done
-          exit 1
+        run: cargo test --workspace --locked

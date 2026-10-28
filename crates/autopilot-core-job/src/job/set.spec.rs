@@ -2,17 +2,20 @@ use super::*;
 use crate::job::TaskMode;
 use crate::job::get::get_job;
 use crate::job::test_support;
+use autopilot_core_conditions::ConditionScheme;
 use autopilot_core_task::TaskScheme;
 
 fn add(name: Option<&str>) -> PathBuf {
+    let condition = ConditionEntry {
+        scheme: ConditionScheme::Fail(autopilot_core_conditions::fail_condition::FailCondition),
+        check_interval: None,
+    };
     add_job(
         name.map(str::to_string),
         Some("spec job".to_string()),
         None,
         None,
-        vec![ConditionScheme::Fail(
-            autopilot_core_conditions::fail_condition::FailCondition,
-        )],
+        vec![condition],
         vec![TaskScheme::new("true".to_string())],
         TaskMode::Concurrent,
     )
