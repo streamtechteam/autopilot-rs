@@ -31,7 +31,11 @@ jobs:
         run: cargo fmt --check
 
       - name: Run clippy
-        run: cargo clippy --workspace --locked -- -D warnings
+        shell: bash
+        run: |
+          cargo clippy --workspace --locked -- -D warnings > /tmp/clippy.txt 2>&1 || true
+          tr -d '\r' < /tmp/clippy.txt | grep -E '^(error|warning)(:|\[)|-->' | head -30 | while IFS= read -r line; do echo "::error::CLIPPY $line"; done
+          exit 1
 
       - name: Run tests
         run: cargo test --workspace --locked
