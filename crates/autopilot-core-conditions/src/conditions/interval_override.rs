@@ -84,7 +84,7 @@ impl JsonSchema for ConditionEntry {
         let mut value = serde_json::to_value(ConditionScheme::json_schema(generator))
             .unwrap_or(serde_json::Value::Null);
         let variants = value
-            .get_mut("anyOf")
+            .get_mut("oneOf")
             .and_then(serde_json::Value::as_array_mut);
         if let Some(variants) = variants {
             for variant in variants {
