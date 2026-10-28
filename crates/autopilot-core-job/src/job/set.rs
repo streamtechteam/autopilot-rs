@@ -6,7 +6,7 @@ use std::{
 
 use autopilot_core_fs::{JsonFileStore, paths};
 
-use autopilot_core_conditions::ConditionScheme;
+use autopilot_core_conditions::ConditionEntry;
 use autopilot_core_error::AutoPilotError;
 use autopilot_core_task::TaskScheme;
 use autopilot_core_time::When;
@@ -18,7 +18,7 @@ pub fn add_job(
     description: Option<String>,
     when: Option<When>,
     check_interval: Option<String>,
-    conditions: Vec<ConditionScheme>,
+    conditions: Vec<ConditionEntry>,
     tasks: Vec<TaskScheme>,
     task_mode: TaskMode,
 ) -> Result<PathBuf, AutoPilotError> {
@@ -57,7 +57,7 @@ pub fn update_job(
     description: Option<String>,
     when: Option<When>,
     check_interval: Option<String>,
-    conditions: Vec<ConditionScheme>,
+    conditions: Vec<ConditionEntry>,
     tasks: Vec<TaskScheme>,
     task_mode: Option<TaskMode>,
 ) -> Result<PathBuf, AutoPilotError> {

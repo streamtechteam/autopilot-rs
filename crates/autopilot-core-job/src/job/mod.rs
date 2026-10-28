@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use tokio::task::{JoinError, JoinHandle};
 use tokio_cron_scheduler::JobScheduler;
 
-use autopilot_core_conditions::{Condition, ConditionScheme};
+use autopilot_core_conditions::{Condition, ConditionEntry};
 use autopilot_core_error::AutoPilotError;
 use autopilot_core_status::{JobStatusEnum, StateManager};
 use autopilot_core_task::{self, Task, TaskScheme};
@@ -86,7 +86,7 @@ impl Job {
         let conditions: Vec<Box<dyn Condition>> = scheme
             .conditions
             .into_iter()
-            .map(|condition_scheme| condition_scheme.to_condition())
+            .map(ConditionEntry::into_condition)
             .collect();
 
         let tasks: Vec<Task> = scheme
@@ -307,7 +307,7 @@ pub struct JobScheme {
     pub description: Option<String>,
     pub when: Option<When>,
     pub check_interval: Option<String>,
-    pub conditions: Vec<ConditionScheme>,
+    pub conditions: Vec<ConditionEntry>,
     pub tasks: Vec<TaskScheme>,
     #[serde(default)]
     pub task_mode: TaskMode,

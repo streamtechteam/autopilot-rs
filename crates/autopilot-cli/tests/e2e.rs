@@ -328,9 +328,8 @@ fn conditions_run_tasks_and_gate_on_failures() {
             "cmd_interval.jsonc",
             job(
                 "job_cmd_interval",
-                vec![json!({"type": "polling", "condition": {
-                    "condition": {"type": "command", "condition": {"command": "true"}},
-                    "check_interval": "50"
+                vec![json!({"type": "command", "check_interval": "50", "condition": {
+                    "command": "true"
                 }})],
                 vec![json!({"command": format!("touch {}", marker("cmd_interval"))})],
             ),

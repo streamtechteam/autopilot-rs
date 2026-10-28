@@ -2,17 +2,21 @@ use super::*;
 use crate::job::test_support;
 use autopilot_core_conditions::ConditionScheme;
 use autopilot_core_conditions::fail_condition::FailCondition;
-use autopilot_core_conditions::polling_condition::PollingCondition;
+use autopilot_core_conditions::interval_override::{ConditionEntry, IntervalOverride};
 use autopilot_core_task::TaskScheme;
 
 fn scheme(id: &str) -> JobScheme {
+    let condition = ConditionEntry {
+        scheme: ConditionScheme::Fail(FailCondition),
+        check_interval: None,
+    };
     JobScheme {
         id: id.to_string(),
         name: None,
         description: None,
         when: None,
         check_interval: None,
-        conditions: vec![ConditionScheme::Fail(FailCondition)],
+        conditions: vec![condition],
         tasks: vec![TaskScheme::new("true".to_string())],
         task_mode: TaskMode::Concurrent,
     }
@@ -165,7 +169,7 @@ async fn run_retries_on_condition_override_without_global_interval() {
     input.conditions.clear();
     let mut job = Job::from_scheme(input);
     let checks = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
-    job.conditions.push(Box::new(PollingCondition::new(
+    job.conditions.push(Box::new(IntervalOverride::new(
         Box::new(EventuallyTrue(checks.clone())),
         Some("10".to_string()),
     )));

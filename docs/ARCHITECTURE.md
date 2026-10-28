@@ -48,7 +48,7 @@ The loader reads the jobs directory and skips files that fail to deserialize. Du
 
 `AutoPilot::start()` spawns one Tokio task per job. Each job runs in one of two modes:
 
-- **Immediate job** (`when` absent): check conditions when the runtime starts. If they fail, retry each condition on its own cadence — a `polling` wrapper's `check_interval` when set, otherwise the job-level `check_interval` — sleeping until the next condition is due. Conditions without an interval are checked once and cached. If nothing can change the outcome, mark the job `Unsatisfied`.
+- **Immediate job** (`when` absent): check conditions when the runtime starts. If they fail, retry each condition on its own cadence — the entry's `check_interval` when set, otherwise the job-level `check_interval` — sleeping until the next condition is due. Conditions without an interval are checked once and cached. If nothing can change the outcome, mark the job `Unsatisfied`.
 - **Scheduled job** (`when` present): register the schedule with `tokio-cron-scheduler`. When the schedule fires, check conditions once and either run tasks or mark the job `Unsatisfied`.
 
 Immediate jobs evaluate conditions sequentially. Scheduled-job condition checks run concurrently on the blocking pool. Conditions are synchronous `check() -> bool` implementations, so blocking/background work is offloaded with `tokio::task::spawn_blocking`.

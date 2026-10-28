@@ -4,7 +4,7 @@ use dialoguer::Editor;
 use dialoguer::{Confirm, Input, Select, theme::ColorfulTheme};
 use std::path::PathBuf;
 
-use autopilot_core::conditions::ConditionScheme;
+use autopilot_core::conditions::ConditionEntry;
 use autopilot_core::cross_platform::get::get_supported_editors;
 use autopilot_core::error::AutoPilotError;
 use autopilot_core::job::{JobScheme, TaskMode};
@@ -226,7 +226,7 @@ async fn create_interactive() -> Result<PathBuf, AutoPilotError> {
     };
 
     // Collect conditions
-    let mut conditions: Vec<ConditionScheme> = Vec::new();
+    let mut conditions: Vec<ConditionEntry> = Vec::new();
     loop {
         if !Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt("Do you want to add a condition?")
@@ -241,7 +241,10 @@ async fn create_interactive() -> Result<PathBuf, AutoPilotError> {
 
         match prompt_condition() {
             Ok(condition_scheme) => {
-                conditions.push(condition_scheme);
+                conditions.push(ConditionEntry {
+                    scheme: condition_scheme,
+                    check_interval: None,
+                });
                 println!("Condition added successfully!");
             }
             Err(e) => {

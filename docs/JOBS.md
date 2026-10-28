@@ -42,7 +42,7 @@ The loader currently **skips job files that fail to parse** and **rejects duplic
 | `name` | string | no | Display name. Defaults to `job_<id>`. |
 | `description` | string | no | Free-form description. Defaults to a single space. |
 | `when` | schedule object | no | When to run. Omit to check conditions when jobs start. |
-| `check_interval` | string | no | Default milliseconds between retries for an unscheduled job whose conditions are not yet satisfied. A `polling` wrapper may override this for one condition. Invalid values fall back to 1000 ms. |
+| `check_interval` | string | no | Default milliseconds between retries for an unscheduled job whose conditions are not yet satisfied. Each condition entry may override this with its own `check_interval`. Invalid values fall back to 1000 ms. |
 | `conditions` | array | yes | Conditions that must all pass. May be empty. |
 | `tasks` | array | yes | Tasks to run. May be empty. |
 | `task_mode` | string | no | How tasks run: `concurrent` (default), `sequential`, or `sequential_stop_on_failure`. |
@@ -75,7 +75,7 @@ The `weekday`, `day`, and `month` fields are validated when the scheduler is bui
 
 Cron expressions are passed to `tokio-cron-scheduler`; use a seconds-first expression with six fields unless your expression intentionally includes a year field.
 
-If `when` is omitted, the job is an **immediate job**: the runtime checks its conditions once when jobs start — at daemon startup, or on `POST /start` after `serve --api`. If they fail, each condition is retried on its own cadence: a `polling` wrapper's `check_interval` when set, otherwise the job-level `check_interval`. Conditions with no interval anywhere are checked once and their result is reused. If no condition has an interval to retry on, a failed immediate job becomes `Unsatisfied` and stops.
+If `when` is omitted, the job is an **immediate job**: the runtime checks its conditions once when jobs start — at daemon startup, or on `POST /start` after `serve --api`. If they fail, each condition is retried on its own cadence: the entry's `check_interval` when set, otherwise the job-level `check_interval`. Conditions with no interval anywhere are checked once and their result is reused. If no condition has an interval to retry on, a failed immediate job becomes `Unsatisfied` and stops.
 
 Scheduled jobs evaluate their conditions once per trigger. `check_interval` is not used for retrying scheduled jobs.
 
@@ -109,7 +109,7 @@ Use a `logical` condition for OR/NOR combinations:
 }
 ```
 
-Wrap a condition in a `polling` condition to give it its own `check_interval` (milliseconds) that overrides the job-level `check_interval` for that condition. See the [conditions guide](CONDITIONS.md) for every condition type and field.
+Each condition entry accepts an optional `check_interval` (milliseconds) next to its `type` that overrides the job-level `check_interval` for that condition. See the [conditions guide](CONDITIONS.md) for every condition type and field.
 
 ## Tasks
 

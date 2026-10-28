@@ -10,16 +10,13 @@ Conditions are checks that must pass before a job's tasks are executed. A job wi
 
 Conditions are synchronous `check() -> bool` implementations. A condition that cannot complete its backend check generally returns `false`; it does not raise a structured error into the job runner.
 
-A `polling` condition wraps any other condition and gives it its own `check_interval` (milliseconds, as a string) that overrides the job-level `check_interval` for that condition, so each condition in an unscheduled job can be retried on its own cadence:
+Every condition entry accepts an optional `check_interval` (milliseconds, as a string) next to its `type`. It overrides the job-level `check_interval` for that condition, so each condition in an unscheduled job can be retried on its own cadence:
 
 ```jsonc
-{ "type": "polling", "condition": {
-  "condition": { "type": "command", "condition": { "command": "true" } },
-  "check_interval": "50"
-} }
+{ "type": "command", "check_interval": "50", "condition": { "command": "true" } }
 ```
 
-When wrappers are nested, the outermost interval wins. A wrapper without an interval falls back to the job-level default.
+Conditions nested inside a `logical` condition cannot carry overrides; the outer entry's interval (or the global default) drives the whole logical check.
 
 ## Condition Types
 

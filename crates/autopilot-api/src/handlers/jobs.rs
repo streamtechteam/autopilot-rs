@@ -9,7 +9,7 @@ use log::{info, warn};
 use serde::Deserialize;
 
 use autopilot_core::{
-    conditions::ConditionScheme,
+    conditions::ConditionEntry,
     error::AutoPilotError,
     job::{
         JobScheme, TaskMode,
@@ -185,7 +185,7 @@ pub struct JobUpdateRequest {
     description: Option<String>,
     when: Option<When>,
     check_interval: Option<String>,
-    conditions: Vec<ConditionScheme>,
+    conditions: Vec<ConditionEntry>,
     tasks: Vec<TaskScheme>,
     #[serde(default)]
     task_mode: Option<TaskMode>,
