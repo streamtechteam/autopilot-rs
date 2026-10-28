@@ -222,7 +222,7 @@ Most job endpoints return a `JobResponse` or an array of them:
 | `name` | Display name. |
 | `description` | Description from the job file. |
 | `loaded` | Live-runtime hint. For `GET /jobs` it is true when the status manager has an entry for the job; for `GET /jobs/{id}` it reflects the runtime job's loaded flag. |
-| `status` | Debug representation of the live status, or `"None"` when no live status exists. Examples: `Unknown`, `Running`, `Completed`, `Unsatisfied`, `Scheduled`. |
+| `status` | Debug representation of the live status, or `"None"` when no live status exists. Examples: `Unknown`, `Running`, `Completed`, `Failed`, `Unsatisfied`, `Scheduled`. |
 
 Job files are read from `<config-root>/jobs/`. The list is the set of valid files currently on disk. Invalid files are skipped by the loader; duplicate IDs prevent the job set from loading.
 
@@ -311,7 +311,7 @@ curl -X PUT http://127.0.0.1:7883/jobs/hello \
 }
 ```
 
-The path ID selects the job; the body `id` is ignored. The body must include `conditions` and `tasks`. `name` and `description` are optional and keep their existing values when omitted. `when` and `check_interval` are replaced from the body, so omitting them clears a schedule/retry interval.
+The path ID selects the job; the body `id` is ignored. The body must include `conditions` and `tasks`. `name` and `description` are optional and keep their existing values when omitted. `when` and `check_interval` are replaced from the body, so omitting them clears a schedule/retry interval. `task_mode` is optional; when omitted on update, the existing task mode is preserved.
 
 Returns `404` if the job does not exist. Returns `400` if the update is invalid.
 

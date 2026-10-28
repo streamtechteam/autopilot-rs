@@ -1,4 +1,5 @@
 use super::*;
+use crate::job::TaskMode;
 use crate::job::get::get_job;
 use crate::job::test_support;
 use autopilot_core_task::TaskScheme;
@@ -13,6 +14,7 @@ fn add(name: Option<&str>) -> PathBuf {
             autopilot_core_conditions::fail_condition::FailCondition,
         )],
         vec![TaskScheme::new("true".to_string())],
+        TaskMode::Concurrent,
     )
     .unwrap()
 }
@@ -58,6 +60,7 @@ fn update_job_preserves_the_id_and_path() {
         None,
         vec![],
         vec![],
+        Some(TaskMode::Sequential),
     )
     .unwrap();
 
@@ -68,6 +71,22 @@ fn update_job_preserves_the_id_and_path() {
     assert_eq!(updated.id, job.id);
     assert_eq!(updated.name, "after");
     assert_eq!(updated.description, "updated");
+    assert_eq!(updated.task_mode, TaskMode::Sequential);
+
+    update_job(
+        &updated.id,
+        Some("after again".to_string()),
+        None,
+        None,
+        None,
+        vec![],
+        vec![],
+        None,
+    )
+    .unwrap();
+
+    let preserved = get_job(path.clone()).unwrap();
+    assert_eq!(preserved.task_mode, TaskMode::Sequential);
 
     std::fs::remove_file(path).unwrap();
 }
@@ -75,7 +94,8 @@ fn update_job_preserves_the_id_and_path() {
 #[test]
 fn update_job_reports_unknown_ids() {
     let _guard = test_support::lock();
-    let error = update_job("job_missing", None, None, None, None, vec![], vec![]).unwrap_err();
+    let error =
+        update_job("job_missing", None, None, None, None, vec![], vec![], None).unwrap_err();
     assert!(error.to_string().contains("not found"));
 }
 

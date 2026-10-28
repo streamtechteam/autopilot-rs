@@ -1,7 +1,7 @@
 use std::sync::Once;
 
 use autopilot_core::autopilot::AutoPilot;
-use autopilot_core::job::{Job, JobScheme};
+use autopilot_core::job::{Job, JobScheme, TaskMode};
 use tokio::sync::{Mutex, MutexGuard};
 
 use crate::state::AppState;
@@ -34,6 +34,7 @@ pub(crate) fn job(id: &str, name: &str) -> Job {
         None,
         vec![],
         vec![],
+        TaskMode::Concurrent,
     )
 }
 
@@ -46,6 +47,7 @@ pub(crate) fn payload(id: &str, name: &str) -> JobScheme {
         check_interval: None,
         conditions: vec![],
         tasks: vec![],
+        task_mode: TaskMode::Concurrent,
     }
 }
 

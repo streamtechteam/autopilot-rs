@@ -10,12 +10,11 @@ use autopilot_core_logging::init_logging;
 use autopilot_core_status::{JobStatusEnum, StateManager};
 use autopilot_core_time::init::init_time_check;
 
-// #[derive(Clone)]
 pub struct AutoPilot {
     pub started: bool,
     pub scheduler: JobScheduler,
     pub jobs: Vec<Job>,
-    pub jobs_handles: Vec<JoinHandle<()>>,
+    pub _jobs_handles: Vec<JoinHandle<()>>,
     pub status_manager: StateManager,
 }
 
@@ -27,12 +26,12 @@ impl AutoPilot {
             started: false,
             scheduler,
             jobs: Vec::new(),
-            jobs_handles: Vec::new(),
+            _jobs_handles: Vec::new(),
             status_manager: StateManager::new(),
         })
     }
     pub async fn init(&mut self, verbose: bool) -> Result<(), AutoPilotError> {
-        Self::prepare_logging(verbose);
+        init_logging(verbose);
         if check_if_running() {
             return Err(AutoPilotError::Autopilot(
                 "Instance already running".to_string(),
@@ -42,35 +41,6 @@ impl AutoPilot {
         self.init_status().await?;
         Ok(())
     }
-    pub async fn reload(&mut self) -> Result<(), AutoPilotError> {
-        let was_started = self.started;
-        self.stop_jobs().await?;
-        info!("{}", "Reloading Autopilot...".yellow());
-        self.load_jobs().await?;
-        self.init_status().await?;
-        if was_started {
-            self.start();
-        }
-
-        info!("{}", "Autopilot reloaded successfully!".green());
-        Ok(())
-    }
-    pub async fn restart(&mut self) -> Result<(), AutoPilotError> {
-        self.stop_jobs().await?;
-        self.load_jobs().await?;
-        self.init_status().await?;
-        self.start();
-
-        Ok(())
-    }
-    pub fn start(&mut self) {
-        self.jobs_handles = self.run_jobs();
-        self.started = true;
-        info!("{}", "Autopilot served!".green());
-    }
-    // pub fn check_instance() -> bool {
-    //     check_if_running()
-    // }
     pub async fn init_status(&mut self) -> Result<(), AutoPilotError> {
         let entries: Vec<(String, String)> = self
             .jobs
@@ -87,6 +57,33 @@ impl AutoPilot {
         self.status_manager = status_manager;
         Ok(())
     }
+    pub async fn reload(&mut self) -> Result<(), AutoPilotError> {
+        let was_started = self.started;
+        self.stop_jobs().await?;
+        info!("{}", "Reloading Autopilot...".yellow());
+        self.load_jobs().await?;
+        self.init_status().await?;
+        if was_started {
+            self.start_all();
+        }
+
+        info!("{}", "Autopilot reloaded successfully!".green());
+        Ok(())
+    }
+    pub async fn restart(&mut self) -> Result<(), AutoPilotError> {
+        self.stop_jobs().await?;
+        self.load_jobs().await?;
+        self.init_status().await?;
+        self.start_all();
+
+        Ok(())
+    }
+    pub fn start_all(&mut self) {
+        self._jobs_handles = self.run_jobs();
+        self.started = true;
+        info!("{}", "Autopilot served!".green());
+    }
+
     pub fn run_jobs(&mut self) -> Vec<JoinHandle<()>> {
         self.jobs.iter_mut().for_each(|job| {
             job.loaded = true;
@@ -109,14 +106,13 @@ impl AutoPilot {
             .map_err(|e| AutoPilotError::JobExecution(format!("Failed to load jobs: {}", e)))??;
         Ok(())
     }
-
     /// Stop running jobs and clear the scheduler's pending work.
     pub async fn stop_jobs(&mut self) -> Result<(), AutoPilotError> {
         warn!("Stopping jobs...");
-        self.jobs_handles.iter().for_each(|handle| {
+        self._jobs_handles.iter().for_each(|handle| {
             handle.abort();
         });
-        self.jobs_handles.clear();
+        self._jobs_handles.clear();
         self.started = false;
 
         self.scheduler
@@ -126,9 +122,6 @@ impl AutoPilot {
         self.scheduler = init_time_check().await?;
 
         Ok(())
-    }
-    pub fn prepare_logging(verbose: bool) {
-        init_logging(verbose);
     }
     pub async fn shutdown(&mut self) -> Result<(), AutoPilotError> {
         self.stop_jobs().await?;
@@ -142,3 +135,6 @@ impl AutoPilot {
 #[cfg(test)]
 #[path = "autopilot.spec.rs"]
 mod spec;
+
+//  TODO
+// need to consider somethings regarding the structure of AutoPilot

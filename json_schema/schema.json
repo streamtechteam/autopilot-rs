@@ -30,6 +30,10 @@
         "null"
       ]
     },
+    "task_mode": {
+      "$ref": "#/$defs/TaskMode",
+      "default": "concurrent"
+    },
     "tasks": {
       "type": "array",
       "items": {
@@ -391,6 +395,7 @@
           "type": "string"
         }
       },
+      "additionalProperties": false,
       "required": [
         "date",
         "time"
@@ -618,6 +623,27 @@
         "Nor"
       ]
     },
+    "MonthlyScheme": {
+      "title": "Monthly schedule",
+      "type": "object",
+      "properties": {
+        "day": {
+          "description": "Day of month, from 1 to 31. Defaults to the first day.",
+          "type": "integer",
+          "format": "uint8",
+          "default": 1,
+          "maximum": 31,
+          "minimum": 1
+        },
+        "time": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "time"
+      ]
+    },
     "PowerConditionScheme": {
       "title": "Power condition",
       "type": "object",
@@ -814,6 +840,27 @@
         "command"
       ]
     },
+    "TaskMode": {
+      "title": "Task mode",
+      "description": "How the tasks in a job are executed.",
+      "oneOf": [
+        {
+          "description": "Run all tasks at the same time. This is the default.",
+          "type": "string",
+          "const": "concurrent"
+        },
+        {
+          "description": "Run tasks one at a time and continue after a task fails.",
+          "type": "string",
+          "const": "sequential"
+        },
+        {
+          "description": "Run tasks one at a time and stop after the first failure.",
+          "type": "string",
+          "const": "sequential_stop_on_failure"
+        }
+      ]
+    },
     "TimeScheme": {
       "type": "object",
       "properties": {
@@ -821,6 +868,7 @@
           "type": "string"
         }
       },
+      "additionalProperties": false,
       "required": [
         "time"
       ]
@@ -848,6 +896,27 @@
         }
       },
       "additionalProperties": false
+    },
+    "WeeklyScheme": {
+      "title": "Weekly schedule",
+      "type": "object",
+      "properties": {
+        "time": {
+          "type": "string"
+        },
+        "weekday": {
+          "description": "Day of week: 0 or 7 is Sunday, 1 is Monday, ..., 6 is Saturday.\nDefaults to Monday.",
+          "type": "integer",
+          "format": "uint8",
+          "default": 1,
+          "maximum": 7,
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "time"
+      ]
     },
     "When": {
       "title": "Schedule",
@@ -890,7 +959,7 @@
           "type": "object",
           "properties": {
             "trigger": {
-              "$ref": "#/$defs/TimeScheme"
+              "$ref": "#/$defs/WeeklyScheme"
             },
             "type": {
               "type": "string",
@@ -907,7 +976,7 @@
           "type": "object",
           "properties": {
             "trigger": {
-              "$ref": "#/$defs/TimeScheme"
+              "$ref": "#/$defs/MonthlyScheme"
             },
             "type": {
               "type": "string",
@@ -924,7 +993,7 @@
           "type": "object",
           "properties": {
             "trigger": {
-              "$ref": "#/$defs/TimeScheme"
+              "$ref": "#/$defs/YearlyScheme"
             },
             "type": {
               "type": "string",
@@ -975,6 +1044,35 @@
         }
       },
       "additionalProperties": false
+    },
+    "YearlyScheme": {
+      "title": "Yearly schedule",
+      "type": "object",
+      "properties": {
+        "day": {
+          "description": "Day of month, from 1 to 31. Defaults to the first day.",
+          "type": "integer",
+          "format": "uint8",
+          "default": 1,
+          "maximum": 31,
+          "minimum": 1
+        },
+        "month": {
+          "description": "Month, from 1 to 12. Defaults to January.",
+          "type": "integer",
+          "format": "uint8",
+          "default": 1,
+          "maximum": 12,
+          "minimum": 1
+        },
+        "time": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "time"
+      ]
     }
   }
 }

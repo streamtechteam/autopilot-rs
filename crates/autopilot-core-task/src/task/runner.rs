@@ -14,15 +14,7 @@ pub fn sync_run(command: String) -> Result<(), AutoPilotError> {
 }
 
 pub async fn async_run(command: String) -> Result<(), AutoPilotError> {
-    let (shell, flag) = if cfg!(windows) {
-        ("cmd", "/C")
-    } else {
-        ("sh", "-c")
-    };
-
-    let status = Command::new(shell)
-        .arg(flag)
-        .arg(&command)
+    let status = shell_command(&command)
         .kill_on_drop(true)
         .status()
         .await
@@ -38,6 +30,23 @@ pub async fn async_run(command: String) -> Result<(), AutoPilotError> {
     }
 
     Ok(())
+}
+
+#[cfg(windows)]
+fn shell_command(command: &str) -> Command {
+    // `cmd.exe` does not follow the MSVC argument-escaping rules that `Command`
+    // applies to normal arguments, so pass the shell command through verbatim.
+    // Otherwise quoted arguments and redirects are corrupted on Windows.
+    let mut shell = Command::new("cmd");
+    shell.arg("/C").raw_arg(command);
+    shell
+}
+
+#[cfg(not(windows))]
+fn shell_command(command: &str) -> Command {
+    let mut shell = Command::new("sh");
+    shell.arg("-c").arg(command);
+    shell
 }
 
 #[cfg(test)]

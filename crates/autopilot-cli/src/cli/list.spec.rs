@@ -1,4 +1,5 @@
 use super::*;
+use autopilot_core::job::TaskMode;
 
 fn job(id: &str, name: &str) -> JobScheme {
     JobScheme {
@@ -9,6 +10,7 @@ fn job(id: &str, name: &str) -> JobScheme {
         check_interval: None,
         conditions: Vec::new(),
         tasks: Vec::new(),
+        task_mode: TaskMode::Concurrent,
     }
 }
 

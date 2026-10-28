@@ -4,11 +4,25 @@ use axum::{
     http::StatusCode,
 };
 
+use autopilot_core::job::TaskMode;
 use autopilot_core::job::set::add_job;
 use autopilot_core::status::JobStatusEnum;
 
-use super::{jobs_create, jobs_delete, jobs_getbyid, jobs_list, jobs_update};
+use super::{JobUpdateRequest, jobs_create, jobs_delete, jobs_getbyid, jobs_list, jobs_update};
 use crate::handlers::test_support::{config_lock, payload, state_with_jobs};
+
+fn update_payload(name: &str) -> JobUpdateRequest {
+    JobUpdateRequest {
+        _id: "ignored".to_string(),
+        name: Some(name.to_string()),
+        description: Some("description".to_string()),
+        when: None,
+        check_interval: None,
+        conditions: vec![],
+        tasks: vec![],
+        task_mode: None,
+    }
+}
 
 #[tokio::test]
 async fn jobs_getbyid_finds_jobs_on_disk() {
@@ -20,6 +34,7 @@ async fn jobs_getbyid_finds_jobs_on_disk() {
         None,
         vec![],
         vec![],
+        TaskMode::Concurrent,
     )
     .unwrap();
     let id = autopilot_core::job::get::get_job(path.clone()).unwrap().id;
@@ -53,6 +68,7 @@ async fn jobs_list_merges_live_statuses() {
         None,
         vec![],
         vec![],
+        TaskMode::Concurrent,
     )
     .unwrap();
     let id = autopilot_core::job::get::get_job(path.clone()).unwrap().id;
@@ -96,6 +112,21 @@ async fn jobs_create_writes_a_job_file() {
 }
 
 #[tokio::test]
+async fn jobs_create_persists_task_mode() {
+    let _guard = config_lock().await;
+    let mut body = payload("job_task_mode_spec", "Task Mode Spec");
+    body.task_mode = TaskMode::SequentialStopOnFailure;
+
+    let response = jobs_create(Json(body)).await.unwrap().0;
+    let path = response["path"].as_str().unwrap();
+    let job = autopilot_core::job::get::get_job(std::path::PathBuf::from(path)).unwrap();
+
+    assert_eq!(job.task_mode, TaskMode::SequentialStopOnFailure);
+
+    std::fs::remove_file(path).unwrap();
+}
+
+#[tokio::test]
 async fn jobs_delete_removes_a_job_file() {
     let _guard = config_lock().await;
     let path = add_job(
@@ -105,6 +136,7 @@ async fn jobs_delete_removes_a_job_file() {
         None,
         vec![],
         vec![],
+        TaskMode::Concurrent,
     )
     .unwrap();
     let job = autopilot_core::job::get::get_job(path.clone()).unwrap();
@@ -136,6 +168,7 @@ async fn jobs_update_replaces_an_existing_job() {
         None,
         vec![],
         vec![],
+        TaskMode::Concurrent,
     )
     .unwrap();
     let id = autopilot_core::job::get::get_job(path.clone()).unwrap().id;
@@ -144,7 +177,7 @@ async fn jobs_update_replaces_an_existing_job() {
     let response = jobs_update(
         State(state),
         Path(id.clone()),
-        Json(payload("ignored", "Updated Spec")),
+        Json(update_payload("Updated Spec")),
     )
     .await
     .unwrap()
@@ -164,6 +197,34 @@ async fn jobs_update_replaces_an_existing_job() {
 }
 
 #[tokio::test]
+async fn jobs_update_preserves_task_mode_when_omitted() {
+    let _guard = config_lock().await;
+    let path = add_job(
+        Some("Preserve Mode".to_string()),
+        None,
+        None,
+        None,
+        vec![],
+        vec![],
+        TaskMode::SequentialStopOnFailure,
+    )
+    .unwrap();
+    let id = autopilot_core::job::get::get_job(path.clone()).unwrap().id;
+    let state = state_with_jobs(vec![]).await;
+
+    let response = jobs_update(State(state), Path(id), Json(update_payload("Preserved")))
+        .await
+        .unwrap()
+        .0;
+
+    assert_eq!(response["success"], true);
+    let updated = autopilot_core::job::get::get_job(path.clone()).unwrap();
+    assert_eq!(updated.task_mode, TaskMode::SequentialStopOnFailure);
+
+    std::fs::remove_file(path).unwrap();
+}
+
+#[tokio::test]
 async fn jobs_update_reports_missing_jobs_as_not_found() {
     let _guard = config_lock().await;
     let state = state_with_jobs(vec![]).await;
@@ -171,7 +232,7 @@ async fn jobs_update_reports_missing_jobs_as_not_found() {
     let error = jobs_update(
         State(state),
         Path("job_does_not_exist".to_string()),
-        Json(payload("ignored", "Ignored")),
+        Json(update_payload("Ignored")),
     )
     .await
     .unwrap_err();

@@ -29,7 +29,7 @@ pub async fn jobs_start(
         warn!("Failed to initialize job status: {error}");
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
-    ap.start();
+    ap.start_all();
 
     info!("Jobs started via API");
     Ok(Json(

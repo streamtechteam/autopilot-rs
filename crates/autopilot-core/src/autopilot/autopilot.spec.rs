@@ -1,6 +1,6 @@
 use super::*;
 use autopilot_core_conditions::ConditionScheme;
-use autopilot_core_job::{Job, JobScheme};
+use autopilot_core_job::{Job, JobScheme, TaskMode};
 use autopilot_core_task::TaskScheme;
 
 fn job(id: &str) -> Job {
@@ -12,6 +12,7 @@ fn job(id: &str) -> Job {
         check_interval: None,
         conditions: vec![],
         tasks: vec![TaskScheme::new("true".to_string())],
+        task_mode: TaskMode::Concurrent,
     })
 }
 
@@ -21,7 +22,7 @@ async fn new_creates_an_empty_autopilot_instance() {
 
     assert!(!autopilot.started);
     assert!(autopilot.jobs.is_empty());
-    assert!(autopilot.jobs_handles.is_empty());
+    assert!(autopilot._jobs_handles.is_empty());
     assert!(autopilot.status_manager.get_all().await.is_empty());
     autopilot.scheduler.shutdown().await.unwrap();
 }
@@ -81,12 +82,12 @@ async fn run_jobs_marks_jobs_loaded_and_completes_them() {
 async fn stop_jobs_clears_handles_and_marks_the_instance_stopped() {
     let mut autopilot = AutoPilot::new().await.unwrap();
     autopilot.jobs = vec![job("job_stop")];
-    autopilot.start();
+    autopilot.start_all();
 
     autopilot.stop_jobs().await.unwrap();
 
     assert_eq!(autopilot.jobs.len(), 1);
-    assert!(autopilot.jobs_handles.is_empty());
+    assert!(autopilot._jobs_handles.is_empty());
     assert!(!autopilot.started);
 }
 
@@ -95,7 +96,7 @@ async fn reload_restarts_running_jobs() {
     let mut autopilot = AutoPilot::new().await.unwrap();
     autopilot.jobs = vec![job("job_reload")];
     autopilot.init_status().await.unwrap();
-    autopilot.start();
+    autopilot.start_all();
 
     for _ in 0..100 {
         if matches!(
@@ -139,8 +140,8 @@ async fn reload_restarts_running_jobs() {
     assert!(autopilot.started);
     assert_eq!(autopilot.jobs.len(), 1);
     assert!(autopilot.jobs[0].loaded);
-    assert!(!autopilot.jobs_handles.is_empty());
-    for handle in autopilot.jobs_handles.iter() {
+    assert!(!autopilot._jobs_handles.is_empty());
+    for handle in autopilot._jobs_handles.iter() {
         handle.abort();
     }
     autopilot.shutdown().await.unwrap();

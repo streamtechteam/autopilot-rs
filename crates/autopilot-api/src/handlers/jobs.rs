@@ -6,15 +6,19 @@ use axum::{
     http::StatusCode,
 };
 use log::{info, warn};
+use serde::Deserialize;
 
 use autopilot_core::{
+    conditions::ConditionScheme,
     error::AutoPilotError,
     job::{
-        JobScheme,
+        JobScheme, TaskMode,
         get::get_jobs,
         set::{add_job, remove_job, update_job},
     },
     status::JobStatusEnum,
+    task::TaskScheme,
+    time::When,
 };
 
 use super::types::JobResponse;
@@ -70,11 +74,20 @@ pub async fn jobs_create(
         check_interval,
         conditions,
         tasks,
+        task_mode,
         ..
     } = payload;
 
     let result = tokio::task::spawn_blocking(move || {
-        add_job(name, description, when, check_interval, conditions, tasks)
+        add_job(
+            name,
+            description,
+            when,
+            check_interval,
+            conditions,
+            tasks,
+            task_mode,
+        )
     })
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -162,20 +175,37 @@ pub async fn jobs_delete(Path(id): Path<String>) -> Result<Json<serde_json::Valu
     }
 }
 
+/// PUT body. `task_mode` is optional so an update can preserve the existing mode.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct JobUpdateRequest {
+    #[serde(rename = "id")]
+    _id: String,
+    name: Option<String>,
+    description: Option<String>,
+    when: Option<When>,
+    check_interval: Option<String>,
+    conditions: Vec<ConditionScheme>,
+    tasks: Vec<TaskScheme>,
+    #[serde(default)]
+    task_mode: Option<TaskMode>,
+}
+
 /// PUT /jobs/{id} - Update job by ID
 pub async fn jobs_update(
     State(_state): State<AppState>,
     Path(id): Path<String>,
-    Json(payload): Json<JobScheme>,
+    Json(payload): Json<JobUpdateRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let JobScheme {
+    let JobUpdateRequest {
+        _id: _,
         name,
         description,
         when,
         check_interval,
         conditions,
         tasks,
-        ..
+        task_mode,
     } = payload;
 
     let result = tokio::task::spawn_blocking(move || {
@@ -187,6 +217,7 @@ pub async fn jobs_update(
             check_interval,
             conditions,
             tasks,
+            task_mode,
         )
     })
     .await

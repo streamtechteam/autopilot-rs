@@ -1,4 +1,5 @@
 use super::*;
+use autopilot_core::job::TaskMode;
 
 #[test]
 fn formats_known_job_options() {
@@ -10,6 +11,7 @@ fn formats_known_job_options() {
         check_interval: None,
         conditions: Vec::new(),
         tasks: Vec::new(),
+        task_mode: TaskMode::Concurrent,
     };
 
     assert_eq!(format_job_option(&job), "Backup - job_123_Backup");
@@ -25,6 +27,7 @@ fn formats_unknown_job_options() {
         check_interval: None,
         conditions: Vec::new(),
         tasks: Vec::new(),
+        task_mode: TaskMode::Concurrent,
     };
 
     assert_eq!(format_job_option(&job), "Unknown - broken");

@@ -603,6 +603,18 @@ pub trait ConditionConfig: Clone + Serialize + DeserializeOwned + JsonSchema {
     }
 }
 
+/// Implements [`ConditionConfig`] with all of the trait's default behavior.
+///
+/// Use this for configs that only need schema generation, serde round-tripping,
+/// and the default (no-op) validation. Configs with cross-field validation, such
+/// as `ScreenConditionScheme`, should implement the trait directly instead.
+#[macro_export]
+macro_rules! impl_condition_config {
+    ($($type:ty),+ $(,)?) => {
+        $(impl $crate::ConditionConfig for $type {})+
+    };
+}
+
 impl fmt::Display for FormSchema {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "{} ({} fields)", self.title, self.fields.len())

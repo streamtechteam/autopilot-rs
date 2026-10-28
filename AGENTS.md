@@ -100,7 +100,8 @@ Do not use plain `cargo run -- ...`; it cannot choose between the CLI and GUI bi
   - API job CRUD writes files but requires reload/restart to affect the live runtime.
   - Reload/restart failures currently return HTTP `200` with `"success": false`.
   - `file` condition `size_changed` is a minimum-size check, not change detection.
-  - A failed task is logged, but the job currently reports `Completed`.
+  - A failed task is logged, and the job status is set to `Failed`.
+  - `task_mode` defaults to `concurrent`; `sequential` and `sequential_stop_on_failure` are also supported.
   - The Unix signal handler processes one `SIGHUP`; `SIGINT`/`SIGTERM` exit directly.
 
 ## API and security rules

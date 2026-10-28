@@ -17,7 +17,7 @@ The project license changed from MIT to GPL-3.0-or-later.
 
 - **Condition-based jobs** — 14 condition types covering WiFi, Bluetooth, power, CPU/memory, processes, files, disks, screens, and more.
 - **Flexible schedules** — run immediately, once, daily, weekly, monthly, yearly, or with a cron expression.
-- **Parallel tasks** — a job's shell commands run concurrently; one failing task does not stop the others.
+- **Configurable task execution** — run a job's shell commands concurrently, sequentially, or stop at the first failure.
 - **JSON/JSONC job files** — human-readable files stored under your configuration directory.
 - **Three interfaces** — CLI, HTTP API, and a native GUI.
 - **Cross-platform** — Linux, macOS, and Windows backends for the built-in conditions.
@@ -168,6 +168,7 @@ A job requires an `id`, a `conditions` array, and a `tasks` array. A minimal job
 | `check_interval` | no       | String of milliseconds between condition retries for unscheduled jobs. |
 | `conditions`     | yes      | Array of conditions. May be empty. All must pass.                      |
 | `tasks`          | yes      | Array of `{ "command": "..." }` objects. May be empty.                 |
+| `task_mode`      | no       | `concurrent` (default), `sequential`, or `sequential_stop_on_failure`. |
 
 For schedule types, condition composition, and runtime details, see [Job files and schedules](docs/JOBS.md).
 
@@ -352,7 +353,7 @@ or restart the daemon. See [API lifecycle](docs/API.md#lifecycle-and-reload-beha
 
 ### Tasks fail
 
-Tasks run with `sh -c` on Unix and `cmd /C` on Windows. Use syntax supported by those shells, test commands manually, and redirect errors while debugging (`command 2>&1`). Failed tasks are logged; the other tasks in the job still run.
+Tasks run with `sh -c` on Unix and `cmd /C` on Windows. Use syntax supported by those shells, test commands manually, and redirect errors while debugging (`command 2>&1`). By default tasks run concurrently; set `task_mode` to `sequential` or `sequential_stop_on_failure` to run them one at a time. Failed tasks are logged, and the job status becomes `Failed`.
 
 ## Documentation
 

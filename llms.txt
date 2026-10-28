@@ -52,7 +52,8 @@
 - Reload/restart failures currently return HTTP `200` with `"success": false`.
 - Invalid job files are skipped by the loader; duplicate job IDs prevent the job set from loading.
 - `file` condition `size_changed` currently checks a minimum size threshold; it does not detect a change from a previous size.
-- A failed task is logged, but the job currently reports `Completed`.
+- A failed task is logged, and the job status is set to `Failed`.
+- `task_mode` defaults to `concurrent`; `sequential` and `sequential_stop_on_failure` are also supported.
 - The Unix signal handler processes one `SIGHUP`; `SIGINT`/`SIGTERM` exit directly.
 
 ## Development commands

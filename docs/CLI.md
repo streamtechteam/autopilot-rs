@@ -72,7 +72,7 @@ The browser supports viewing job details and deleting a job file. Deleting from 
 autopilot-rs create
 ```
 
-Opens the interactive job creation form. The new job is written to the configured `jobs/` directory.
+Opens the interactive job creation form. The new job is written to the configured `jobs/` directory. The form uses Monday for weekly jobs, the first day for monthly jobs, and January 1 for yearly jobs; edit the generated JSON to choose a different `weekday`, `day`, or `month`. New jobs use the default `concurrent` task mode; edit the file to choose a different `task_mode`.
 
 ### `remove`
 
