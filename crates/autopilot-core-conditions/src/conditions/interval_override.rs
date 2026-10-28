@@ -47,8 +47,7 @@ impl<'de> Deserialize<'de> for ConditionEntry {
             }
         };
         let rest = serde_json::Value::Object(fields);
-        let scheme = ConditionScheme::deserialize(&rest)
-            .map_err(serde::de::Error::custom)?;
+        let scheme = ConditionScheme::deserialize(&rest).map_err(serde::de::Error::custom)?;
         Ok(Self {
             scheme,
             check_interval,
