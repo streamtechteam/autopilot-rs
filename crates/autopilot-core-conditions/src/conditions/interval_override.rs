@@ -81,7 +81,7 @@ impl JsonSchema for ConditionEntry {
     }
 
     fn json_schema(generator: &mut SchemaGenerator) -> Schema {
-        let mut value = serde_json::to_value(generator.subschema_for::<ConditionScheme>())
+        let mut value = serde_json::to_value(ConditionScheme::json_schema(generator))
             .unwrap_or(serde_json::Value::Null);
         let variants = value
             .get_mut("anyOf")
@@ -101,7 +101,7 @@ impl JsonSchema for ConditionEntry {
             }
         }
         serde_json::from_value(value)
-            .unwrap_or_else(|_| generator.subschema_for::<ConditionScheme>())
+            .unwrap_or_else(|_| ConditionScheme::json_schema(generator))
     }
 }
 
