@@ -100,8 +100,7 @@ impl JsonSchema for ConditionEntry {
                 }
             }
         }
-        serde_json::from_value(value)
-            .unwrap_or_else(|_| ConditionScheme::json_schema(generator))
+        serde_json::from_value(value).unwrap_or_else(|_| ConditionScheme::json_schema(generator))
     }
 }
 

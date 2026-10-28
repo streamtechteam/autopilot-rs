@@ -28,12 +28,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Check formatting
-        shell: bash
-        run: |
-          cargo fmt --check > /tmp/fmt.txt 2>&1 || true
-          tr -d '\r' < /tmp/fmt.txt | grep -E '^Diff in ' | sed "s|Diff in $GITHUB_WORKSPACE/||" | while IFS= read -r line; do echo "::error::$line"; done
-          tr -d '\r' < /tmp/fmt.txt | grep -E '^[+-] ' | head -20 | while IFS= read -r line; do echo "::notice::CTX $line"; done
-          exit 1
+        run: cargo fmt --check
 
       - name: Run clippy
         run: cargo clippy --workspace --locked -- -D warnings
