@@ -26,7 +26,7 @@ fn parses_plain_json_and_jsonc() {
 }
 
 #[test]
-fn get_jobs_reads_valid_files_and_skips_invalid_ones() {
+fn list_reads_valid_files_and_skips_invalid_ones() {
     let _guard = test_support::lock();
     let valid = write_job(
         "job_get_valid.jsonc",
@@ -40,7 +40,7 @@ fn get_jobs_reads_valid_files_and_skips_invalid_ones() {
     );
     let invalid = write_job("job_get_invalid.jsonc", "ignored", "not json");
 
-    let jobs = get_jobs(true).unwrap();
+    let jobs = list(true).unwrap();
     let ids: Vec<&str> = jobs.iter().map(|job| job.id.as_str()).collect();
 
     assert!(ids.contains(&"job_get_valid"));
@@ -53,7 +53,7 @@ fn get_jobs_reads_valid_files_and_skips_invalid_ones() {
 }
 
 #[test]
-fn get_jobs_rejects_duplicate_job_ids() {
+fn list_rejects_duplicate_job_ids() {
     let _guard = test_support::lock();
     let first = write_job(
         "job_get_duplicate_a.jsonc",
@@ -66,7 +66,7 @@ fn get_jobs_rejects_duplicate_job_ids() {
         r#"{"id":"job_get_duplicate","conditions":[],"tasks":[]}"#,
     );
 
-    let error = get_jobs(true).err().expect("duplicate job ids should fail");
+    let error = list(true).err().expect("duplicate job ids should fail");
 
     assert!(error.to_string().contains("job_get_duplicate"));
 
@@ -76,7 +76,7 @@ fn get_jobs_rejects_duplicate_job_ids() {
 }
 
 #[test]
-fn get_jobs_paths_lists_only_files() {
+fn paths_lists_only_files() {
     let _guard = test_support::lock();
     let file = write_job(
         "job_get_paths.jsonc",
@@ -86,7 +86,7 @@ fn get_jobs_paths_lists_only_files() {
     let directory = test_support::jobs_dir().join("job_get_paths_dir");
     std::fs::create_dir_all(&directory).unwrap();
 
-    let paths = get_jobs_paths();
+    let paths = paths();
 
     assert!(paths.contains(&file));
     assert!(!paths.contains(&directory));
@@ -96,7 +96,7 @@ fn get_jobs_paths_lists_only_files() {
 }
 
 #[test]
-fn get_job_reads_a_single_file() {
+fn get_reads_a_single_file() {
     let _guard = test_support::lock();
     let path = write_job(
         "job_get_single.jsonc",
@@ -104,11 +104,11 @@ fn get_job_reads_a_single_file() {
         r#"{"id":"job_get_single","conditions":[],"tasks":[]}"#,
     );
 
-    assert_eq!(get_job(path.clone()).unwrap().id, "job_get_single");
-    assert!(get_job(test_support::jobs_dir().join("missing.jsonc")).is_err());
+    assert_eq!(get(path.clone()).unwrap().id, "job_get_single");
+    assert!(get(test_support::jobs_dir().join("missing.jsonc")).is_err());
 
     std::fs::write(&path, "not json").unwrap();
-    assert!(get_job(path.clone()).is_err());
+    assert!(get(path.clone()).is_err());
 
     std::fs::remove_file(path).unwrap();
 }

@@ -5,7 +5,7 @@ use axum::{
 };
 
 use autopilot_core::job::TaskMode;
-use autopilot_core::job::set::add_job;
+use autopilot_core::job::write::add;
 use autopilot_core::status::JobStatusEnum;
 
 use super::{JobUpdateRequest, jobs_create, jobs_delete, jobs_getbyid, jobs_list, jobs_update};
@@ -27,7 +27,7 @@ fn update_payload(name: &str) -> JobUpdateRequest {
 #[tokio::test]
 async fn jobs_getbyid_finds_jobs_on_disk() {
     let _guard = config_lock().await;
-    let path = add_job(
+    let path = add(
         Some("Find".to_string()),
         Some("Find description".to_string()),
         None,
@@ -37,7 +37,7 @@ async fn jobs_getbyid_finds_jobs_on_disk() {
         TaskMode::Concurrent,
     )
     .unwrap();
-    let id = autopilot_core::job::get::get_job(path.clone()).unwrap().id;
+    let id = autopilot_core::job::read::get(path.clone()).unwrap().id;
     let state = state_with_jobs(vec![]).await;
 
     let response = jobs_getbyid(State(state.clone()), Path(id.clone()))
@@ -61,7 +61,7 @@ async fn jobs_getbyid_finds_jobs_on_disk() {
 #[tokio::test]
 async fn jobs_list_merges_live_statuses() {
     let _guard = config_lock().await;
-    let path = add_job(
+    let path = add(
         Some("List Live".to_string()),
         Some("List description".to_string()),
         None,
@@ -71,7 +71,7 @@ async fn jobs_list_merges_live_statuses() {
         TaskMode::Concurrent,
     )
     .unwrap();
-    let id = autopilot_core::job::get::get_job(path.clone()).unwrap().id;
+    let id = autopilot_core::job::read::get(path.clone()).unwrap().id;
     let state = state_with_jobs(vec![]).await;
     {
         let autopilot = state.auto_pilot.read().await;
@@ -119,7 +119,7 @@ async fn jobs_create_persists_task_mode() {
 
     let response = jobs_create(Json(body)).await.unwrap().0;
     let path = response["path"].as_str().unwrap();
-    let job = autopilot_core::job::get::get_job(std::path::PathBuf::from(path)).unwrap();
+    let job = autopilot_core::job::read::get(std::path::PathBuf::from(path)).unwrap();
 
     assert_eq!(job.task_mode, TaskMode::SequentialStopOnFailure);
 
@@ -129,7 +129,7 @@ async fn jobs_create_persists_task_mode() {
 #[tokio::test]
 async fn jobs_delete_removes_a_job_file() {
     let _guard = config_lock().await;
-    let path = add_job(
+    let path = add(
         Some("Delete Spec".to_string()),
         None,
         None,
@@ -139,7 +139,7 @@ async fn jobs_delete_removes_a_job_file() {
         TaskMode::Concurrent,
     )
     .unwrap();
-    let job = autopilot_core::job::get::get_job(path.clone()).unwrap();
+    let job = autopilot_core::job::read::get(path.clone()).unwrap();
 
     let response = jobs_delete(Path(job.id)).await.unwrap().0;
     assert_eq!(response["success"], true);
@@ -161,7 +161,7 @@ async fn jobs_delete_reports_unknown_ids() {
 #[tokio::test]
 async fn jobs_update_replaces_an_existing_job() {
     let _guard = config_lock().await;
-    let path = add_job(
+    let path = add(
         Some("Update Spec".to_string()),
         Some("before".to_string()),
         None,
@@ -171,7 +171,7 @@ async fn jobs_update_replaces_an_existing_job() {
         TaskMode::Concurrent,
     )
     .unwrap();
-    let id = autopilot_core::job::get::get_job(path.clone()).unwrap().id;
+    let id = autopilot_core::job::read::get(path.clone()).unwrap().id;
     let state = state_with_jobs(vec![]).await;
 
     let response = jobs_update(
@@ -188,7 +188,7 @@ async fn jobs_update_replaces_an_existing_job() {
     assert_eq!(std::path::Path::new(updated_path), path.as_path());
     assert!(path.exists());
 
-    let updated = autopilot_core::job::get::get_job(path.clone()).unwrap();
+    let updated = autopilot_core::job::read::get(path.clone()).unwrap();
     assert_eq!(updated.id, id);
     assert_eq!(updated.name, "Updated Spec");
     assert_eq!(updated.description, "description");
@@ -199,7 +199,7 @@ async fn jobs_update_replaces_an_existing_job() {
 #[tokio::test]
 async fn jobs_update_preserves_task_mode_when_omitted() {
     let _guard = config_lock().await;
-    let path = add_job(
+    let path = add(
         Some("Preserve Mode".to_string()),
         None,
         None,
@@ -209,7 +209,7 @@ async fn jobs_update_preserves_task_mode_when_omitted() {
         TaskMode::SequentialStopOnFailure,
     )
     .unwrap();
-    let id = autopilot_core::job::get::get_job(path.clone()).unwrap().id;
+    let id = autopilot_core::job::read::get(path.clone()).unwrap().id;
     let state = state_with_jobs(vec![]).await;
 
     let response = jobs_update(State(state), Path(id), Json(update_payload("Preserved")))
@@ -218,7 +218,7 @@ async fn jobs_update_preserves_task_mode_when_omitted() {
         .0;
 
     assert_eq!(response["success"], true);
-    let updated = autopilot_core::job::get::get_job(path.clone()).unwrap();
+    let updated = autopilot_core::job::read::get(path.clone()).unwrap();
     assert_eq!(updated.task_mode, TaskMode::SequentialStopOnFailure);
 
     std::fs::remove_file(path).unwrap();

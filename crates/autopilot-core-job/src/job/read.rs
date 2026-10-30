@@ -12,7 +12,7 @@ use crate::job::{Job, JobScheme};
 
 /// Loads all jobs, returning an error when the storage cannot be read or the
 /// store contains duplicate job ids.
-pub fn get_jobs(quiet: bool) -> Result<Vec<Job>, AutoPilotError> {
+pub fn list(quiet: bool) -> Result<Vec<Job>, AutoPilotError> {
     let store = JsonFileStore::<JobScheme>::new(config::current()?.jobs_dir());
     let records = store.list()?;
 
@@ -67,7 +67,7 @@ fn duplicate_ids(jobs_ids: &[String]) -> Vec<String> {
     duplicates
 }
 
-pub fn get_jobs_paths() -> Vec<PathBuf> {
+pub fn paths() -> Vec<PathBuf> {
     let Ok(paths) = config::current() else {
         return Vec::new();
     };
@@ -86,12 +86,12 @@ pub fn get_jobs_paths() -> Vec<PathBuf> {
     }
 }
 
-pub fn get_job(path: PathBuf) -> Result<Job, AutoPilotError> {
+pub fn get(path: PathBuf) -> Result<Job, AutoPilotError> {
     let store = JsonFileStore::<JobScheme>::new(config::current()?.jobs_dir());
     let scheme = store.read_path(&path)?;
     Ok(Job::from_scheme(scheme))
 }
 
 #[cfg(test)]
-#[path = "get.spec.rs"]
+#[path = "read.spec.rs"]
 mod spec;

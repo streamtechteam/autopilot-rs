@@ -14,7 +14,7 @@ use autopilot_core_time::When;
 
 use crate::job::{JobScheme, TaskMode};
 
-pub fn add_job(
+pub fn add(
     name: Option<String>,
     description: Option<String>,
     when: Option<When>,
@@ -52,7 +52,7 @@ fn next_job_id() -> String {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn update_job(
+pub fn update(
     id: &str,
     name: Option<String>,
     description: Option<String>,
@@ -84,7 +84,7 @@ pub fn update_job(
     Ok(path)
 }
 
-pub fn remove_job(id: Option<String>, file_name: Option<String>) -> Result<(), AutoPilotError> {
+pub fn remove(id: Option<String>, file_name: Option<String>) -> Result<(), AutoPilotError> {
     if id.is_none() && file_name.is_none() {
         return Err(AutoPilotError::InvalidJob(
             "No job ID or file name provided".to_string(),
@@ -126,5 +126,5 @@ pub fn remove_job(id: Option<String>, file_name: Option<String>) -> Result<(), A
 }
 
 #[cfg(test)]
-#[path = "set.spec.rs"]
+#[path = "write.spec.rs"]
 mod spec;

@@ -4,17 +4,17 @@ use autopilot_core_time::When;
 
 mod conditions;
 mod execution;
-pub mod get;
+pub mod read;
 pub mod repository;
 pub mod schedule;
 mod scheme;
-pub mod set;
-mod task_mode;
+mod task;
+pub mod write;
 
 pub use execution::run_job;
 pub use repository::{FsJobRepository, JobRepository};
 pub use scheme::JobScheme;
-pub use task_mode::{TaskMode, run_tasks};
+pub use task::{TaskMode, run_tasks};
 
 #[derive(Clone)]
 pub struct Job {

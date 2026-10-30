@@ -9,7 +9,7 @@ use autopilot_core_status::{JobStatusEnum, StateManager};
 use super::Job;
 use super::conditions::all_conditions_met;
 use super::schedule::add_job;
-use super::task_mode::run_tasks;
+use super::task::run_tasks;
 
 impl Job {
     pub async fn run(

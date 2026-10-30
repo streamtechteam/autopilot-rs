@@ -5,7 +5,7 @@ use tokio_cron_scheduler::JobScheduler;
 
 use crate::health::check_if_running;
 use autopilot_core_error::AutoPilotError;
-use autopilot_core_job::{Job, get};
+use autopilot_core_job::{Job, read};
 use autopilot_core_logging::init_logging;
 use autopilot_core_status::{JobStatusEnum, StateManager};
 use autopilot_core_time::init::init_time_check;
@@ -106,7 +106,7 @@ impl AutoPilot {
         handles
     }
     pub async fn load_jobs(&mut self) -> Result<(), AutoPilotError> {
-        self.jobs = tokio::task::spawn_blocking(|| get::get_jobs(false))
+        self.jobs = tokio::task::spawn_blocking(|| read::list(false))
             .await
             .map_err(|e| AutoPilotError::JobExecution(format!("Failed to load jobs: {}", e)))??;
         Ok(())

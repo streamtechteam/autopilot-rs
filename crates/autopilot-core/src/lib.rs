@@ -29,8 +29,8 @@ pub use crate::{
     health::{HealthResponse, check_if_running},
     job::{
         Job,
-        get::get_jobs,
-        set::{add_job, remove_job},
+        read::list,
+        write::{add, remove},
     },
     network::{API_SERVICE_NAME, address, host, port},
     status::{JobStatusEnum, JobStatusStruct, StateManager, StatusLog},
