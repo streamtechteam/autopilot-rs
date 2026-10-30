@@ -6,14 +6,14 @@ use std::{
 
 use crate::error::{FsError, Result};
 
-static PATHS: OnceLock<Paths> = OnceLock::new();
+static DIR_CONFIG: OnceLock<DirConfig> = OnceLock::new();
 
 #[derive(Clone, Debug)]
-pub struct Paths {
+pub struct DirConfig {
     root: PathBuf,
 }
 
-impl Paths {
+impl DirConfig {
     pub fn discover(custom: Option<PathBuf>) -> Result<Self> {
         let root = custom.unwrap_or_else(default_root);
         let paths = Self::from_root(root);
@@ -64,19 +64,19 @@ impl Paths {
     }
 }
 
-pub fn initialize(custom: Option<PathBuf>) -> Result<&'static Paths> {
-    if let Some(paths) = PATHS.get() {
+pub fn initialize(custom: Option<PathBuf>) -> Result<&'static DirConfig> {
+    if let Some(paths) = DIR_CONFIG.get() {
         paths.ensure()?;
         return Ok(paths);
     }
 
-    let paths = Paths::discover(custom)?;
-    let _ = PATHS.set(paths);
-    PATHS.get().ok_or(FsError::NotInitialized)
+    let paths = DirConfig::discover(custom)?;
+    let _ = DIR_CONFIG.set(paths);
+    DIR_CONFIG.get().ok_or(FsError::NotInitialized)
 }
 
-pub fn current() -> Result<&'static Paths> {
-    PATHS.get().ok_or(FsError::NotInitialized)
+pub fn current() -> Result<&'static DirConfig> {
+    DIR_CONFIG.get().ok_or(FsError::NotInitialized)
 }
 
 fn default_root() -> PathBuf {
