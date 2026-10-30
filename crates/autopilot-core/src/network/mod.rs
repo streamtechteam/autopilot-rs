@@ -18,3 +18,7 @@ pub fn port() -> String {
 pub fn address() -> String {
     format!("{}:{}", host(), port())
 }
+
+#[cfg(test)]
+#[path = "network.spec.rs"]
+mod spec;
