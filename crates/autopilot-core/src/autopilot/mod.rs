@@ -14,7 +14,7 @@ pub struct AutoPilot {
     pub started: bool,
     pub scheduler: JobScheduler,
     pub jobs: Vec<Job>,
-    pub _jobs_handles: Vec<JoinHandle<()>>,
+    job_handles: Vec<JoinHandle<()>>,
     pub status_manager: StateManager,
 }
 
@@ -26,10 +26,15 @@ impl AutoPilot {
             started: false,
             scheduler,
             jobs: Vec::new(),
-            _jobs_handles: Vec::new(),
+            job_handles: Vec::new(),
             status_manager: StateManager::new(),
         })
     }
+
+    pub fn is_started(&self) -> bool {
+        self.started
+    }
+
     pub async fn init(&mut self, verbose: bool) -> Result<(), AutoPilotError> {
         init_logging(verbose);
         if check_if_running() {
@@ -59,10 +64,8 @@ impl AutoPilot {
     }
     pub async fn reload(&mut self) -> Result<(), AutoPilotError> {
         let was_started = self.started;
-        self.stop_jobs().await?;
         info!("{}", "Reloading Autopilot...".yellow());
-        self.load_jobs().await?;
-        self.init_status().await?;
+        self.rebuild_jobs().await?;
         if was_started {
             self.start_all();
         }
@@ -71,15 +74,17 @@ impl AutoPilot {
         Ok(())
     }
     pub async fn restart(&mut self) -> Result<(), AutoPilotError> {
-        self.stop_jobs().await?;
-        self.load_jobs().await?;
-        self.init_status().await?;
+        self.rebuild_jobs().await?;
         self.start_all();
-
         Ok(())
     }
+    async fn rebuild_jobs(&mut self) -> Result<(), AutoPilotError> {
+        self.stop_jobs().await?;
+        self.load_jobs().await?;
+        self.init_status().await
+    }
     pub fn start_all(&mut self) {
-        self._jobs_handles = self.run_jobs();
+        self.job_handles = self.run_jobs();
         self.started = true;
         info!("{}", "Autopilot served!".green());
     }
@@ -106,29 +111,28 @@ impl AutoPilot {
             .map_err(|e| AutoPilotError::JobExecution(format!("Failed to load jobs: {}", e)))??;
         Ok(())
     }
-    /// Stop running jobs and clear the scheduler's pending work.
+    /// Stop running jobs and replace the scheduler with a fresh one.
     pub async fn stop_jobs(&mut self) -> Result<(), AutoPilotError> {
-        warn!("Stopping jobs...");
-        self._jobs_handles.iter().for_each(|handle| {
-            handle.abort();
-        });
-        self._jobs_handles.clear();
-        self.started = false;
-
-        self.scheduler
-            .shutdown()
-            .await
-            .map_err(|e| AutoPilotError::JobExecution(e.to_string()))?;
+        self.stop_scheduler().await?;
         self.scheduler = init_time_check().await?;
-
         Ok(())
     }
     pub async fn shutdown(&mut self) -> Result<(), AutoPilotError> {
-        self.stop_jobs().await?;
+        self.stop_scheduler().await
+    }
+    async fn stop_scheduler(&mut self) -> Result<(), AutoPilotError> {
+        warn!("Stopping jobs...");
+        self.abort_job_handles();
         self.scheduler
             .shutdown()
             .await
             .map_err(|e| AutoPilotError::JobExecution(e.to_string()))
+    }
+    fn abort_job_handles(&mut self) {
+        for handle in self.job_handles.drain(..) {
+            handle.abort();
+        }
+        self.started = false;
     }
 }
 

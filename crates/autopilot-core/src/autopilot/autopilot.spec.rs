@@ -22,7 +22,7 @@ async fn new_creates_an_empty_autopilot_instance() {
 
     assert!(!autopilot.started);
     assert!(autopilot.jobs.is_empty());
-    assert!(autopilot._jobs_handles.is_empty());
+    assert!(autopilot.job_handles.is_empty());
     assert!(autopilot.status_manager.get_all().await.is_empty());
     autopilot.scheduler.shutdown().await.unwrap();
 }
@@ -87,8 +87,24 @@ async fn stop_jobs_clears_handles_and_marks_the_instance_stopped() {
     autopilot.stop_jobs().await.unwrap();
 
     assert_eq!(autopilot.jobs.len(), 1);
-    assert!(autopilot._jobs_handles.is_empty());
+    assert!(autopilot.job_handles.is_empty());
     assert!(!autopilot.started);
+}
+
+#[tokio::test]
+async fn is_started_tracks_the_instance_lifecycle() {
+    let mut autopilot = AutoPilot::new().await.unwrap();
+    assert!(!autopilot.is_started());
+
+    autopilot.jobs = vec![job("job_is_started")];
+    autopilot.init_status().await.unwrap();
+    autopilot.start_all();
+    assert!(autopilot.is_started());
+
+    autopilot.stop_jobs().await.unwrap();
+    assert!(!autopilot.is_started());
+
+    autopilot.shutdown().await.unwrap();
 }
 
 #[tokio::test]
@@ -140,8 +156,8 @@ async fn reload_restarts_running_jobs() {
     assert!(autopilot.started);
     assert_eq!(autopilot.jobs.len(), 1);
     assert!(autopilot.jobs[0].loaded);
-    assert!(!autopilot._jobs_handles.is_empty());
-    for handle in autopilot._jobs_handles.iter() {
+    assert!(!autopilot.job_handles.is_empty());
+    for handle in autopilot.job_handles.iter() {
         handle.abort();
     }
     autopilot.shutdown().await.unwrap();
