@@ -35,7 +35,7 @@
 - [HTTP routes](crates/autopilot-api/src/routes.rs): Axum routes and bind address.
 - [API handlers](crates/autopilot-api/src/handlers): health, lifecycle, and job CRUD handlers.
 - [Runtime facade](crates/autopilot-core/src/autopilot/mod.rs): `AutoPilot`, start/stop/reload, job loading.
-- [Job model and runtime](crates/autopilot-core-job/src/job/mod.rs): job scheme, condition evaluation, task execution, status updates.
+- [Job model and runtime](crates/autopilot-core-job/src/job): job model and scheme, execution, condition evaluation, task modes, status updates.
 - [Conditions](crates/autopilot-core-conditions/src/conditions): condition implementations and schemas.
 - [Task execution](crates/autopilot-core-task/src/task): shell command runner.
 - [Schedules](crates/autopilot-core-time/src/time/mod.rs): `When` variants and cron expressions.
