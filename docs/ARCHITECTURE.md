@@ -9,14 +9,13 @@ AutoPilot-rs is a Cargo workspace. The binary is intentionally thin: most behavi
 | `autopilot-rs` (`crates/autopilot-cli`) | CLI entry point, argument parsing, interactive commands, daemon lifecycle. |
 | `autopilot-api` | Axum HTTP server, routes, handlers, shared API state. |
 | `autopilot-gui` | Native egui/eframe GUI. |
-| `autopilot-core` | Runtime facade: `AutoPilot`, job/task/status orchestration, logging, scheduling. |
+| `autopilot-core` | Runtime facade: `AutoPilot`, job/task/status orchestration, logging, scheduling, API address and health checks. |
 | `autopilot-core-job` | Job model, JSON/JSONC persistence, job lookup and mutation, schedule attachment. |
 | `autopilot-core-conditions` | `Condition` trait and all condition schemes/backends. |
 | `autopilot-core-task` | Shell task execution. |
 | `autopilot-core-time` | Schedule types (`When`) and cron scheduler initialization. |
 | `autopilot-core-status` | In-memory status manager and status values. |
 | `autopilot-core-fs` | Configuration paths and JSON/JSONC file storage. |
-| `autopilot-core-checks` | API address, health response, and daemon health check. |
 | `autopilot-core-form` | UI-agnostic form schema/values used by the CLI and GUI. |
 | `autopilot-core-cross-platform` | Platform helpers such as shell/editor discovery. |
 | `autopilot-core-logging` | File/stdout logger setup. |
@@ -74,7 +73,7 @@ The API lives in `crates/autopilot-api`:
 
 Handlers mutate the runtime under the write lock and read status under the read lock. Job CRUD handlers call the storage layer and return JSON status messages. They intentionally do not mutate the live runtime; a reload or restart applies file changes.
 
-The API address comes from `autopilot_core_checks::address()` and defaults to `127.0.0.1:7883`.
+The API address comes from `autopilot_core::network::address()` and defaults to `127.0.0.1:7883`. The health check itself lives in `autopilot_core::health::check_if_running`.
 
 ## Storage
 

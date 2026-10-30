@@ -40,7 +40,8 @@
 - [Task execution](crates/autopilot-core-task/src/task): shell command runner.
 - [Schedules](crates/autopilot-core-time/src/time/mod.rs): `When` variants and cron expressions.
 - [Configuration paths and storage](crates/autopilot-core-fs/src): config root, jobs directory, JSON/JSONC store.
-- [Health checks](crates/autopilot-core-checks/src/checks.rs): API address, defaults, and `/health` client.
+- [Network](crates/autopilot-core/src/network): API address, defaults, and service name.
+- [Health checks](crates/autopilot-core/src/health): API health response and `/health` client.
 
 ## Important facts
 

@@ -3,7 +3,6 @@ resolver = "2"
 members = [
     "crates/autopilot-core",
     "crates/autopilot-core-fs",
-    "crates/autopilot-core-checks",
     "crates/autopilot-core-conditions",
     "crates/autopilot-core-cross-platform",
     "crates/autopilot-core-error",
@@ -57,7 +56,6 @@ walkdir = "2.5.0"
 
 autopilot-core = { path = "crates/autopilot-core" }
 autopilot-core-fs = { path = "crates/autopilot-core-fs" }
-autopilot-core-checks = { path = "crates/autopilot-core-checks" }
 autopilot-core-conditions = { path = "crates/autopilot-core-conditions" }
 autopilot-core-cross-platform = { path = "crates/autopilot-core-cross-platform" }
 autopilot-core-error = { path = "crates/autopilot-core-error" }

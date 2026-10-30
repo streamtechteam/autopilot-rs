@@ -63,7 +63,7 @@ Do not use plain `cargo run -- ...`; it cannot choose between the CLI and GUI bi
 | --- | --- |
 | `crates/autopilot-cli` | Argument parsing, interactive commands, daemon lifecycle, signals. |
 | `crates/autopilot-api` | Axum routes, handlers, shared API state. |
-| `crates/autopilot-core` | `AutoPilot` runtime facade. |
+| `crates/autopilot-core` | `AutoPilot` runtime facade, API address, and health checks. |
 | `crates/autopilot-core-job` | Job model, persistence, scheduling attachment, runtime execution. |
 | `crates/autopilot-core-conditions` | Condition trait, schemas, and platform backends. |
 | `crates/autopilot-core-task` | Shell task execution. |
@@ -71,7 +71,6 @@ Do not use plain `cargo run -- ...`; it cannot choose between the CLI and GUI bi
 | `crates/autopilot-core-fs` | Config paths and JSON/JSONC storage. |
 | `crates/autopilot-core-status` | In-memory job status. |
 | `crates/autopilot-core-form` | UI-agnostic form schema used by CLI and GUI. |
-| `crates/autopilot-core-checks` | API address, health response, daemon checks. |
 | `crates/autopilot-gui` | Native egui GUI. |
 
 ## Working rules

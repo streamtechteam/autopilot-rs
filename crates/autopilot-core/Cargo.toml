@@ -10,9 +10,10 @@ authors.workspace = true
 [dependencies]
 colored.workspace = true
 log.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 tokio.workspace = true
 tokio-cron-scheduler.workspace = true
-autopilot-core-checks.workspace = true
 autopilot-core-fs.workspace = true
 autopilot-core-conditions.workspace = true
 autopilot-core-cross-platform.workspace = true
@@ -28,4 +29,3 @@ autopilot-core-utilities.workspace = true
 
 [dev-dependencies]
 schemars.workspace = true
-serde_json.workspace = true

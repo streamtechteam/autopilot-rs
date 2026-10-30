@@ -1,6 +1,7 @@
 use axum::Json;
 
-pub use autopilot_core::checks::{API_SERVICE_NAME, HealthResponse};
+pub use autopilot_core::health::HealthResponse;
+pub use autopilot_core::network::API_SERVICE_NAME;
 
 pub async fn health() -> Json<HealthResponse> {
     Json(HealthResponse {

@@ -1,4 +1,4 @@
-use autopilot_core::checks::check_if_running;
+use autopilot_core::health::check_if_running;
 
 pub fn status() {
     println!("{}", status_message(check_if_running()));

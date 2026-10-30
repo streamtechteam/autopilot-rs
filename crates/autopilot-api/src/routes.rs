@@ -1,4 +1,4 @@
-use autopilot_core::{checks::address, error::AutoPilotError};
+use autopilot_core::{error::AutoPilotError, network::address};
 use axum::{
     Router,
     routing::{delete, get, post, put},

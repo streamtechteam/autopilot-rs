@@ -3,7 +3,7 @@ use log::{info, warn};
 use tokio::task::JoinHandle;
 use tokio_cron_scheduler::JobScheduler;
 
-use autopilot_core_checks::check_if_running;
+use crate::health::check_if_running;
 use autopilot_core_error::AutoPilotError;
 use autopilot_core_job::{Job, get};
 use autopilot_core_logging::init_logging;
