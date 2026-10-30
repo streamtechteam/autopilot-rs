@@ -275,7 +275,7 @@ fn bundled_job_template_matches_scheme() {
     let template_path =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../templates/job.jsonc");
     let template = std::fs::read_to_string(template_path).unwrap();
-    let parsed = autopilot_core_fs::jsonc_parse(&template);
+    let parsed = autopilot_core_fs::jsonc::parse(&template);
 
     let job: JobScheme = serde_json::from_str(&parsed).unwrap();
 

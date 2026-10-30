@@ -1,4 +1,4 @@
-pub fn jsonc_parse(jsonc: &str) -> String {
+pub fn parse(jsonc: &str) -> String {
     let mut in_string = false;
     let mut escaped = false;
     let mut in_line_comment = false;

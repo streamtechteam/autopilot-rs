@@ -1,7 +1,9 @@
 use std::path::{Path, PathBuf};
 
 use async_trait::async_trait;
-use autopilot_core_fs::{FsError, JsonFileStore, RecordId, paths};
+use autopilot_core_fs::FsError;
+use autopilot_core_fs::config;
+use autopilot_core_fs::storage::{JsonFileStore, RecordId};
 
 use autopilot_core_error::AutoPilotError;
 
@@ -23,7 +25,7 @@ pub struct FsJobRepository {
 
 impl FsJobRepository {
     pub fn new() -> Result<Self, AutoPilotError> {
-        let repository = Self::with_dir(paths()?.jobs_dir());
+        let repository = Self::with_dir(config::current()?.jobs_dir());
         repository.store.ensure_dir()?;
         Ok(repository)
     }

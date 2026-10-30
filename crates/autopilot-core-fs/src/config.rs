@@ -4,7 +4,7 @@ use std::{
     sync::OnceLock,
 };
 
-use crate::{FsError, Result};
+use crate::error::{FsError, Result};
 
 static PATHS: OnceLock<Paths> = OnceLock::new();
 
@@ -64,7 +64,7 @@ impl Paths {
     }
 }
 
-pub fn init(custom: Option<PathBuf>) -> Result<&'static Paths> {
+pub fn initialize(custom: Option<PathBuf>) -> Result<&'static Paths> {
     if let Some(paths) = PATHS.get() {
         paths.ensure()?;
         return Ok(paths);
@@ -75,7 +75,7 @@ pub fn init(custom: Option<PathBuf>) -> Result<&'static Paths> {
     PATHS.get().ok_or(FsError::NotInitialized)
 }
 
-pub fn paths() -> Result<&'static Paths> {
+pub fn current() -> Result<&'static Paths> {
     PATHS.get().ok_or(FsError::NotInitialized)
 }
 
@@ -93,5 +93,5 @@ fn default_root() -> PathBuf {
 }
 
 #[cfg(test)]
-#[path = "paths.spec.rs"]
+#[path = "config.spec.rs"]
 mod spec;

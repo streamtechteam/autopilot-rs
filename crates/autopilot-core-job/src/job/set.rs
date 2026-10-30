@@ -4,7 +4,8 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use autopilot_core_fs::{JsonFileStore, paths};
+use autopilot_core_fs::config;
+use autopilot_core_fs::storage::JsonFileStore;
 
 use autopilot_core_conditions::ConditionScheme;
 use autopilot_core_error::AutoPilotError;
@@ -35,7 +36,7 @@ pub fn add_job(
         task_mode,
     };
 
-    let store = JsonFileStore::<JobScheme>::new(paths()?.jobs_dir());
+    let store = JsonFileStore::<JobScheme>::new(config::current()?.jobs_dir());
     Ok(store.save(&job)?)
 }
 
@@ -61,7 +62,7 @@ pub fn update_job(
     tasks: Vec<TaskScheme>,
     task_mode: Option<TaskMode>,
 ) -> Result<PathBuf, AutoPilotError> {
-    let store = JsonFileStore::<JobScheme>::new(paths()?.jobs_dir());
+    let store = JsonFileStore::<JobScheme>::new(config::current()?.jobs_dir());
 
     let Some((path, mut job)) = store.list()?.into_iter().find(|(_, job)| job.id == id) else {
         return Err(AutoPilotError::Job(
@@ -90,7 +91,7 @@ pub fn remove_job(id: Option<String>, file_name: Option<String>) -> Result<(), A
         ));
     }
 
-    let store = JsonFileStore::<JobScheme>::new(paths()?.jobs_dir());
+    let store = JsonFileStore::<JobScheme>::new(config::current()?.jobs_dir());
 
     if let Some(file_name) = file_name {
         let candidate = Path::new(&file_name);

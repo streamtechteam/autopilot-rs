@@ -3,7 +3,8 @@ use std::{collections::HashSet, path::PathBuf};
 use colored::*;
 use log::{error, info};
 
-use autopilot_core_fs::{JsonFileStore, paths};
+use autopilot_core_fs::config;
+use autopilot_core_fs::storage::JsonFileStore;
 
 use autopilot_core_error::AutoPilotError;
 
@@ -12,7 +13,7 @@ use crate::job::{Job, JobScheme};
 /// Loads all jobs, returning an error when the storage cannot be read or the
 /// store contains duplicate job ids.
 pub fn get_jobs(quiet: bool) -> Result<Vec<Job>, AutoPilotError> {
-    let store = JsonFileStore::<JobScheme>::new(paths()?.jobs_dir());
+    let store = JsonFileStore::<JobScheme>::new(config::current()?.jobs_dir());
     let records = store.list()?;
 
     let mut job_objects: Vec<Job> = Vec::new();
@@ -49,7 +50,7 @@ pub fn get_jobs(quiet: bool) -> Result<Vec<Job>, AutoPilotError> {
 #[cfg(test)]
 fn parse_job(content: &str) -> Result<JobScheme, serde_json::Error> {
     serde_json::from_str(content)
-        .or_else(|_| serde_json::from_str(&autopilot_core_fs::jsonc_parse(content)))
+        .or_else(|_| serde_json::from_str(&autopilot_core_fs::jsonc::parse(content)))
 }
 
 fn duplicate_ids(jobs_ids: &[String]) -> Vec<String> {
@@ -67,7 +68,7 @@ fn duplicate_ids(jobs_ids: &[String]) -> Vec<String> {
 }
 
 pub fn get_jobs_paths() -> Vec<PathBuf> {
-    let Ok(paths) = paths() else {
+    let Ok(paths) = config::current() else {
         return Vec::new();
     };
     let store = JsonFileStore::<JobScheme>::new(paths.jobs_dir());
@@ -86,7 +87,7 @@ pub fn get_jobs_paths() -> Vec<PathBuf> {
 }
 
 pub fn get_job(path: PathBuf) -> Result<Job, AutoPilotError> {
-    let store = JsonFileStore::<JobScheme>::new(paths()?.jobs_dir());
+    let store = JsonFileStore::<JobScheme>::new(config::current()?.jobs_dir());
     let scheme = store.read_path(&path)?;
     Ok(Job::from_scheme(scheme))
 }

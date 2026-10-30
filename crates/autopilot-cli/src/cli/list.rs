@@ -8,7 +8,7 @@ use autopilot_core::{
     error::AutoPilotError,
     job::{FsJobRepository, JobRepository, JobScheme},
 };
-use autopilot_core_fs::paths;
+use autopilot_core_fs::config;
 
 pub async fn list() {
     match list_interactive().await {
@@ -44,7 +44,7 @@ pub async fn list_interactive() -> Result<(), AutoPilotError> {
         let selected_job_index: usize = Select::with_theme(&ColorfulTheme::default())
             .with_prompt(format!(
                 "Job (↑↓ nav, Enter action, ESC back) [root: {}]",
-                paths()
+                config::current()
                     .map(|paths| paths.root().display().to_string())
                     .unwrap_or_default()
             ))

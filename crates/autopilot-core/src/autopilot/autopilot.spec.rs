@@ -118,12 +118,12 @@ async fn reload_restarts_running_jobs() {
         Some(JobStatusEnum::Completed)
     ));
 
-    autopilot_core_fs::init(Some(std::env::temp_dir().join(format!(
+    autopilot_core_fs::config::initialize(Some(std::env::temp_dir().join(format!(
         "autopilot-autopilot-reload-spec-{}",
         std::process::id()
     ))))
     .unwrap();
-    let paths = autopilot_core_fs::paths().unwrap();
+    let paths = autopilot_core_fs::config::current().unwrap();
     std::fs::write(
         paths.jobs_dir().join("job_reload.jsonc"),
         r#"{

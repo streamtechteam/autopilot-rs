@@ -19,7 +19,7 @@ pub(crate) async fn config_lock() -> MutexGuard<'static, ()> {
                 .unwrap()
                 .as_nanos()
         ));
-        autopilot_core::fs::init(Some(dir)).unwrap();
+        autopilot_core::fs::config::initialize(Some(dir)).unwrap();
     });
 
     CONFIG_LOCK.lock().await

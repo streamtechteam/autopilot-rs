@@ -6,7 +6,8 @@ use std::{
 
 use serde::{Serialize, de::DeserializeOwned};
 
-use crate::{FsError, Result, jsonc_parse};
+use crate::error::{FsError, Result};
+use crate::jsonc::parse;
 
 pub trait RecordId {
     fn record_id(&self) -> &str;
@@ -208,7 +209,7 @@ where
 
 fn parse_record<T: DeserializeOwned>(content: &str) -> Result<T> {
     serde_json::from_str(content)
-        .or_else(|_| serde_json::from_str(&jsonc_parse(content)))
+        .or_else(|_| serde_json::from_str(&parse(content)))
         .map_err(FsError::Json)
 }
 
@@ -229,5 +230,5 @@ fn validate_id(id: &str) -> Result<()> {
 }
 
 #[cfg(test)]
-#[path = "store.spec.rs"]
+#[path = "storage.spec.rs"]
 mod spec;

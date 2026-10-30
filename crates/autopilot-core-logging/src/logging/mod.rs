@@ -1,10 +1,10 @@
 use std::path::{Path, PathBuf};
 
-use autopilot_core_fs::paths;
+use autopilot_core_fs::config;
 use flexi_logger::{Duplicate, FileSpec, LevelFilter, Logger, WriteMode};
 
 pub fn init_logging(verbose: bool) {
-    let logs_dir = paths()
+    let logs_dir = config::current()
         .map(|paths| paths.logs_dir())
         .unwrap_or_else(|_| PathBuf::from("logs"));
     init_logger(verbose, &logs_dir);
