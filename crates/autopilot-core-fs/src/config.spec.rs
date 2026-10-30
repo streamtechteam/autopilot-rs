@@ -27,7 +27,7 @@ impl Drop for TestDir {
 #[test]
 fn builds_paths_relative_to_the_root() {
     let dir = TestDir::new();
-    let paths = Paths::from_root(&dir.path);
+    let paths = DirConfig::from_root(&dir.path);
 
     assert_eq!(paths.root(), dir.path);
     assert_eq!(paths.config_file(), dir.path.join("autopilot.jsonc"));
@@ -38,7 +38,7 @@ fn builds_paths_relative_to_the_root() {
 #[test]
 fn ensure_creates_directories_and_config_once() {
     let dir = TestDir::new();
-    let paths = Paths::from_root(&dir.path);
+    let paths = DirConfig::from_root(&dir.path);
 
     paths.ensure().unwrap();
     paths.ensure().unwrap();

@@ -1,12 +1,12 @@
 use super::*;
 
-fn parse(input: &str) -> serde_json::Value {
-    serde_json::from_str(&jsonc_parse(input)).unwrap()
+fn parse_json(input: &str) -> serde_json::Value {
+    serde_json::from_str(&parse(input)).unwrap()
 }
 
 #[test]
 fn removes_line_and_block_comments() {
-    let value = parse(
+    let value = parse_json(
         r#"{
             // line comment
             "a": 1, /* block comment */
@@ -20,7 +20,7 @@ fn removes_line_and_block_comments() {
 
 #[test]
 fn removes_trailing_commas_in_objects_and_arrays() {
-    let value = parse(r#"{"a": [1, 2, 3,], "b": {"c": true,},}"#);
+    let value = parse_json(r#"{"a": [1, 2, 3,], "b": {"c": true,},}"#);
 
     assert_eq!(value["a"], serde_json::json!([1, 2, 3]));
     assert_eq!(value["b"]["c"], true);
@@ -28,7 +28,7 @@ fn removes_trailing_commas_in_objects_and_arrays() {
 
 #[test]
 fn preserves_comment_markers_inside_strings() {
-    let value = parse(
+    let value = parse_json(
         r#"{
             "url": "https://example.com/a//b",
             "text": "not /* a comment */ here"
@@ -41,7 +41,7 @@ fn preserves_comment_markers_inside_strings() {
 
 #[test]
 fn handles_escaped_quotes_inside_strings() {
-    let value = parse(r#"{"text": "a \"quoted\" value", "next": 1}"#);
+    let value = parse_json(r#"{"text": "a \"quoted\" value", "next": 1}"#);
 
     assert_eq!(value["text"], "a \"quoted\" value");
     assert_eq!(value["next"], 1);
@@ -49,5 +49,5 @@ fn handles_escaped_quotes_inside_strings() {
 
 #[test]
 fn returns_the_input_when_there_is_nothing_to_strip() {
-    assert_eq!(jsonc_parse("{\"a\":1}"), "{\"a\":1}");
+    assert_eq!(parse("{\"a\":1}"), "{\"a\":1}");
 }

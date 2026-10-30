@@ -484,7 +484,6 @@ dependencies = [
 name = "autopilot-core"
 version = "0.1.0-beta.1"
 dependencies = [
- "autopilot-core-checks",
  "autopilot-core-conditions",
  "autopilot-core-cross-platform",
  "autopilot-core-error",
@@ -500,17 +499,10 @@ dependencies = [
  "colored",
  "log",
  "schemars",
+ "serde",
  "serde_json",
  "tokio",
  "tokio-cron-scheduler",
-]
-
-[[package]]
-name = "autopilot-core-checks"
-version = "0.1.0-beta.1"
-dependencies = [
- "serde",
- "serde_json",
 ]
 
 [[package]]

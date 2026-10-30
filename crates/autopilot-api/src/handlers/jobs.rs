@@ -13,8 +13,8 @@ use autopilot_core::{
     error::AutoPilotError,
     job::{
         JobScheme, TaskMode,
-        get::get_jobs,
-        set::{add_job, remove_job, update_job},
+        read::list,
+        write::{add, remove, update},
     },
     status::JobStatusEnum,
     task::TaskScheme,
@@ -27,7 +27,7 @@ use crate::state::AppState;
 pub async fn jobs_list(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<JobResponse>>, StatusCode> {
-    let jobs = tokio::task::spawn_blocking(|| get_jobs(true))
+    let jobs = tokio::task::spawn_blocking(|| list(true))
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .map_err(|error| {
@@ -79,7 +79,7 @@ pub async fn jobs_create(
     } = payload;
 
     let result = tokio::task::spawn_blocking(move || {
-        add_job(
+        add(
             name,
             description,
             when,
@@ -113,7 +113,7 @@ pub async fn jobs_getbyid(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<Json<JobResponse>, StatusCode> {
-    let jobs = tokio::task::spawn_blocking(|| get_jobs(true))
+    let jobs = tokio::task::spawn_blocking(|| list(true))
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .map_err(|error| {
@@ -149,7 +149,7 @@ pub async fn jobs_getbyid(
 
 /// DELETE /jobs/{id} - Delete job by ID
 pub async fn jobs_delete(Path(id): Path<String>) -> Result<Json<serde_json::Value>, StatusCode> {
-    let result = tokio::task::spawn_blocking(move || remove_job(Some(id), None))
+    let result = tokio::task::spawn_blocking(move || remove(Some(id), None))
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
@@ -209,7 +209,7 @@ pub async fn jobs_update(
     } = payload;
 
     let result = tokio::task::spawn_blocking(move || {
-        update_job(
+        update(
             &id,
             name,
             description,

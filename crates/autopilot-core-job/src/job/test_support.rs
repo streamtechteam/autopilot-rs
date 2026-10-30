@@ -3,7 +3,7 @@ use std::{
     sync::{Mutex, MutexGuard, Once},
 };
 
-use autopilot_core_fs::{init, paths};
+use autopilot_core_fs::config;
 
 static INIT: Once = Once::new();
 static LOCK: Mutex<()> = Mutex::new(());
@@ -18,9 +18,9 @@ pub fn config_dir() -> &'static str {
                 .unwrap()
                 .as_nanos()
         ));
-        init(Some(dir)).unwrap();
+        config::initialize(Some(dir)).unwrap();
     });
-    paths().unwrap().root().to_str().unwrap()
+    config::current().unwrap().root().to_str().unwrap()
 }
 
 pub fn lock() -> MutexGuard<'static, ()> {
@@ -29,5 +29,5 @@ pub fn lock() -> MutexGuard<'static, ()> {
 }
 
 pub fn jobs_dir() -> PathBuf {
-    paths().unwrap().jobs_dir()
+    config::current().unwrap().jobs_dir()
 }

@@ -1,4 +1,4 @@
-use autopilot_core::checks::address;
+use autopilot_core::network::address;
 use colored::Colorize;
 use core::result::Result::Ok;
 use log::info;

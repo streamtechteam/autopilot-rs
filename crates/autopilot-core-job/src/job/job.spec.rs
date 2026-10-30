@@ -2,6 +2,7 @@ use super::*;
 use crate::job::test_support;
 use autopilot_core_conditions::ConditionScheme;
 use autopilot_core_conditions::fail_condition::FailCondition;
+use autopilot_core_status::{JobStatusEnum, StateManager};
 use autopilot_core_task::TaskScheme;
 
 fn scheme(id: &str) -> JobScheme {
@@ -186,6 +187,46 @@ async fn run_job_marks_completed_or_unsatisfied() {
     );
 }
 
+struct PanickingCondition;
+
+impl Condition for PanickingCondition {
+    fn check(&self) -> bool {
+        panic!("condition panic");
+    }
+
+    fn clone_box(&self) -> Box<dyn Condition> {
+        Box::new(PanickingCondition)
+    }
+
+    fn name(&self) -> &str {
+        "Panicking"
+    }
+}
+
+#[tokio::test]
+async fn run_job_treats_a_panicking_condition_as_unsatisfied() {
+    let state = StateManager::new();
+    let job = Job::new(
+        "job_panicking_condition".to_string(),
+        "job_panicking_condition".to_string(),
+        " ".to_string(),
+        None,
+        None,
+        vec![Box::new(PanickingCondition)],
+        Vec::new(),
+        TaskMode::Concurrent,
+    );
+
+    run_job(job, state.clone()).await;
+
+    assert_eq!(
+        state
+            .get_state_by_id("job_panicking_condition".to_string())
+            .await,
+        Some(JobStatusEnum::Unsatisfied)
+    );
+}
+
 #[tokio::test]
 async fn run_tasks_reports_individual_failures_but_runs_all_concurrent_tasks() {
     let tasks = vec![
@@ -254,7 +295,7 @@ async fn load_jobs_reads_the_config_directory() {
     )
     .unwrap();
 
-    let jobs = crate::job::get::get_jobs(false).unwrap();
+    let jobs = crate::job::read::list(false).unwrap();
     assert!(jobs.iter().any(|job| job.id == "job_load_spec"));
 
     std::fs::remove_file(path).unwrap();
@@ -275,7 +316,7 @@ fn bundled_job_template_matches_scheme() {
     let template_path =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../templates/job.jsonc");
     let template = std::fs::read_to_string(template_path).unwrap();
-    let parsed = autopilot_core_fs::jsonc_parse(&template);
+    let parsed = autopilot_core_fs::jsonc::parse(&template);
 
     let job: JobScheme = serde_json::from_str(&parsed).unwrap();
 

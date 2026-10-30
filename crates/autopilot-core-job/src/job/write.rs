@@ -4,7 +4,8 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use autopilot_core_fs::{JsonFileStore, paths};
+use autopilot_core_fs::config;
+use autopilot_core_fs::storage::JsonFileStore;
 
 use autopilot_core_conditions::ConditionScheme;
 use autopilot_core_error::AutoPilotError;
@@ -13,7 +14,7 @@ use autopilot_core_time::When;
 
 use crate::job::{JobScheme, TaskMode};
 
-pub fn add_job(
+pub fn add(
     name: Option<String>,
     description: Option<String>,
     when: Option<When>,
@@ -35,7 +36,7 @@ pub fn add_job(
         task_mode,
     };
 
-    let store = JsonFileStore::<JobScheme>::new(paths()?.jobs_dir());
+    let store = JsonFileStore::<JobScheme>::new(config::current()?.jobs_dir());
     Ok(store.save(&job)?)
 }
 
@@ -51,7 +52,7 @@ fn next_job_id() -> String {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn update_job(
+pub fn update(
     id: &str,
     name: Option<String>,
     description: Option<String>,
@@ -61,7 +62,7 @@ pub fn update_job(
     tasks: Vec<TaskScheme>,
     task_mode: Option<TaskMode>,
 ) -> Result<PathBuf, AutoPilotError> {
-    let store = JsonFileStore::<JobScheme>::new(paths()?.jobs_dir());
+    let store = JsonFileStore::<JobScheme>::new(config::current()?.jobs_dir());
 
     let Some((path, mut job)) = store.list()?.into_iter().find(|(_, job)| job.id == id) else {
         return Err(AutoPilotError::Job(
@@ -83,14 +84,14 @@ pub fn update_job(
     Ok(path)
 }
 
-pub fn remove_job(id: Option<String>, file_name: Option<String>) -> Result<(), AutoPilotError> {
+pub fn remove(id: Option<String>, file_name: Option<String>) -> Result<(), AutoPilotError> {
     if id.is_none() && file_name.is_none() {
         return Err(AutoPilotError::InvalidJob(
             "No job ID or file name provided".to_string(),
         ));
     }
 
-    let store = JsonFileStore::<JobScheme>::new(paths()?.jobs_dir());
+    let store = JsonFileStore::<JobScheme>::new(config::current()?.jobs_dir());
 
     if let Some(file_name) = file_name {
         let candidate = Path::new(&file_name);
@@ -125,5 +126,5 @@ pub fn remove_job(id: Option<String>, file_name: Option<String>) -> Result<(), A
 }
 
 #[cfg(test)]
-#[path = "set.spec.rs"]
+#[path = "write.spec.rs"]
 mod spec;

@@ -8,7 +8,7 @@ use crate::state::{AppState, ReloadResponse, RestartResponse, StatusResponse};
 pub async fn jobs_status(State(state): State<AppState>) -> Json<StatusResponse> {
     let ap = state.auto_pilot.read().await;
     Json(StatusResponse {
-        running: ap.started,
+        running: ap.is_started(),
         job_count: ap.jobs.len(),
     })
 }
@@ -17,7 +17,7 @@ pub async fn jobs_start(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     let mut ap = state.auto_pilot.write().await;
-    if ap.started {
+    if ap.is_started() {
         return Err(StatusCode::CONFLICT);
     }
 
@@ -41,7 +41,7 @@ pub async fn jobs_stop(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     let mut ap = state.auto_pilot.write().await;
-    if !ap.started {
+    if !ap.is_started() {
         return Err(StatusCode::CONFLICT);
     }
 

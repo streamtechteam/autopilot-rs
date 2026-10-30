@@ -1,4 +1,4 @@
-use autopilot_core_fs::init;
+use autopilot_core_fs::config;
 use clap::{Parser, Subcommand, crate_version};
 use std::path::PathBuf;
 
@@ -90,7 +90,7 @@ pub async fn handle_cli() {
 }
 
 fn handle_dir(config_path: Option<String>) {
-    if let Err(error) = init(config_path.map(PathBuf::from)) {
+    if let Err(error) = config::initialize(config_path.map(PathBuf::from)) {
         eprintln!("Failed to set up directories: {error}");
         std::process::exit(1);
     }
