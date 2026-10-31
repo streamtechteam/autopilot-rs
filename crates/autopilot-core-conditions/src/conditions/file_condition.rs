@@ -110,7 +110,7 @@ pub struct FileConditionScheme {
     #[serde(default)]
     #[schemars(
         title = "Path",
-        extend("x-autopilot" = {"required": true})
+        extend("x-autopilot" = {"required": true, "group": "file"})
     )]
     pub path: String,
     #[serde(default)]
@@ -120,6 +120,7 @@ pub struct FileConditionScheme {
             "x-autopilot" = {
                 "required": true,
                 "widget": "select",
+                "group": "check",
                 "options": [
                     {"label": "File/Directory Exists", "value": "exists"},
                     {"label": "Modified Recently", "value": "modified_recently"},
@@ -133,14 +134,26 @@ pub struct FileConditionScheme {
     #[schemars(
         title = "Time threshold",
         range(min = 0),
-        extend("x-autopilot" = {"unit": "seconds"})
+        extend(
+            "x-autopilot" = {
+                "unit": "seconds",
+                "group": "check",
+                "visible_when": {"field": "check_type", "equals": "modified_recently"}
+            }
+        )
     )]
     pub time_threshold: Option<i64>,
     #[serde(default)]
     #[schemars(
         title = "Size threshold",
         range(min = 0),
-        extend("x-autopilot" = {"unit": "bytes"})
+        extend(
+            "x-autopilot" = {
+                "unit": "bytes",
+                "group": "check",
+                "visible_when": {"field": "check_type", "equals": "size_changed"}
+            }
+        )
     )]
     pub size_threshold: Option<u64>,
 }

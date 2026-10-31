@@ -89,7 +89,8 @@ pub struct DiskSpaceConditionScheme {
                 "required": true,
                 "widget": "dynamic-select",
                 "provider": "disks",
-                "allow_custom": true
+                "allow_custom": true,
+                "group": "disk"
             }
         )
     )]
@@ -98,14 +99,16 @@ pub struct DiskSpaceConditionScheme {
     #[schemars(
         title = "Minimum free space",
         range(min = 0.0),
-        extend("x-autopilot" = {"required": true, "unit": "GB"})
+        extend(
+            "x-autopilot" = {"required": true, "unit": "GB", "group": "thresholds"}
+        )
     )]
     pub min_free_gb: f64,
     #[serde(default)]
     #[schemars(
         title = "Maximum used space",
         range(min = 0.0),
-        extend("x-autopilot" = {"unit": "GB"})
+        extend("x-autopilot" = {"unit": "GB", "group": "thresholds"})
     )]
     pub max_used_gb: Option<f64>,
 }

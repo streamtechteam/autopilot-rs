@@ -66,6 +66,57 @@ fn every_condition_form_type_builds_a_schema() {
 }
 
 #[test]
+fn command_form_declares_grouped_output_fields() {
+    let schema = ConditionScheme::form_schema("command").unwrap();
+    let groups = schema
+        .groups
+        .iter()
+        .map(|group| group.key.as_str())
+        .collect::<Vec<_>>();
+
+    assert!(groups.contains(&"command"));
+    assert!(groups.contains(&"output"));
+    assert_eq!(
+        schema.field("target_output").unwrap().group.as_deref(),
+        Some("output")
+    );
+}
+
+#[test]
+fn command_form_hides_output_match_until_exit_code_is_not_checked() {
+    let schema = ConditionScheme::form_schema("command").unwrap();
+    let target = schema.field("target_output").unwrap();
+
+    let mut values = FormValues::new();
+    values.insert("command", json!("echo hi"));
+    assert!(!target.is_visible(&values));
+
+    values.insert("check_exit_code", json!(false));
+    assert!(target.is_visible(&values));
+
+    values.insert("check_exit_code", json!(true));
+    assert!(!target.is_visible(&values));
+}
+
+#[test]
+fn file_form_shows_only_the_matching_threshold() {
+    let schema = ConditionScheme::form_schema("file").unwrap();
+
+    let mut values = FormValues::new();
+    values.insert("check_type", json!("exists"));
+    assert!(!schema.field("time_threshold").unwrap().is_visible(&values));
+    assert!(!schema.field("size_threshold").unwrap().is_visible(&values));
+
+    values.insert("check_type", json!("modified_recently"));
+    assert!(schema.field("time_threshold").unwrap().is_visible(&values));
+    assert!(!schema.field("size_threshold").unwrap().is_visible(&values));
+
+    values.insert("check_type", json!("size_changed"));
+    assert!(!schema.field("time_threshold").unwrap().is_visible(&values));
+    assert!(schema.field("size_threshold").unwrap().is_visible(&values));
+}
+
+#[test]
 fn every_condition_form_round_trips() {
     let samples = [
         json!({"type":"command","condition":{"command":"echo hi","check_exit_code":false,"target_output":"hi"}}),

@@ -92,6 +92,7 @@ pub struct ResourceConditionScheme {
             "x-autopilot" = {
                 "required": true,
                 "widget": "select",
+                "group": "resource",
                 "options": [
                     {"label": "CPU", "value": "cpu"},
                     {"label": "Memory (RAM)", "value": "memory"}
@@ -104,7 +105,9 @@ pub struct ResourceConditionScheme {
     #[schemars(
         title = "Threshold",
         range(min = 0.0, max = 100.0),
-        extend("x-autopilot" = {"required": true, "unit": "%"})
+        extend(
+            "x-autopilot" = {"required": true, "unit": "%", "group": "threshold"}
+        )
     )]
     pub threshold: f32,
     #[serde(default)]
@@ -113,6 +116,7 @@ pub struct ResourceConditionScheme {
         extend(
             "x-autopilot" = {
                 "widget": "select",
+                "group": "threshold",
                 "options": [
                     {"label": "Greater than (>)", "value": "greater"},
                     {"label": "Less than (<)", "value": "less"}
