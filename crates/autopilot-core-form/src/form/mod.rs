@@ -13,7 +13,7 @@ mod validate;
 mod values;
 
 pub use config::ConditionConfig;
-pub use error::FormError;
+pub use error::{FormError, FormFieldError};
 pub use schema::{AUTOPILOT_HINT, FormField, FormFieldKind, FormOption, FormSchema};
 pub use values::FormValues;
 

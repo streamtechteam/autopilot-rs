@@ -15,3 +15,10 @@ pub enum FormError {
     #[error("form serialization error: {0}")]
     Serialization(String),
 }
+
+/// A validation failure tied to a single field, suitable for inline display.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FormFieldError {
+    pub field: String,
+    pub message: String,
+}

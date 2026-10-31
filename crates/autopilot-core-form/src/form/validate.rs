@@ -1,27 +1,55 @@
 use serde_json::Value;
 
-use super::{FormError, FormField, FormFieldKind, FormSchema, FormValues};
+use super::{FormError, FormField, FormFieldError, FormFieldKind, FormSchema, FormValues};
 
 impl FormSchema {
     pub fn validate(&self, values: &FormValues) -> Result<(), FormError> {
-        for field in &self.fields {
-            let value = values.get(&field.key);
+        self.fields
+            .iter()
+            .try_for_each(|field| field.validate(values))
+    }
 
-            if field.required && value_is_empty(field, value) {
-                return Err(FormError::MissingField(field.key.clone()));
-            }
+    /// Validates a single field by key, for inline/live validation in a UI.
+    pub fn validate_field(&self, key: &str, values: &FormValues) -> Result<(), FormError> {
+        let field = self
+            .field(key)
+            .ok_or_else(|| FormError::InvalidSchema(format!("unknown form field '{key}'")))?;
 
-            if let FormFieldKind::Conditions { min_items } = field.kind {
-                let count = value
-                    .and_then(Value::as_array)
-                    .map(|items| items.len())
-                    .unwrap_or(0);
-                if (field.required || count > 0) && count < min_items {
-                    return Err(FormError::InvalidValue {
-                        field: field.key.clone(),
-                        message: format!("at least {min_items} item(s) required"),
-                    });
-                }
+        field.validate(values)
+    }
+
+    /// Returns every invalid field, in field order, for inline error display.
+    pub fn errors(&self, values: &FormValues) -> Vec<FormFieldError> {
+        self.fields
+            .iter()
+            .filter_map(|field| {
+                field.validate(values).err().map(|error| FormFieldError {
+                    field: field.key.clone(),
+                    message: error.to_string(),
+                })
+            })
+            .collect()
+    }
+}
+
+impl FormField {
+    pub fn validate(&self, values: &FormValues) -> Result<(), FormError> {
+        let value = values.get(&self.key);
+
+        if self.required && value_is_empty(self, value) {
+            return Err(FormError::MissingField(self.key.clone()));
+        }
+
+        if let FormFieldKind::Conditions { min_items } = self.kind {
+            let count = value
+                .and_then(Value::as_array)
+                .map(|items| items.len())
+                .unwrap_or(0);
+            if (self.required || count > 0) && count < min_items {
+                return Err(FormError::InvalidValue {
+                    field: self.key.clone(),
+                    message: format!("at least {min_items} item(s) required"),
+                });
             }
         }
 

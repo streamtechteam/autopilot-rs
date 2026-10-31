@@ -235,3 +235,75 @@ fn resolves_local_references_from_definitions() {
         FormFieldKind::Select { default: Some(default), .. } if default == "and"
     ));
 }
+
+#[test]
+fn errors_reports_every_invalid_field_in_order() {
+    let schema = SampleConfig::form_schema();
+    let errors = schema.errors(&FormValues::new());
+
+    assert_eq!(
+        errors,
+        vec![
+            FormFieldError {
+                field: "conditions".to_string(),
+                message: "missing required field 'conditions'".to_string(),
+            },
+            FormFieldError {
+                field: "ssid".to_string(),
+                message: "missing required field 'ssid'".to_string(),
+            },
+        ]
+    );
+
+    let mut values = FormValues::new();
+    values.insert("ssid", json!("Home"));
+    values.insert("conditions", json!([{"value": "present"}]));
+    assert!(schema.errors(&values).is_empty());
+}
+
+#[test]
+fn validate_field_reports_only_that_field() {
+    let schema = SampleConfig::form_schema();
+    let mut values = FormValues::new();
+
+    let error = schema.validate_field("ssid", &values).unwrap_err();
+    assert!(matches!(error, FormError::MissingField(field) if field == "ssid"));
+
+    values.insert("ssid", json!("Home"));
+    schema.validate_field("ssid", &values).unwrap();
+
+    let error = schema.validate_field("unknown", &values).unwrap_err();
+    assert!(matches!(error, FormError::InvalidSchema(_)));
+}
+
+#[test]
+fn form_field_validates_against_values() {
+    let schema = SampleConfig::form_schema();
+    let ssid = field(&schema, "ssid");
+    let mut values = FormValues::new();
+
+    assert!(ssid.validate(&values).is_err());
+    values.insert("ssid", json!("Home"));
+    ssid.validate(&values).unwrap();
+}
+
+#[test]
+fn validate_field_enforces_condition_item_counts() {
+    let schema = FormSchema {
+        title: "Manual".to_string(),
+        description: None,
+        fields: vec![FormField {
+            key: "conditions".to_string(),
+            label: "Conditions".to_string(),
+            description: None,
+            required: false,
+            kind: FormFieldKind::Conditions { min_items: 2 },
+        }],
+    };
+
+    let mut values = FormValues::new();
+    values.insert("conditions", json!([{"value": "one"}]));
+
+    let error = schema.validate_field("conditions", &values).unwrap_err();
+    assert!(matches!(error, FormError::InvalidValue { field, .. } if field == "conditions"));
+}
