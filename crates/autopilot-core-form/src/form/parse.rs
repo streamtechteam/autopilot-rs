@@ -2,7 +2,10 @@ use schemars::Schema;
 use serde::Deserialize;
 use serde_json::Value;
 
-use super::{AUTOPILOT_HINT, FormError, FormField, FormFieldKind, FormOption, FormSchema};
+use super::{
+    AUTOPILOT_HINT, FormError, FormField, FormFieldKind, FormGroup, FormOption, FormSchema,
+    FormVisibility,
+};
 
 impl FormSchema {
     pub fn from_json_schema(schema: &Schema) -> Result<Self, FormError> {
@@ -33,8 +36,16 @@ impl FormSchema {
             .unwrap_or_default();
 
         let mut parsed = Vec::with_capacity(fields.len());
+        let mut groups: Vec<FormGroup> = Vec::new();
         for (key, field_schema) in fields {
-            parsed.push(parse_field(root, key, field_schema, &required)?);
+            let (field, group) = parse_field(root, key, field_schema, &required)?;
+            if let Some(group) = group {
+                let known = groups.iter().any(|existing| existing.key == group.key);
+                if !known {
+                    groups.push(group);
+                }
+            }
+            parsed.push(field);
         }
 
         Ok(Self {
@@ -47,6 +58,7 @@ impl FormSchema {
                 .get("description")
                 .and_then(Value::as_str)
                 .map(str::to_string),
+            groups,
             fields: parsed,
         })
     }
@@ -57,7 +69,7 @@ fn parse_field(
     key: &str,
     raw_schema: &Value,
     required: &[String],
-) -> Result<FormField, FormError> {
+) -> Result<(FormField, Option<FormGroup>), FormError> {
     let schema = field_schema(root, raw_schema)?;
     let hint = FormHint::from_schema(&schema)?;
     let schema_object = schema
@@ -94,13 +106,20 @@ fn parse_field(
         parse_kind(root, &schema, &hint, key)?
     };
 
-    Ok(FormField {
-        key: key.to_string(),
-        label,
-        description,
-        required,
-        kind,
-    })
+    let group = hint.group.as_ref().map(GroupHint::to_group);
+
+    Ok((
+        FormField {
+            key: key.to_string(),
+            label,
+            description,
+            required,
+            group: group.as_ref().map(|group| group.key.clone()),
+            visible_when: hint.visible_when.clone(),
+            kind,
+        },
+        group,
+    ))
 }
 
 fn parse_kind(
@@ -221,6 +240,44 @@ struct FormHint {
     options: Option<Vec<FormOption>>,
     #[serde(default)]
     multiline: Option<bool>,
+    #[serde(default)]
+    group: Option<GroupHint>,
+    #[serde(default)]
+    visible_when: Option<FormVisibility>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(untagged)]
+enum GroupHint {
+    Key(String),
+    Detailed {
+        key: String,
+        #[serde(default)]
+        title: Option<String>,
+        #[serde(default)]
+        description: Option<String>,
+    },
+}
+
+impl GroupHint {
+    fn to_group(&self) -> FormGroup {
+        match self {
+            Self::Key(key) => FormGroup {
+                key: key.clone(),
+                title: humanize(key),
+                description: None,
+            },
+            Self::Detailed {
+                key,
+                title,
+                description,
+            } => FormGroup {
+                key: key.clone(),
+                title: title.clone().unwrap_or_else(|| humanize(key)),
+                description: description.clone(),
+            },
+        }
+    }
 }
 
 impl FormHint {

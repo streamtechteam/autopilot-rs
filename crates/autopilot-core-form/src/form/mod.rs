@@ -14,7 +14,9 @@ mod values;
 
 pub use config::ConditionConfig;
 pub use error::{FormError, FormFieldError};
-pub use schema::{AUTOPILOT_HINT, FormField, FormFieldKind, FormOption, FormSchema};
+pub use schema::{
+    AUTOPILOT_HINT, FormField, FormFieldKind, FormGroup, FormOption, FormSchema, FormVisibility,
+};
 pub use values::FormValues;
 
 #[cfg(test)]

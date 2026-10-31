@@ -31,6 +31,10 @@ fn prompt_schema(schema: &FormSchema) -> Result<FormValues, AutoPilotError> {
     let mut values = FormValues::new();
 
     for field in &schema.fields {
+        if !field.is_visible(&values) {
+            continue;
+        }
+
         if let Some(value) = prompt_field(field)? {
             values.insert(field.key.clone(), value);
         }

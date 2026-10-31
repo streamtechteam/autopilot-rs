@@ -292,11 +292,14 @@ fn validate_field_enforces_condition_item_counts() {
     let schema = FormSchema {
         title: "Manual".to_string(),
         description: None,
+        groups: Vec::new(),
         fields: vec![FormField {
             key: "conditions".to_string(),
             label: "Conditions".to_string(),
             description: None,
             required: false,
+            group: None,
+            visible_when: None,
             kind: FormFieldKind::Conditions { min_items: 2 },
         }],
     };
@@ -306,4 +309,140 @@ fn validate_field_enforces_condition_item_counts() {
 
     let error = schema.validate_field("conditions", &values).unwrap_err();
     assert!(matches!(error, FormError::InvalidValue { field, .. } if field == "conditions"));
+}
+
+#[test]
+fn parses_group_hints_in_field_order() {
+    let schema = json!({
+        "type": "object",
+        "title": "Grouped",
+        "properties": {
+            "beta": {
+                "type": "string",
+                "x-autopilot": {"group": "extra"}
+            },
+            "alpha": {
+                "type": "string",
+                "x-autopilot": {
+                    "group": {
+                        "key": "main",
+                        "title": "Main settings",
+                        "description": "Primary options"
+                    }
+                }
+            },
+            "gamma": {
+                "type": "string",
+                "x-autopilot": {"group": "main"}
+            }
+        }
+    });
+
+    let form = FormSchema::from_value(&schema).unwrap();
+
+    assert_eq!(
+        form.groups,
+        vec![
+            FormGroup {
+                key: "main".to_string(),
+                title: "Main settings".to_string(),
+                description: Some("Primary options".to_string()),
+            },
+            FormGroup {
+                key: "extra".to_string(),
+                title: "Extra".to_string(),
+                description: None,
+            },
+        ]
+    );
+    assert_eq!(form.field("alpha").unwrap().group.as_deref(), Some("main"));
+    assert_eq!(form.field("beta").unwrap().group.as_deref(), Some("extra"));
+    assert_eq!(form.field("gamma").unwrap().group.as_deref(), Some("main"));
+    assert_eq!(form.fields_in_group("main").count(), 2);
+}
+
+#[test]
+fn parses_visibility_rules_and_evaluates_them() {
+    let schema = json!({
+        "type": "object",
+        "properties": {
+            "enabled": {"type": "boolean"},
+            "name": {
+                "type": "string",
+                "x-autopilot": {"visible_when": {"field": "enabled", "equals": true}}
+            }
+        }
+    });
+
+    let form = FormSchema::from_value(&schema).unwrap();
+    let name = form.field("name").unwrap();
+
+    assert_eq!(
+        name.visible_when,
+        Some(FormVisibility {
+            field: "enabled".to_string(),
+            equals: json!(true),
+        })
+    );
+    assert!(!name.is_visible(&FormValues::new()));
+
+    let mut values = FormValues::new();
+    values.insert("enabled", json!(true));
+    assert!(name.is_visible(&values));
+
+    values.insert("enabled", json!(false));
+    assert!(!name.is_visible(&values));
+
+    values.insert("enabled", json!("true"));
+    assert!(!name.is_visible(&values));
+}
+
+#[test]
+fn validation_skips_hidden_required_fields() {
+    let schema = json!({
+        "type": "object",
+        "properties": {
+            "enabled": {"type": "boolean"},
+            "name": {
+                "type": "string",
+                "x-autopilot": {
+                    "required": true,
+                    "visible_when": {"field": "enabled", "equals": true}
+                }
+            }
+        }
+    });
+
+    let form = FormSchema::from_value(&schema).unwrap();
+    let hidden = FormValues::new();
+
+    form.validate(&hidden).unwrap();
+    assert!(form.errors(&hidden).is_empty());
+    form.validate_field("name", &hidden).unwrap();
+
+    let mut visible = FormValues::new();
+    visible.insert("enabled", json!(true));
+    let error = form.validate(&visible).unwrap_err();
+    assert!(matches!(error, FormError::MissingField(field) if field == "name"));
+    assert_eq!(form.errors(&visible).len(), 1);
+}
+
+#[test]
+fn deserializes_schemas_without_group_metadata() {
+    let form: FormSchema = serde_json::from_value(json!({
+        "title": "Old",
+        "description": null,
+        "fields": [{
+            "key": "name",
+            "label": "Name",
+            "description": null,
+            "required": false,
+            "kind": {"kind": "boolean", "default": null}
+        }]
+    }))
+    .unwrap();
+
+    assert!(form.groups.is_empty());
+    assert!(form.fields[0].group.is_none());
+    assert!(form.fields[0].visible_when.is_none());
 }

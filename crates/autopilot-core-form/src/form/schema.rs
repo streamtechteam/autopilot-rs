@@ -1,6 +1,9 @@
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+use super::FormValues;
 
 pub const AUTOPILOT_HINT: &str = "x-autopilot";
 
@@ -8,12 +11,20 @@ pub const AUTOPILOT_HINT: &str = "x-autopilot";
 pub struct FormSchema {
     pub title: String,
     pub description: Option<String>,
+    #[serde(default)]
+    pub groups: Vec<FormGroup>,
     pub fields: Vec<FormField>,
 }
 
 impl FormSchema {
     pub fn field(&self, key: &str) -> Option<&FormField> {
         self.fields.iter().find(|field| field.key == key)
+    }
+
+    pub fn fields_in_group<'a>(&'a self, key: &str) -> impl Iterator<Item = &'a FormField> {
+        self.fields
+            .iter()
+            .filter(move |field| field.group.as_deref() == Some(key))
     }
 }
 
@@ -24,12 +35,43 @@ impl fmt::Display for FormSchema {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct FormGroup {
+    pub key: String,
+    pub title: String,
+    #[serde(default)]
+    pub description: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct FormField {
     pub key: String,
     pub label: String,
     pub description: Option<String>,
     pub required: bool,
+    #[serde(default)]
+    pub group: Option<String>,
+    #[serde(default)]
+    pub visible_when: Option<FormVisibility>,
     pub kind: FormFieldKind,
+}
+
+impl FormField {
+    /// Whether this field should be shown for `values`.
+    ///
+    /// Fields without a visibility rule are always shown. A rule matches only
+    /// when the referenced field exists and equals the expected value.
+    pub fn is_visible(&self, values: &FormValues) -> bool {
+        self.visible_when
+            .as_ref()
+            .map(|rule| values.get(&rule.field) == Some(&rule.equals))
+            .unwrap_or(true)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct FormVisibility {
+    pub field: String,
+    pub equals: Value,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

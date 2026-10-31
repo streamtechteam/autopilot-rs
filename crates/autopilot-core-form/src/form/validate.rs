@@ -34,6 +34,10 @@ impl FormSchema {
 
 impl FormField {
     pub fn validate(&self, values: &FormValues) -> Result<(), FormError> {
+        if !self.is_visible(values) {
+            return Ok(());
+        }
+
         let value = values.get(&self.key);
 
         if self.required && value_is_empty(self, value) {
