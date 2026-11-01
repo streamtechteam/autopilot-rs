@@ -358,13 +358,16 @@ fn prompt_dynamic_select(
     default: &[String],
     placeholder: Option<&str>,
 ) -> Result<Value, AutoPilotError> {
-    let options = providers::values(provider).unwrap_or_default();
+    let options = providers::values(provider).unwrap_or_default().options;
 
     if multiple {
-        let labels = options.iter().map(String::as_str).collect::<Vec<_>>();
+        let labels = options
+            .iter()
+            .map(|option| option.label.as_str())
+            .collect::<Vec<_>>();
         let defaults = options
             .iter()
-            .map(|option| default.contains(option))
+            .map(|option| default.contains(&option.value))
             .collect::<Vec<_>>();
         let mut selected = if options.is_empty() {
             Vec::new()
@@ -377,7 +380,7 @@ fn prompt_dynamic_select(
                 .map_err(dialoguer_error)?
                 .unwrap_or_default()
                 .into_iter()
-                .map(|index| options[index].clone())
+                .map(|index| options[index].value.clone())
                 .collect::<Vec<_>>()
         };
 
@@ -412,7 +415,7 @@ fn prompt_dynamic_select(
     if allow_custom {
         labels.push("<Enter custom value>".to_string());
     }
-    labels.extend(options.iter().cloned());
+    labels.extend(options.iter().map(|option| option.label.clone()));
     let leave_unset = (!field.required).then_some(labels.len());
     if leave_unset.is_some() {
         labels.push("Leave unset".to_string());
@@ -421,7 +424,7 @@ fn prompt_dynamic_select(
     let option_offset = usize::from(allow_custom);
     let default_index = default
         .first()
-        .and_then(|default| options.iter().position(|option| option == default))
+        .and_then(|default| options.iter().position(|option| &option.value == default))
         .map(|index| index + option_offset)
         .unwrap_or(option_offset);
     let label_refs = labels.iter().map(String::as_str).collect::<Vec<_>>();
@@ -447,7 +450,9 @@ fn prompt_dynamic_select(
         return Ok(Value::Null);
     }
 
-    Ok(Value::String(options[selected - option_offset].clone()))
+    Ok(Value::String(
+        options[selected - option_offset].value.clone(),
+    ))
 }
 
 fn prompt_conditions(field: &FormField, min_items: usize) -> Result<Value, AutoPilotError> {
