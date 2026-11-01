@@ -45,17 +45,6 @@ fn prompt_schema(schema: &FormSchema) -> Result<FormValues, AutoPilotError> {
 }
 
 fn prompt_field(field: &FormField) -> Result<Option<Value>, AutoPilotError> {
-    if !field.required
-        && !Confirm::with_theme(&ColorfulTheme::default())
-            .with_prompt(format!("Configure '{}'? (optional)", field.label))
-            .default(false)
-            .interact_opt()
-            .map_err(dialoguer_error)?
-            .unwrap_or(false)
-    {
-        return Ok(None);
-    }
-
     if let Some(description) = &field.description {
         println!("{}", description);
     }
@@ -85,14 +74,7 @@ fn prompt_field(field: &FormField) -> Result<Option<Value>, AutoPilotError> {
             max,
             unit,
         } => prompt_number(field, *default, *min, *max, unit.as_deref())?,
-        FormFieldKind::Boolean { default } => Value::Bool(
-            Confirm::with_theme(&ColorfulTheme::default())
-                .with_prompt(&field.label)
-                .default(default.unwrap_or(false))
-                .interact_opt()
-                .map_err(dialoguer_error)?
-                .unwrap_or(false),
-        ),
+        FormFieldKind::Boolean { default } => prompt_boolean(field, *default)?,
         FormFieldKind::Select { options, default } => {
             prompt_select(field, options, default.as_deref())?
         }
@@ -125,6 +107,35 @@ fn prompt_field(field: &FormField) -> Result<Option<Value>, AutoPilotError> {
     }
 
     Ok(Some(value))
+}
+
+fn prompt_boolean(field: &FormField, default: Option<bool>) -> Result<Value, AutoPilotError> {
+    if field.required {
+        return Ok(Value::Bool(
+            Confirm::with_theme(&ColorfulTheme::default())
+                .with_prompt(&field.label)
+                .default(default.unwrap_or(false))
+                .interact_opt()
+                .map_err(dialoguer_error)?
+                .unwrap_or(default.unwrap_or(false)),
+        ));
+    }
+
+    let labels = ["Yes", "No", "Leave unset"];
+    let default_index = if default.unwrap_or(false) { 0 } else { 1 };
+    let selected = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt(&field.label)
+        .items(labels)
+        .default(default_index)
+        .interact_opt()
+        .map_err(dialoguer_error)?
+        .unwrap_or(2);
+
+    Ok(match selected {
+        0 => Value::Bool(true),
+        1 => Value::Bool(false),
+        _ => Value::Null,
+    })
 }
 
 fn prompt_text(
@@ -248,13 +259,20 @@ fn prompt_select(
     default: Option<&str>,
 ) -> Result<Value, AutoPilotError> {
     if options.is_empty() {
-        return Err(invalid(format!("{} has no options", field.label)));
+        if field.required {
+            return Err(invalid(format!("{} has no options", field.label)));
+        }
+        return Ok(Value::Null);
     }
 
-    let labels = options
+    let mut labels = options
         .iter()
         .map(|option| option.label.as_str())
         .collect::<Vec<_>>();
+    if !field.required {
+        labels.push("Leave unset");
+    }
+
     let default_index = default
         .and_then(|default| options.iter().position(|option| option.value == default))
         .unwrap_or(0);
@@ -263,8 +281,18 @@ fn prompt_select(
         .items(&labels)
         .default(default_index)
         .interact_opt()
-        .map_err(dialoguer_error)?
-        .ok_or_else(|| invalid(format!("No {} selected", field.label)))?;
+        .map_err(dialoguer_error)?;
+
+    let Some(selected) = selected else {
+        if field.required {
+            return Err(invalid(format!("No {} selected", field.label)));
+        }
+        return Ok(Value::Null);
+    };
+
+    if selected >= options.len() {
+        return Ok(Value::Null);
+    }
 
     Ok(Value::String(options[selected].value.clone()))
 }
@@ -364,7 +392,10 @@ fn prompt_dynamic_select(
 
     if options.is_empty() {
         if !allow_custom {
-            return Err(invalid(format!("No values available for {}", field.label)));
+            if field.required {
+                return Err(invalid(format!("No values available for {}", field.label)));
+            }
+            return Ok(Value::Null);
         }
         return prompt_text(field, None, placeholder);
     }
@@ -372,6 +403,10 @@ fn prompt_dynamic_select(
     let mut labels = options.clone();
     if allow_custom {
         labels.push("<Enter custom value>".to_string());
+    }
+    let leave_unset = (!field.required).then_some(labels.len());
+    if leave_unset.is_some() {
+        labels.push("Leave unset".to_string());
     }
     let label_refs = labels.iter().map(String::as_str).collect::<Vec<_>>();
     let default_index = default
@@ -383,8 +418,18 @@ fn prompt_dynamic_select(
         .items(&label_refs)
         .default(default_index)
         .interact_opt()
-        .map_err(dialoguer_error)?
-        .ok_or_else(|| invalid(format!("No {} selected", field.label)))?;
+        .map_err(dialoguer_error)?;
+
+    let Some(selected) = selected else {
+        if field.required {
+            return Err(invalid(format!("No {} selected", field.label)));
+        }
+        return Ok(Value::Null);
+    };
+
+    if Some(selected) == leave_unset {
+        return Ok(Value::Null);
+    }
 
     if allow_custom && selected == options.len() {
         return prompt_text(field, None, placeholder);

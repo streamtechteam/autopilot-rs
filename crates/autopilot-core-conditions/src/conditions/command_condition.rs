@@ -114,6 +114,7 @@ pub struct CommandConditionScheme {
         description = "Leave unset to check the exit code",
         extend("x-autopilot" = {"group": "output"})
     )]
+    #[schemars(extend("default" = true))]
     pub check_exit_code: Option<bool>,
     /// Target output to match (only used if check_exit_code is false)
     #[serde(default)]

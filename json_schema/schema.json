@@ -99,7 +99,7 @@
             "boolean",
             "null"
           ],
-          "default": null,
+          "default": true,
           "x-autopilot": {
             "group": "output"
           }
@@ -739,7 +739,7 @@
             "boolean",
             "null"
           ],
-          "default": null
+          "default": true
         }
       },
       "additionalProperties": false
