@@ -123,8 +123,16 @@ fn prompt_boolean(field: &FormField, default: Option<bool>) -> Result<Value, Aut
 
     let labels = ["Yes", "No", "Leave unset"];
     let default_index = if default.unwrap_or(false) { 0 } else { 1 };
+    let prompt = match default {
+        Some(default) => format!(
+            "{} (default: {})",
+            field.label,
+            if default { "Yes" } else { "No" }
+        ),
+        None => field.label.clone(),
+    };
     let selected = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt(&field.label)
+        .with_prompt(prompt)
         .items(labels)
         .default(default_index)
         .interact_opt()

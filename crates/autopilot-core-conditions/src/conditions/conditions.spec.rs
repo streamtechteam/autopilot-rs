@@ -145,3 +145,20 @@ fn every_condition_form_round_trips() {
         assert_eq!(serde_json::to_value(restored).unwrap(), sample, "{key}");
     }
 }
+
+#[test]
+fn command_check_exit_code_defaults_to_true() {
+    let schema = ConditionScheme::form_schema("command").unwrap();
+    let field = schema.field("check_exit_code").unwrap();
+
+    assert!(
+        matches!(
+            &field.kind,
+            autopilot_core_form::FormFieldKind::Boolean {
+                default: Some(true)
+            }
+        ),
+        "unexpected kind: {:?}",
+        field.kind
+    );
+}
