@@ -408,19 +408,23 @@ fn prompt_dynamic_select(
         return prompt_text(field, None, placeholder);
     }
 
-    let mut labels = options.clone();
+    let mut labels = Vec::new();
     if allow_custom {
         labels.push("<Enter custom value>".to_string());
     }
+    labels.extend(options.iter().cloned());
     let leave_unset = (!field.required).then_some(labels.len());
     if leave_unset.is_some() {
         labels.push("Leave unset".to_string());
     }
-    let label_refs = labels.iter().map(String::as_str).collect::<Vec<_>>();
+
+    let option_offset = usize::from(allow_custom);
     let default_index = default
         .first()
         .and_then(|default| options.iter().position(|option| option == default))
-        .unwrap_or(0);
+        .map(|index| index + option_offset)
+        .unwrap_or(option_offset);
+    let label_refs = labels.iter().map(String::as_str).collect::<Vec<_>>();
     let selected = Select::with_theme(&ColorfulTheme::default())
         .with_prompt(&field.label)
         .items(&label_refs)
@@ -435,15 +439,15 @@ fn prompt_dynamic_select(
         return Ok(Value::Null);
     };
 
+    if allow_custom && selected == 0 {
+        return prompt_text(field, None, placeholder);
+    }
+
     if Some(selected) == leave_unset {
         return Ok(Value::Null);
     }
 
-    if allow_custom && selected == options.len() {
-        return prompt_text(field, None, placeholder);
-    }
-
-    Ok(Value::String(options[selected].clone()))
+    Ok(Value::String(options[selected - option_offset].clone()))
 }
 
 fn prompt_conditions(field: &FormField, min_items: usize) -> Result<Value, AutoPilotError> {
