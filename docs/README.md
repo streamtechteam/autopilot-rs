@@ -23,7 +23,7 @@ Start with the [README](../README.md) if you are new to AutoPilot-rs. This direc
 
 These documents describe the current implementation, including behavior that is tracked for improvement. Where a known limitation affects how you use AutoPilot-rs, it is called out explicitly. For example:
 
-- the API is currently unauthenticated and loopback-only by default;
+- the API requires a bearer token, is loopback-only by default, and needs an explicit opt-in for non-loopback binds;
 - API job CRUD writes files but does not update already-loaded jobs until a reload or restart;
 - `file` condition `min_size` checks a minimum size threshold; `size_changed` is a deprecated alias and does not detect a change from a previous size.
 

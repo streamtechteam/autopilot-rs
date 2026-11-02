@@ -116,7 +116,7 @@ cargo clippy -p autopilot-api --all-targets --locked
 
 ## Known constraints
 
-- The API is unauthenticated and plain HTTP; see [API security](API.md#security).
+- The API uses bearer-token authentication and Origin/Host checks over plain HTTP; see [API security](API.md#security).
 - Job CRUD writes files and requires reload/restart for live changes.
 - Invalid job files are skipped by the loader; duplicate IDs are fatal for the load.
 - `file` condition `min_size` implements a minimum-size check; `size_changed` is a deprecated alias.

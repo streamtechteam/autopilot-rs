@@ -41,6 +41,10 @@ impl DirConfig {
         self.root.join("logs")
     }
 
+    pub fn api_token_path(&self) -> PathBuf {
+        self.root.join(crate::auth::API_TOKEN_FILE)
+    }
+
     pub fn ensure(&self) -> Result<()> {
         fs::create_dir_all(&self.root).map_err(|error| {
             FsError::Init(format!(

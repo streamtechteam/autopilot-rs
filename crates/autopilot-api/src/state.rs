@@ -23,6 +23,18 @@ pub type RestartResponse = ReloadResponse;
 #[derive(Clone)]
 pub struct AppState {
     pub auto_pilot: Arc<RwLock<AutoPilot>>,
+    /// Bearer token required for every route except `/health`. `start_api`
+    /// replaces this with the persisted or environment-provided token.
+    pub api_token: Arc<String>,
+}
+
+impl AppState {
+    pub fn new(auto_pilot: Arc<RwLock<AutoPilot>>) -> Self {
+        Self {
+            auto_pilot,
+            api_token: Arc::new(String::new()),
+        }
+    }
 }
 
 #[cfg(test)]

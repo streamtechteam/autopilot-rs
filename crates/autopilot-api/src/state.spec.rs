@@ -22,9 +22,7 @@ fn responses_serialise_to_expected_json() {
 #[tokio::test]
 async fn app_state_clone_shares_the_underlying_state() {
     let autopilot = AutoPilot::new().await.unwrap();
-    let state = AppState {
-        auto_pilot: Arc::new(RwLock::new(autopilot)),
-    };
+    let state = AppState::new(Arc::new(RwLock::new(autopilot)));
     let clone = state.clone();
 
     assert!(Arc::ptr_eq(&state.auto_pilot, &clone.auto_pilot));

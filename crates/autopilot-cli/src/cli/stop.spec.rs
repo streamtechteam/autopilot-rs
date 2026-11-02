@@ -31,7 +31,10 @@ fn stop_sends_a_shutdown_request() {
     let port = listener.local_addr().unwrap().port();
 
     // SAFETY: env access is serialised by ENV_LOCK.
-    unsafe { std::env::set_var("AUTOPILOT_PORT", port.to_string()) };
+    unsafe {
+        std::env::set_var("AUTOPILOT_PORT", port.to_string());
+        std::env::set_var("AUTOPILOT_API_TOKEN", "test-token");
+    };
 
     let server = std::thread::spawn(move || {
         let (mut stream, _) = listener.accept().unwrap();
@@ -59,7 +62,11 @@ fn stop_sends_a_shutdown_request() {
     assert!(stop(true).is_ok());
     let request = server.join().unwrap();
     assert!(request.starts_with("POST /shutdown HTTP/1.1"));
+    assert!(request.contains("Authorization: Bearer test-token"));
 
     // SAFETY: env access is serialised by ENV_LOCK.
-    unsafe { std::env::remove_var("AUTOPILOT_PORT") };
+    unsafe {
+        std::env::remove_var("AUTOPILOT_PORT");
+        std::env::remove_var("AUTOPILOT_API_TOKEN");
+    }
 }

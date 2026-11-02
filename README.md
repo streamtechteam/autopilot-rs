@@ -126,7 +126,7 @@ This sends a shutdown request to the running daemon and exits the process.
 
 ## HTTP API quick start
 
-> **Security warning:** the API has no authentication or TLS. It binds to loopback by default. Do not expose it to an untrusted network. See [docs/API.md](docs/API.md) for the full security guidance.
+> **Security warning:** the API requires a bearer token but has no TLS or per-user authorization. It binds to loopback by default; non-loopback binds require an explicit opt-in. Do not expose it to an untrusted network. See [docs/API.md](docs/API.md) for the full security guidance.
 
 ```bash
 # Start the API without auto-starting jobs
@@ -245,13 +245,15 @@ The API listens on loopback by default. These environment variables control the 
 | Variable         | Default     | Description                  |
 | ---------------- | ----------- | ---------------------------- |
 | `AUTOPILOT_HOST` | `127.0.0.1` | Host or IP the API binds to. |
-| `AUTOPILOT_PORT` | `7883`      | Port the API listens on.     |
+| `AUTOPILOT_PORT` | `7883` | Port the API listens on. |
+| `AUTOPILOT_API_TOKEN` | generated | Bearer token for API requests. Overrides `<config-root>/api-token`. |
+| `AUTOPILOT_ALLOW_REMOTE` | unset | Must be `1` to bind to a non-loopback host. |
 
 ```bash
 AUTOPILOT_PORT=9000 autopilot-rs serve
 ```
 
-Only change `AUTOPILOT_HOST` when you intentionally want remote access. See [API security](docs/API.md#security).
+The daemon writes a random token to `<config-root>/api-token` with owner-only permissions, and the CLI reads it automatically. Only change `AUTOPILOT_HOST` when you intentionally want remote access, and set `AUTOPILOT_ALLOW_REMOTE=1` plus a TLS reverse proxy in that case. See [API security](docs/API.md#security).
 
 ## Examples
 

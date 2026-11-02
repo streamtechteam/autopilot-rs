@@ -54,7 +54,5 @@ pub(crate) fn payload(id: &str, name: &str) -> JobScheme {
 pub(crate) async fn state_with_jobs(jobs: Vec<Job>) -> AppState {
     let mut autopilot = AutoPilot::new().await.unwrap();
     autopilot.jobs = jobs;
-    AppState {
-        auto_pilot: std::sync::Arc::new(tokio::sync::RwLock::new(autopilot)),
-    }
+    AppState::new(std::sync::Arc::new(tokio::sync::RwLock::new(autopilot)))
 }

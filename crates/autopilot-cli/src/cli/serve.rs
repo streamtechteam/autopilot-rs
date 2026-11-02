@@ -37,9 +37,7 @@ pub async fn serve(verbose: bool, api: bool) {
     if !api {
         auto_pilot.write().await.start_all();
     }
-    let state = AppState {
-        auto_pilot: auto_pilot.clone(),
-    };
+    let state = AppState::new(auto_pilot.clone());
     match start_api(state).await {
         Ok(_) => {}
         Err(err) => {

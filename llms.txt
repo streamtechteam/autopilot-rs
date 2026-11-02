@@ -46,9 +46,9 @@
 ## Important facts
 
 - Default API address: `http://127.0.0.1:7883`.
-- Environment variables: `AUTOPILOT_HOST` (default `127.0.0.1`) and `AUTOPILOT_PORT` (default `7883`).
+- Environment variables: `AUTOPILOT_HOST` (default `127.0.0.1`), `AUTOPILOT_PORT` (default `7883`), `AUTOPILOT_API_TOKEN`, and `AUTOPILOT_ALLOW_REMOTE`.
 - `autopilot-rs serve` always starts the API; `--api` only suppresses automatic job start.
-- The API is unauthenticated and uses plain HTTP. Keep it on loopback.
+- The API requires a bearer token for every route except `/health`, uses plain HTTP, and stays on loopback unless `AUTOPILOT_ALLOW_REMOTE=1` is set.
 - API job CRUD writes files; `POST /reload` or `POST /restart` applies changes to the live runtime.
 - Reload/restart failures currently return HTTP `200` with `"success": false`.
 - Invalid job files are skipped by the loader; duplicate job IDs prevent the job set from loading.

@@ -129,13 +129,15 @@ The API address and the address used by `status`/`stop` come from:
 | --- | --- | --- |
 | `AUTOPILOT_HOST` | `127.0.0.1` | API host. |
 | `AUTOPILOT_PORT` | `7883` | API port. |
+| `AUTOPILOT_API_TOKEN` | generated | Bearer token; overrides `<config-root>/api-token`. |
+| `AUTOPILOT_ALLOW_REMOTE` | unset | Must be `1` for a non-loopback bind. |
 
 ```bash
 AUTOPILOT_PORT=9000 autopilot-rs serve
 AUTOPILOT_PORT=9000 autopilot-rs status
 ```
 
-Do not expose the API to an untrusted network without an authentication layer. See [API security](API.md#security).
+`stop` reads the bearer token from `AUTOPILOT_API_TOKEN` or `<config-root>/api-token` automatically. Do not expose the API to an untrusted network without TLS termination. See [API security](API.md#security).
 
 ## Related documentation
 
