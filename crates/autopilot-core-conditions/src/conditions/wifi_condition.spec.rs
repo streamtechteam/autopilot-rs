@@ -25,3 +25,24 @@ fn condition_keeps_ssid_and_reports_name() {
         "autopilot-spec-network-that-is-not-connected"
     ));
 }
+
+#[cfg(any(target_os = "windows", test))]
+#[test]
+fn windows_parser_reads_the_connected_ssid() {
+    let output = "\r\n    Name                   : Wi-Fi\r\n    State                  : connected\r\n    SSID                   : Home WiFi\r\n    BSSID                  : aa:bb:cc:dd:ee:ff\r\n";
+
+    assert_eq!(
+        get_connected_wifi_windows(output),
+        Some("Home WiFi".to_string())
+    );
+}
+
+#[cfg(any(target_os = "windows", test))]
+#[test]
+fn windows_parser_ignores_saved_profiles_and_bssid() {
+    let profiles = "Profiles on interface Wi-Fi:\r\n    All User Profile     : Home WiFi\r\n";
+    let bssid_only = "    BSSID                  : aa:bb:cc:dd:ee:ff\r\n";
+
+    assert_eq!(get_connected_wifi_windows(profiles), None);
+    assert_eq!(get_connected_wifi_windows(bssid_only), None);
+}

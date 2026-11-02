@@ -85,19 +85,13 @@ pub fn sync_condition(target_ssid: &str) -> bool {
 
     #[cfg(target_os = "windows")]
     {
-        // Windows: use netsh
+        // Windows: use netsh. Only the interfaces view reports the current
+        // connection; `netsh wlan show profiles` lists saved networks and
+        // must not be used as a connected check.
         if let Ok(output) = cmd("netsh", vec!["wlan", "show", "interfaces"]).read()
             && let Some(ssid) = get_connected_wifi_windows(&output)
         {
             return ssid == target_ssid;
-        }
-
-        // Fallback for Windows: try parsing netsh show current profile
-        if let Ok(output) = cmd("netsh", vec!["wlan", "show", "profiles"]).read()
-            && output.contains(target_ssid)
-        {
-            // This is less reliable but might help in some environments
-            return true;
         }
         false
     }
@@ -153,16 +147,19 @@ fn get_connected_wifi_macos_airport(output: &str) -> Option<String> {
 }
 
 /// Parse SSID from netsh output (Windows)
-#[cfg(target_os = "windows")]
+///
+/// Only the exact `SSID` field is accepted. `BSSID` is a different value and
+/// must not be mistaken for the network name.
+#[cfg(any(target_os = "windows", test))]
 fn get_connected_wifi_windows(output: &str) -> Option<String> {
     for line in output.lines() {
-        if line.contains("SSID") && line.contains(":") {
-            let parts: Vec<&str> = line.splitn(2, ':').collect();
-            if parts.len() == 2 {
-                let ssid = parts[1].trim().to_string();
-                if !ssid.is_empty() {
-                    return Some(ssid);
-                }
+        let Some((key, value)) = line.split_once(':') else {
+            continue;
+        };
+        if key.trim().eq_ignore_ascii_case("SSID") {
+            let ssid = value.trim();
+            if !ssid.is_empty() {
+                return Some(ssid.to_string());
             }
         }
     }
