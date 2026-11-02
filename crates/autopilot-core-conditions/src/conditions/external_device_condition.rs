@@ -37,20 +37,14 @@ impl Condition for ExternalDeviceCondition {
             let disk_name = disk.name().to_string_lossy().to_lowercase();
             let mount_point = disk.mount_point().to_string_lossy().to_lowercase();
 
-            if self.check_by_name {
-                // Check if the disk name contains our identifier
-                if disk_name.contains(&self.device_identifier)
-                    || self.device_identifier.contains(&disk_name)
-                {
-                    return true;
-                }
+            let matched = if self.check_by_name {
+                name_matches(&disk_name, &self.device_identifier)
             } else {
-                // Check if the mount point contains our identifier
-                if mount_point.contains(&self.device_identifier)
-                    || self.device_identifier.contains(&mount_point)
-                {
-                    return true;
-                }
+                mount_matches(&mount_point, &self.device_identifier)
+            };
+
+            if matched {
+                return true;
             }
         }
 
@@ -64,6 +58,27 @@ impl Condition for ExternalDeviceCondition {
     fn name(&self) -> &str {
         "External Device"
     }
+}
+
+/// A device name matches when it contains the identifier.
+///
+/// The comparison is one-way so short/empty disk names cannot match every
+/// identifier.
+fn name_matches(disk_name: &str, identifier: &str) -> bool {
+    !disk_name.is_empty() && !identifier.is_empty() && disk_name.contains(identifier)
+}
+
+/// Mount points must be equal after ignoring a trailing separator, so the root
+/// mount cannot match an arbitrary absolute path.
+fn mount_matches(mount_point: &str, identifier: &str) -> bool {
+    fn normalize(value: &str) -> &str {
+        let trimmed = value.trim_end_matches(['/', '\\']);
+        if trimmed.is_empty() { value } else { trimmed }
+    }
+
+    !mount_point.is_empty()
+        && !identifier.is_empty()
+        && normalize(mount_point) == normalize(identifier)
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]
