@@ -101,7 +101,8 @@ pub struct CommandConditionScheme {
                 "required": true,
                 "widget": "editor",
                 "provider": "editors",
-                "placeholder": "Shell command"
+                "placeholder": "Shell command",
+                "group": "command"
             }
         )
     )]
@@ -110,14 +111,23 @@ pub struct CommandConditionScheme {
     #[serde(default)]
     #[schemars(
         title = "Check exit code",
-        description = "Leave unset to check the exit code"
+        description = "Leave unset to check the exit code",
+        extend("x-autopilot" = {"group": "output"})
     )]
+    #[schemars(extend("default" = true))]
     pub check_exit_code: Option<bool>,
     /// Target output to match (only used if check_exit_code is false)
     #[serde(default)]
     #[schemars(
         title = "Target output",
-        extend("x-autopilot" = {"widget": "editor", "provider": "editors"})
+        extend(
+            "x-autopilot" = {
+                "widget": "editor",
+                "provider": "editors",
+                "group": "output",
+                "visible_when": {"field": "check_exit_code", "equals": false}
+            }
+        )
     )]
     pub target_output: Option<String>,
 }

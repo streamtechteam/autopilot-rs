@@ -1,20 +1,45 @@
 use std::collections::BTreeSet;
 
-use crate::form::FormError;
+use serde::{Deserialize, Serialize};
+
+use crate::form::{FormError, FormOption};
 use autopilot_core_cross_platform::get::get_supported_editors;
 
-pub fn values(provider: &str) -> Result<Vec<String>, FormError> {
-    match provider {
-        "editors" => Ok(unique(get_supported_editors())),
-        "processes" => Ok(processes()),
-        "disks" => Ok(disks()),
-        "screens" => Ok(screens()),
-        "wifi.networks" => Ok(wifi_networks()),
-        "bluetooth.devices" => Ok(bluetooth_devices()),
-        other => Err(FormError::Unsupported(format!(
-            "unknown form provider '{other}'"
-        ))),
-    }
+/// Values returned by a dynamic form provider.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct ProviderValues {
+    pub options: Vec<FormOption>,
+    /// Whether the values can change while a form is open (processes, disks,
+    /// screens, networks) instead of being effectively fixed (editors).
+    #[serde(default)]
+    pub live: bool,
+}
+
+pub fn values(provider: &str) -> Result<ProviderValues, FormError> {
+    let (values, live) = match provider {
+        "editors" => (unique(get_supported_editors()), false),
+        "processes" => (processes(), true),
+        "disks" => (disks(), true),
+        "screens" => (screens(), true),
+        "wifi.networks" => (wifi_networks(), true),
+        "bluetooth.devices" => (bluetooth_devices(), true),
+        other => {
+            return Err(FormError::Unsupported(format!(
+                "unknown form provider '{other}'"
+            )));
+        }
+    };
+
+    Ok(ProviderValues {
+        options: values
+            .into_iter()
+            .map(|value| FormOption {
+                label: value.clone(),
+                value,
+            })
+            .collect(),
+        live,
+    })
 }
 
 fn unique(values: impl IntoIterator<Item = impl Into<String>>) -> Vec<String> {

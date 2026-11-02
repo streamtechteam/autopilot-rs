@@ -121,7 +121,10 @@ pub struct ProcessConditionScheme {
     )]
     pub process_name: String,
     #[serde(default)]
-    #[schemars(title = "Should be running")]
+    #[schemars(
+        title = "Should be running",
+        extend("default" = true)
+    )]
     pub should_be_running: Option<bool>,
 }
 

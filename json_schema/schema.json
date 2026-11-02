@@ -82,7 +82,7 @@
             "boolean",
             "null"
           ],
-          "default": null
+          "default": false
         }
       },
       "additionalProperties": false
@@ -99,7 +99,10 @@
             "boolean",
             "null"
           ],
-          "default": null
+          "default": true,
+          "x-autopilot": {
+            "group": "output"
+          }
         },
         "command": {
           "title": "Command",
@@ -107,6 +110,7 @@
           "type": "string",
           "default": "",
           "x-autopilot": {
+            "group": "command",
             "placeholder": "Shell command",
             "provider": "editors",
             "required": true,
@@ -122,7 +126,12 @@
           ],
           "default": null,
           "x-autopilot": {
+            "group": "output",
             "provider": "editors",
+            "visible_when": {
+              "equals": false,
+              "field": "check_exit_code"
+            },
             "widget": "editor"
           }
         }
@@ -431,6 +440,7 @@
           "default": null,
           "minimum": 0.0,
           "x-autopilot": {
+            "group": "thresholds",
             "unit": "GB"
           }
         },
@@ -441,6 +451,7 @@
           "default": 0.0,
           "minimum": 0.0,
           "x-autopilot": {
+            "group": "thresholds",
             "required": true,
             "unit": "GB"
           }
@@ -451,6 +462,7 @@
           "default": "",
           "x-autopilot": {
             "allow_custom": true,
+            "group": "disk",
             "provider": "disks",
             "required": true,
             "widget": "dynamic-select"
@@ -469,7 +481,7 @@
             "boolean",
             "null"
           ],
-          "default": null
+          "default": false
         },
         "device_identifier": {
           "title": "Device",
@@ -499,6 +511,7 @@
           "type": "string",
           "default": "",
           "x-autopilot": {
+            "group": "check",
             "options": [
               {
                 "label": "File/Directory Exists",
@@ -522,6 +535,7 @@
           "type": "string",
           "default": "",
           "x-autopilot": {
+            "group": "file",
             "required": true
           }
         },
@@ -535,7 +549,12 @@
           "default": null,
           "minimum": 0,
           "x-autopilot": {
-            "unit": "bytes"
+            "group": "check",
+            "unit": "bytes",
+            "visible_when": {
+              "equals": "size_changed",
+              "field": "check_type"
+            }
           }
         },
         "time_threshold": {
@@ -548,7 +567,12 @@
           "default": null,
           "minimum": 0,
           "x-autopilot": {
-            "unit": "seconds"
+            "group": "check",
+            "unit": "seconds",
+            "visible_when": {
+              "equals": "modified_recently",
+              "field": "check_type"
+            }
           }
         }
       },
@@ -564,7 +588,7 @@
             "string",
             "null"
           ],
-          "default": null,
+          "default": "8.8.8.8",
           "x-autopilot": {
             "placeholder": "8.8.8.8"
           }
@@ -576,7 +600,7 @@
             "null"
           ],
           "format": "uint64",
-          "default": null,
+          "default": 2,
           "minimum": 1,
           "x-autopilot": {
             "unit": "seconds"
@@ -654,7 +678,10 @@
             "boolean",
             "null"
           ],
-          "default": null
+          "default": false,
+          "x-autopilot": {
+            "group": "check"
+          }
         },
         "operator": {
           "title": "Comparison operator",
@@ -662,8 +689,9 @@
             "string",
             "null"
           ],
-          "default": null,
+          "default": "greater",
           "x-autopilot": {
+            "group": "thresholds",
             "options": [
               {
                 "label": "Greater than (>)",
@@ -674,6 +702,10 @@
                 "value": "less"
               }
             ],
+            "visible_when": {
+              "equals": false,
+              "field": "check_charging"
+            },
             "widget": "select"
           }
         },
@@ -688,7 +720,12 @@
           "maximum": 100.0,
           "minimum": 0.0,
           "x-autopilot": {
-            "unit": "%"
+            "group": "thresholds",
+            "unit": "%",
+            "visible_when": {
+              "equals": false,
+              "field": "check_charging"
+            }
           }
         }
       },
@@ -715,7 +752,7 @@
             "boolean",
             "null"
           ],
-          "default": null
+          "default": true
         }
       },
       "additionalProperties": false
@@ -730,8 +767,9 @@
             "string",
             "null"
           ],
-          "default": null,
+          "default": "greater",
           "x-autopilot": {
+            "group": "threshold",
             "options": [
               {
                 "label": "Greater than (>)",
@@ -750,6 +788,7 @@
           "type": "string",
           "default": "",
           "x-autopilot": {
+            "group": "resource",
             "options": [
               {
                 "label": "CPU",
@@ -772,6 +811,7 @@
           "maximum": 100.0,
           "minimum": 0.0,
           "x-autopilot": {
+            "group": "threshold",
             "required": true,
             "unit": "%"
           }
