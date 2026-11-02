@@ -306,7 +306,9 @@ fn committed_schema_matches_job_scheme() {
     let generated = serde_json::to_string_pretty(&schemars::schema_for!(JobScheme)).unwrap();
     let schema_path =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../json_schema/schema.json");
-    let committed = std::fs::read_to_string(schema_path).unwrap();
+    let committed = std::fs::read_to_string(schema_path)
+        .unwrap()
+        .replace("\r\n", "\n");
 
     assert_eq!(committed, format!("{generated}\n"));
 }
