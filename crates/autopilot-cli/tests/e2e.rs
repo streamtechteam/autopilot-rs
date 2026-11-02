@@ -619,6 +619,51 @@ fn invalid_jobs_prevent_startup_with_the_file_path() {
 }
 
 #[test]
+fn signals_reload_and_shut_down_cleanly() {
+    fn signal(child: &Child, name: &str) {
+        let status = Command::new("kill")
+            .arg(name)
+            .arg(child.id().to_string())
+            .status()
+            .expect("run kill");
+        assert!(status.success(), "kill {name} failed");
+    }
+
+    let mut daemon = Daemon::start(&[("signal.jsonc", job("job_signal", vec![], vec![]))]);
+
+    // Repeated SIGHUP reloads must not terminate the daemon.
+    for _ in 0..2 {
+        signal(&daemon.child, "-HUP");
+        sleep(Duration::from_millis(200));
+    }
+    assert_eq!(daemon.get("/health").0, 200);
+    assert_eq!(daemon.jobs().len(), 1);
+
+    signal(&daemon.child, "-TERM");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let status = loop {
+        if let Some(status) = daemon.child.try_wait().unwrap() {
+            break status;
+        }
+        assert!(Instant::now() < deadline, "daemon did not exit on SIGTERM");
+        sleep(Duration::from_millis(25));
+    };
+    assert!(status.success(), "SIGTERM exit status: {status}");
+
+    let mut daemon = Daemon::start(&[("signal_int.jsonc", job("job_signal_int", vec![], vec![]))]);
+    signal(&daemon.child, "-INT");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let status = loop {
+        if let Some(status) = daemon.child.try_wait().unwrap() {
+            break status;
+        }
+        assert!(Instant::now() < deadline, "daemon did not exit on SIGINT");
+        sleep(Duration::from_millis(25));
+    };
+    assert!(status.success(), "SIGINT exit status: {status}");
+}
+
+#[test]
 fn cli_status_and_stop_work() {
     let mut daemon = Daemon::start(&[]);
     let binary = env!("CARGO_BIN_EXE_autopilot-rs");

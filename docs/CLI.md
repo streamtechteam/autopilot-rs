@@ -38,7 +38,9 @@ Initializes the configuration, loads jobs, starts logging, and starts the HTTP A
 
 The API always starts in either mode. `--api` only controls whether jobs auto-start.
 
-`serve` runs until it receives `Ctrl+C`, `SIGTERM`, or (on Unix) `SIGHUP`. `SIGHUP` reloads the job configuration.\n\n> **Current signal behavior:** the Unix signal handler processes one `SIGHUP`, then continues waiting for termination. Use `POST /reload` for repeated reloads. `Ctrl+C` and `SIGTERM` exit the process directly; use `autopilot-rs stop` when you want the API shutdown path.
+`serve` runs until it receives `Ctrl+C`, `SIGTERM`, or (on Unix) `SIGHUP`. `SIGHUP` reloads the job configuration each time it is received.
+
+`Ctrl+C` (SIGINT) and `SIGTERM` stop running jobs and then exit, with a 10-second shutdown timeout. Use `autopilot-rs stop` when you want the API shutdown path instead.
 
 ### `status`
 

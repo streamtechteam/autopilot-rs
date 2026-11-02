@@ -101,7 +101,7 @@ Do not use plain `cargo run -- ...`; it cannot choose between the CLI and GUI bi
   - `file` condition `min_size` is a minimum-size check, not change detection; `size_changed` is a deprecated alias.
   - A failed task is logged, and the job status is set to `Failed`.
   - `task_mode` defaults to `concurrent`; `sequential` and `sequential_stop_on_failure` are also supported.
-  - The Unix signal handler processes one `SIGHUP`; `SIGINT`/`SIGTERM` exit directly.
+  - Unix `SIGHUP` reloads jobs on every signal; `SIGINT`/`SIGTERM` stop jobs and exit (bounded by a 10-second shutdown timeout).
 
 ## API and security rules
 
