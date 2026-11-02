@@ -84,7 +84,7 @@ macro_rules! condition_registry {
             pub fn form_schema(key: &str) -> Result<FormSchema, FormError> {
                 match key {
                     $(
-                        $key => <$scheme>::try_form_schema(),
+                        $key => <$scheme>::form_schema(),
                     )+
                     other => Err(FormError::Unsupported(format!(
                         "unknown condition form type '{other}'"

@@ -69,7 +69,7 @@ fn field<'a>(schema: &'a FormSchema, key: &str) -> &'a FormField {
 
 #[test]
 fn converts_required_dynamic_text_and_hint_metadata() {
-    let schema = SampleConfig::form_schema();
+    let schema = SampleConfig::form_schema().unwrap();
     let ssid = field(&schema, "ssid");
 
     assert_eq!(schema.title, "SampleConfig");
@@ -88,7 +88,7 @@ fn converts_required_dynamic_text_and_hint_metadata() {
 
 #[test]
 fn converts_optional_scalars_without_inventing_defaults() {
-    let schema = SampleConfig::form_schema();
+    let schema = SampleConfig::form_schema().unwrap();
 
     assert!(matches!(
         &field(&schema, "check_exit_code").kind,
@@ -106,7 +106,7 @@ fn converts_optional_scalars_without_inventing_defaults() {
 
 #[test]
 fn resolves_enum_references_and_defaults() {
-    let schema = SampleConfig::form_schema();
+    let schema = SampleConfig::form_schema().unwrap();
     let mode = field(&schema, "mode");
 
     assert!(!mode.required);
@@ -124,7 +124,7 @@ fn resolves_enum_references_and_defaults() {
 
 #[test]
 fn converts_string_arrays_to_string_lists() {
-    let schema = SampleConfig::form_schema();
+    let schema = SampleConfig::form_schema().unwrap();
 
     assert!(matches!(
         &field(&schema, "names").kind,
@@ -134,7 +134,7 @@ fn converts_string_arrays_to_string_lists() {
 
 #[test]
 fn converts_condition_arrays_from_the_extension_hint() {
-    let schema = SampleConfig::form_schema();
+    let schema = SampleConfig::form_schema().unwrap();
 
     assert!(matches!(
         &field(&schema, "conditions").kind,
@@ -144,7 +144,7 @@ fn converts_condition_arrays_from_the_extension_hint() {
 
 #[test]
 fn validates_required_text_and_condition_items() {
-    let schema = SampleConfig::form_schema();
+    let schema = SampleConfig::form_schema().unwrap();
     let empty = FormValues::new();
     let error = schema.validate(&empty).unwrap_err();
     assert!(matches!(error, FormError::MissingField(_)));
@@ -188,7 +188,7 @@ fn condition_config_rejects_missing_required_values() {
 
 #[test]
 fn rejects_empty_required_condition_items() {
-    let schema = SampleConfig::form_schema();
+    let schema = SampleConfig::form_schema().unwrap();
     let mut values = FormValues::new();
     values.insert("ssid", json!("Home"));
     values.insert("conditions", json!([]));
@@ -238,7 +238,7 @@ fn resolves_local_references_from_definitions() {
 
 #[test]
 fn errors_reports_every_invalid_field_in_order() {
-    let schema = SampleConfig::form_schema();
+    let schema = SampleConfig::form_schema().unwrap();
     let errors = schema.errors(&FormValues::new());
 
     assert_eq!(
@@ -263,7 +263,7 @@ fn errors_reports_every_invalid_field_in_order() {
 
 #[test]
 fn validate_field_reports_only_that_field() {
-    let schema = SampleConfig::form_schema();
+    let schema = SampleConfig::form_schema().unwrap();
     let mut values = FormValues::new();
 
     let error = schema.validate_field("ssid", &values).unwrap_err();
@@ -278,7 +278,7 @@ fn validate_field_reports_only_that_field() {
 
 #[test]
 fn form_field_validates_against_values() {
-    let schema = SampleConfig::form_schema();
+    let schema = SampleConfig::form_schema().unwrap();
     let ssid = field(&schema, "ssid");
     let mut values = FormValues::new();
 

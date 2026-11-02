@@ -5,13 +5,9 @@ use serde_json::Value;
 use super::{FormError, FormSchema, FormValues};
 
 pub trait ConditionConfig: Clone + Serialize + DeserializeOwned + JsonSchema {
-    fn try_form_schema() -> Result<FormSchema, FormError> {
+    fn form_schema() -> Result<FormSchema, FormError> {
         let schema = SchemaGenerator::default().into_root_schema_for::<Self>();
         FormSchema::from_json_schema(&schema)
-    }
-
-    fn form_schema() -> FormSchema {
-        Self::try_form_schema().expect("condition schema should produce a valid form")
     }
 
     fn to_form_values(&self) -> Result<FormValues, FormError> {
@@ -26,7 +22,7 @@ pub trait ConditionConfig: Clone + Serialize + DeserializeOwned + JsonSchema {
     }
 
     fn from_form_values(values: FormValues) -> Result<Self, FormError> {
-        Self::form_schema().validate(&values)?;
+        Self::form_schema()?.validate(&values)?;
         let config: Self = serde_json::from_value(values.into_value())
             .map_err(|error| FormError::Serialization(error.to_string()))?;
         config.validate()?;
