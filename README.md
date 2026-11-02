@@ -332,7 +332,7 @@ More examples live in [`examples/`](examples/) and job templates in [`templates/
 
 ### A job does not appear in `list`
 
-`list` reads job files from disk. Check that the file is in `<config-root>/jobs/`, that it is valid JSON/JSONC, and that its job ID is unique. Invalid files are skipped by the loader; duplicate IDs prevent jobs from loading.
+`list` reads job files from disk. Check that the file is in `<config-root>/jobs/`, that it is valid JSON/JSONC, and that its job ID is unique. A file that fails to parse is reported with its path and prevents jobs from loading; duplicate IDs do the same.
 
 ### A condition is not behaving as expected
 

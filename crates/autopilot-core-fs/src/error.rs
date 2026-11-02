@@ -14,6 +14,9 @@ pub enum FsError {
     #[error("Filesystem paths have not been initialized")]
     NotInitialized,
 
+    #[error("Invalid file {path}: {message}")]
+    InvalidFile { path: String, message: String },
+
     #[error("Filesystem initialization error: {0}")]
     Init(String),
 }

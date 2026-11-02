@@ -19,7 +19,9 @@ autopilot-rs --config-path /tmp/autopilot-dev serve
 
 Files may use `.json` or `.jsonc`; comments and trailing commas are accepted by the JSONC parser.
 
-The loader currently **skips job files that fail to parse** and **rejects duplicate job IDs**. A duplicate ID prevents the job set from loading, so keep IDs unique.
+The loader **rejects job files that fail to parse** and reports the file path, and it **rejects duplicate job IDs**. Either error prevents the job set from loading, so fix the reported file and keep IDs unique.
+
+Job writes go to a temporary file in the same directory and are renamed into place, so an interrupted write leaves the previous file intact.
 
 ## Minimal job
 

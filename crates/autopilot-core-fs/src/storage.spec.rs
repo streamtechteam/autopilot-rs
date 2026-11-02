@@ -83,7 +83,7 @@ fn save_upserts_by_id_and_removes_duplicates() {
 }
 
 #[test]
-fn parses_jsonc_and_skips_invalid_files() {
+fn reports_invalid_files_with_their_path() {
     let dir = TestDir::new();
     let store = dir.store();
     store.ensure_dir().unwrap();
@@ -98,10 +98,64 @@ fn parses_jsonc_and_skips_invalid_files() {
     .unwrap();
     fs::write(dir.path.join("broken.jsonc"), "{ not json").unwrap();
 
-    let records = store.list().unwrap();
+    let error = store.list().unwrap_err();
+    assert!(
+        error.to_string().contains("broken.jsonc"),
+        "unexpected error: {error}"
+    );
+    assert_eq!(
+        store
+            .read_path(dir.path.join("commented.jsonc"))
+            .unwrap()
+            .id,
+        "commented"
+    );
+}
 
-    assert_eq!(records.len(), 1);
-    assert_eq!(records[0].1.id, "commented");
+#[test]
+fn failed_write_leaves_the_previous_entry_and_no_temp_file() {
+    let dir = TestDir::new();
+    let store = dir.store();
+    store.ensure_dir().unwrap();
+    let blocked = dir.path.join("blocked");
+    fs::create_dir(&blocked).unwrap();
+
+    assert!(
+        store
+            .write_path(&blocked, &record("blocked", "Blocked"))
+            .is_err()
+    );
+    assert!(blocked.is_dir());
+
+    let leftovers: Vec<PathBuf> = fs::read_dir(&dir.path)
+        .unwrap()
+        .filter_map(|entry| entry.ok().map(|entry| entry.path()))
+        .filter(|path| path.extension().and_then(|ext| ext.to_str()) == Some("tmp"))
+        .collect();
+    assert!(
+        leftovers.is_empty(),
+        "temp files left behind: {leftovers:?}"
+    );
+}
+
+#[test]
+fn writes_do_not_leave_temporary_files() {
+    let dir = TestDir::new();
+    let store = dir.store();
+    let path = store.save(&record("record_1", "First")).unwrap();
+
+    assert_eq!(
+        fs::read_to_string(&path).unwrap(),
+        serde_json::to_string_pretty(&record("record_1", "First")).unwrap()
+    );
+    assert!(fs::read_dir(&dir.path).unwrap().all(|entry| {
+        entry
+            .unwrap()
+            .path()
+            .extension()
+            .and_then(|ext| ext.to_str())
+            != Some("tmp")
+    }));
 }
 
 #[test]

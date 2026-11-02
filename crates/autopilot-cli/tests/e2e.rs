@@ -475,25 +475,11 @@ fn task_modes_and_custom_schedules_work() {
                 "tasks": []
             }),
         ),
-        (
-            "invalid_weekly.jsonc",
-            json!({
-                "id": "job_invalid_weekly",
-                "name": "invalid weekly",
-                "when": {
-                    "type": "weekly",
-                    "trigger": {"time": "23:59", "weekdays": 5}
-                },
-                "conditions": [],
-                "tasks": []
-            }),
-        ),
     ];
 
     let mut daemon = Daemon::start(&jobs);
     let startup = daemon.jobs();
     assert_eq!(startup.len(), 3);
-    assert!(!startup.iter().any(|job| job["id"] == "job_invalid_weekly"));
 
     assert_eq!(daemon.post("/start", None).0, 200);
     daemon.wait_for_jobs(&[
@@ -573,16 +559,35 @@ fn api_crud_reload_and_status_work() {
 }
 
 #[test]
-fn invalid_jobs_are_skipped() {
-    let daemon = Daemon::start(&[
-        ("good.jsonc", job("job_good", vec![], vec![])),
-        ("bad.jsonc", Value::Null),
-    ]);
-    let jobs = daemon.jobs();
+fn invalid_jobs_prevent_startup_with_the_file_path() {
+    let dir = unique_dir();
+    fs::create_dir_all(dir.join("jobs")).unwrap();
+    fs::write(
+        dir.join("jobs/good.jsonc"),
+        serde_json::to_vec(&job("job_good", vec![], vec![])).unwrap(),
+    )
+    .unwrap();
+    fs::write(dir.join("jobs/bad.jsonc"), "not json").unwrap();
 
-    assert_eq!(jobs.len(), 1);
-    assert_eq!(jobs[0]["id"], "job_good");
-    assert_eq!(jobs[0]["status"], "Unknown");
+    let output = Command::new(env!("CARGO_BIN_EXE_autopilot-rs"))
+        .arg("--config-path")
+        .arg(&dir)
+        .args(["serve", "--api"])
+        .env("AUTOPILOT_PORT", free_port().to_string())
+        .stdin(Stdio::null())
+        .output()
+        .expect("run autopilot");
+
+    assert!(!output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let output_text = format!("{stdout}{stderr}");
+    assert!(
+        output_text.contains("bad.jsonc"),
+        "startup error did not mention the file: {output_text}"
+    );
+
+    fs::remove_dir_all(dir).unwrap();
 }
 
 #[test]
