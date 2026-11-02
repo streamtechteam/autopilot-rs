@@ -448,14 +448,14 @@ The current implementation compares `path` against the beginning of each detecte
   "type": "file",
   "condition": {
     "path": "/path/to/file", // Required: File or directory path
-    "check_type": "exists", // Required: "exists", "modified_recently", or "size_changed"
+    "check_type": "exists", // Required: "exists", "modified_recently", or "min_size"
     "time_threshold": 300, // Optional: Seconds for "modified_recently" (default: 300)
-    "size_threshold": 1024 // Optional: Minimum size in bytes for "size_changed" (default: 0)
+    "size_threshold": 1024 // Optional: Minimum size in bytes for "min_size" (default: 0)
   }
 }
 ```
 
-> **Current behavior:** `size_changed` is a minimum-size check, not change detection. It passes when the file exists and its current size is greater than or equal to `size_threshold`. It does not compare against a previous size. With no threshold, any existing file passes. See issue #42 for the planned change-detection fix.
+> **Current behavior:** `min_size` is a minimum-size check, not change detection. It passes when the file exists and its current size is greater than or equal to `size_threshold`. It does not compare against a previous size. With no threshold, any existing file passes. `size_changed` is accepted as a deprecated alias for `min_size` but is no longer advertised in the schema.
 
 **Examples:**
 
@@ -484,14 +484,14 @@ _Check if file was recently modified:_
 }
 ```
 
-_Check that a file has reached at least 1 MiB (current `size_changed` behavior):_
+_Check that a file has reached at least 1 MiB:_
 
 ```jsonc
 {
   "type": "file",
   "condition": {
     "path": "/tmp/export.zip",
-    "check_type": "size_changed",
+    "check_type": "min_size",
     "size_threshold": 1048576
   }
 }
@@ -501,7 +501,7 @@ _Check that a file has reached at least 1 MiB (current `size_changed` behavior):
 
 - Wait for a file to appear
 - Trigger on recent log activity with `modified_recently`
-- Wait for a download or export to reach a minimum size with `size_changed`
+- Wait for a download or export to reach a minimum size with `min_size`
 
 ---
 

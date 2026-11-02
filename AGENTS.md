@@ -98,7 +98,7 @@ Do not use plain `cargo run -- ...`; it cannot choose between the CLI and GUI bi
   - API is unauthenticated, plain HTTP, and loopback by default.
   - API job CRUD writes files but requires reload/restart to affect the live runtime.
   - Reload/restart failures currently return HTTP `200` with `"success": false`.
-  - `file` condition `size_changed` is a minimum-size check, not change detection.
+  - `file` condition `min_size` is a minimum-size check, not change detection; `size_changed` is a deprecated alias.
   - A failed task is logged, and the job status is set to `Failed`.
   - `task_mode` defaults to `concurrent`; `sequential` and `sequential_stop_on_failure` are also supported.
   - The Unix signal handler processes one `SIGHUP`; `SIGINT`/`SIGTERM` exit directly.

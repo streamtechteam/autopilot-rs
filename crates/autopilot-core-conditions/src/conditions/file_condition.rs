@@ -11,11 +11,11 @@ use crate::conditions::Condition;
 pub struct FileCondition {
     /// Path to the file or directory to monitor
     pub path: String,
-    /// Type of check: "exists", "modified_recently", "size_changed"
+    /// Type of check: "exists", "modified_recently", "min_size"
     pub check_type: String,
     /// Time threshold for "modified_recently" in seconds (default: 300 for 5 minutes)
     pub time_threshold: Option<i64>,
-    /// Size threshold for "size_changed" in bytes
+    /// Minimum size for "min_size" in bytes (default: 0)
     pub size_threshold: Option<u64>,
 }
 
@@ -28,7 +28,7 @@ impl FileCondition {
     ) -> Self {
         Self {
             path,
-            check_type: check_type.to_lowercase(),
+            check_type: normalize_check_type(&check_type),
             time_threshold,
             size_threshold,
         }
@@ -37,10 +37,18 @@ impl FileCondition {
     pub fn from_scheme(scheme: FileConditionScheme) -> Self {
         Self {
             path: scheme.path,
-            check_type: scheme.check_type.to_lowercase(),
+            check_type: normalize_check_type(&scheme.check_type),
             time_threshold: scheme.time_threshold,
             size_threshold: scheme.size_threshold,
         }
+    }
+}
+
+/// Canonical check type, mapping the old `size_changed` name to `min_size`.
+fn normalize_check_type(check_type: &str) -> String {
+    match check_type.to_lowercase().as_str() {
+        "size_changed" => "min_size".to_string(),
+        other => other.to_string(),
     }
 }
 
@@ -74,7 +82,7 @@ impl Condition for FileCondition {
                 now.signed_duration_since(modified_local) < threshold_duration
             }
 
-            "size_changed" => {
+            "min_size" | "size_changed" => {
                 if !path.exists() {
                     return false;
                 }
@@ -113,6 +121,9 @@ pub struct FileConditionScheme {
         extend("x-autopilot" = {"required": true, "group": "file"})
     )]
     pub path: String,
+    /// Check to run: `exists`, `modified_recently`, or `min_size`.
+    ///
+    /// `size_changed` is still accepted as a deprecated alias for `min_size`.
     #[serde(default)]
     #[schemars(
         title = "Check type",
@@ -124,7 +135,7 @@ pub struct FileConditionScheme {
                 "options": [
                     {"label": "File/Directory Exists", "value": "exists"},
                     {"label": "Modified Recently", "value": "modified_recently"},
-                    {"label": "Size Changed", "value": "size_changed"}
+                    {"label": "Minimum Size", "value": "min_size"}
                 ]
             }
         )
@@ -145,13 +156,13 @@ pub struct FileConditionScheme {
     pub time_threshold: Option<i64>,
     #[serde(default)]
     #[schemars(
-        title = "Size threshold",
+        title = "Minimum size",
         range(min = 0),
         extend(
             "x-autopilot" = {
                 "unit": "bytes",
                 "group": "check",
-                "visible_when": {"field": "check_type", "equals": "size_changed"}
+                "visible_when": {"field": "check_type", "equals": "min_size"}
             }
         )
     )]

@@ -25,6 +25,6 @@ These documents describe the current implementation, including behavior that is 
 
 - the API is currently unauthenticated and loopback-only by default;
 - API job CRUD writes files but does not update already-loaded jobs until a reload or restart;
-- `file` condition `size_changed` currently checks a minimum size threshold rather than detecting a change from a previous size.
+- `file` condition `min_size` checks a minimum size threshold; `size_changed` is a deprecated alias and does not detect a change from a previous size.
 
 See the open issues in the [GitHub repository](https://github.com/streamtechteam/autopilot-rs/issues) for planned changes.

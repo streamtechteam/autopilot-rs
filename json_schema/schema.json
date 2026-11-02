@@ -508,6 +508,7 @@
       "properties": {
         "check_type": {
           "title": "Check type",
+          "description": "Check to run: `exists`, `modified_recently`, or `min_size`.\n\n`size_changed` is still accepted as a deprecated alias for `min_size`.",
           "type": "string",
           "default": "",
           "x-autopilot": {
@@ -522,8 +523,8 @@
                 "value": "modified_recently"
               },
               {
-                "label": "Size Changed",
-                "value": "size_changed"
+                "label": "Minimum Size",
+                "value": "min_size"
               }
             ],
             "required": true,
@@ -540,7 +541,7 @@
           }
         },
         "size_threshold": {
-          "title": "Size threshold",
+          "title": "Minimum size",
           "type": [
             "integer",
             "null"
@@ -552,7 +553,7 @@
             "group": "check",
             "unit": "bytes",
             "visible_when": {
-              "equals": "size_changed",
+              "equals": "min_size",
               "field": "check_type"
             }
           }
