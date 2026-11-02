@@ -89,6 +89,7 @@ impl Condition for InternetCondition {
 pub struct InternetConditionScheme {
     #[serde(default)]
     #[schemars(title = "Host", extend("x-autopilot" = {"placeholder": "8.8.8.8"}))]
+    #[schemars(extend("default" = "8.8.8.8"))]
     pub host: Option<String>,
     #[serde(default)]
     #[schemars(
@@ -96,6 +97,7 @@ pub struct InternetConditionScheme {
         range(min = 1),
         extend("x-autopilot" = {"unit": "seconds"})
     )]
+    #[schemars(extend("default" = 2))]
     pub timeout: Option<u64>,
 }
 

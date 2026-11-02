@@ -86,6 +86,7 @@ pub struct ExternalDeviceConditionScheme {
     pub device_identifier: String,
     #[serde(default)]
     #[schemars(title = "Check by device name")]
+    #[schemars(extend("default" = false))]
     pub check_by_name: Option<bool>,
 }
 

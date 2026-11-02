@@ -167,13 +167,20 @@ impl Condition for PowerCondition {
 #[schemars(title = "Power condition")]
 pub struct PowerConditionScheme {
     #[serde(default)]
-    #[schemars(title = "Check charging")]
+    #[schemars(title = "Check charging", extend("x-autopilot" = {"group": "check"}))]
+    #[schemars(extend("default" = false))]
     pub check_charging: Option<bool>,
     #[serde(default)]
     #[schemars(
         title = "Battery threshold",
         range(min = 0.0, max = 100.0),
-        extend("x-autopilot" = {"unit": "%"})
+        extend(
+            "x-autopilot" = {
+                "unit": "%",
+                "group": "thresholds",
+                "visible_when": {"field": "check_charging", "equals": false}
+            }
+        )
     )]
     pub threshold: Option<f32>,
     #[serde(default)]
@@ -182,6 +189,8 @@ pub struct PowerConditionScheme {
         extend(
             "x-autopilot" = {
                 "widget": "select",
+                "group": "thresholds",
+                "visible_when": {"field": "check_charging", "equals": false},
                 "options": [
                     {"label": "Greater than (>)", "value": "greater"},
                     {"label": "Less than (<)", "value": "less"}
@@ -189,6 +198,7 @@ pub struct PowerConditionScheme {
             }
         )
     )]
+    #[schemars(extend("default" = "greater"))]
     pub operator: Option<String>,
 }
 

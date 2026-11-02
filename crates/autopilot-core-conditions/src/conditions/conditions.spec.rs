@@ -117,6 +117,75 @@ fn file_form_shows_only_the_matching_threshold() {
 }
 
 #[test]
+fn power_form_groups_and_hides_thresholds_when_charging() {
+    let schema = ConditionScheme::form_schema("power").unwrap();
+    let threshold = schema.field("threshold").unwrap();
+    let operator = schema.field("operator").unwrap();
+
+    assert_eq!(
+        schema.field("check_charging").unwrap().group.as_deref(),
+        Some("check")
+    );
+    assert_eq!(threshold.group.as_deref(), Some("thresholds"));
+    assert_eq!(operator.group.as_deref(), Some("thresholds"));
+
+    let empty = FormValues::new();
+    assert!(schema.is_visible(threshold, &empty));
+    assert!(schema.is_visible(operator, &empty));
+
+    let mut charging = FormValues::new();
+    charging.insert("check_charging", json!(true));
+    assert!(!schema.is_visible(threshold, &charging));
+    assert!(!schema.is_visible(operator, &charging));
+
+    let mut battery = FormValues::new();
+    battery.insert("check_charging", json!(false));
+    assert!(schema.is_visible(threshold, &battery));
+    assert!(schema.is_visible(operator, &battery));
+}
+
+#[test]
+fn condition_forms_declare_their_runtime_defaults() {
+    let power = ConditionScheme::form_schema("power").unwrap();
+    assert_eq!(
+        power.field("check_charging").unwrap().default_value(),
+        Some(json!(false))
+    );
+    assert_eq!(
+        power.field("operator").unwrap().default_value(),
+        Some(json!("greater"))
+    );
+
+    let resource = ConditionScheme::form_schema("resource").unwrap();
+    assert_eq!(
+        resource.field("operator").unwrap().default_value(),
+        Some(json!("greater"))
+    );
+
+    let internet = ConditionScheme::form_schema("internet").unwrap();
+    assert_eq!(
+        internet.field("host").unwrap().default_value(),
+        Some(json!("8.8.8.8"))
+    );
+    assert_eq!(
+        internet.field("timeout").unwrap().default_value(),
+        Some(json!(2))
+    );
+
+    let bluetooth = ConditionScheme::form_schema("bluetooth").unwrap();
+    assert_eq!(
+        bluetooth.field("match_by_mac").unwrap().default_value(),
+        Some(json!(false))
+    );
+
+    let external = ConditionScheme::form_schema("externaldevice").unwrap();
+    assert_eq!(
+        external.field("check_by_name").unwrap().default_value(),
+        Some(json!(false))
+    );
+}
+
+#[test]
 fn every_condition_form_round_trips() {
     let samples = [
         json!({"type":"command","condition":{"command":"echo hi","check_exit_code":false,"target_output":"hi"}}),

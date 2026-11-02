@@ -82,7 +82,7 @@
             "boolean",
             "null"
           ],
-          "default": null
+          "default": false
         }
       },
       "additionalProperties": false
@@ -481,7 +481,7 @@
             "boolean",
             "null"
           ],
-          "default": null
+          "default": false
         },
         "device_identifier": {
           "title": "Device",
@@ -588,7 +588,7 @@
             "string",
             "null"
           ],
-          "default": null,
+          "default": "8.8.8.8",
           "x-autopilot": {
             "placeholder": "8.8.8.8"
           }
@@ -600,7 +600,7 @@
             "null"
           ],
           "format": "uint64",
-          "default": null,
+          "default": 2,
           "minimum": 1,
           "x-autopilot": {
             "unit": "seconds"
@@ -678,7 +678,10 @@
             "boolean",
             "null"
           ],
-          "default": null
+          "default": false,
+          "x-autopilot": {
+            "group": "check"
+          }
         },
         "operator": {
           "title": "Comparison operator",
@@ -686,8 +689,9 @@
             "string",
             "null"
           ],
-          "default": null,
+          "default": "greater",
           "x-autopilot": {
+            "group": "thresholds",
             "options": [
               {
                 "label": "Greater than (>)",
@@ -698,6 +702,10 @@
                 "value": "less"
               }
             ],
+            "visible_when": {
+              "equals": false,
+              "field": "check_charging"
+            },
             "widget": "select"
           }
         },
@@ -712,7 +720,12 @@
           "maximum": 100.0,
           "minimum": 0.0,
           "x-autopilot": {
-            "unit": "%"
+            "group": "thresholds",
+            "unit": "%",
+            "visible_when": {
+              "equals": false,
+              "field": "check_charging"
+            }
           }
         }
       },
@@ -754,7 +767,7 @@
             "string",
             "null"
           ],
-          "default": null,
+          "default": "greater",
           "x-autopilot": {
             "group": "threshold",
             "options": [

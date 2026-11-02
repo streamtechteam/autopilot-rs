@@ -124,6 +124,7 @@ pub struct ResourceConditionScheme {
             }
         )
     )]
+    #[schemars(extend("default" = "greater"))]
     pub operator: Option<String>,
 }
 

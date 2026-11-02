@@ -167,6 +167,7 @@ pub struct BluetoothConditionScheme {
     /// Match by MAC address (true) or device name (false). Defaults to false.
     #[serde(default)]
     #[schemars(title = "Match by MAC address")]
+    #[schemars(extend("default" = false))]
     pub match_by_mac: Option<bool>,
 }
 
