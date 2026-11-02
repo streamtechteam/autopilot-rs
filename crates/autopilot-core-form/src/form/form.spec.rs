@@ -398,6 +398,38 @@ fn parses_visibility_rules_and_evaluates_them() {
 }
 
 #[test]
+fn schema_visibility_falls_back_to_the_referenced_default() {
+    let schema = json!({
+        "type": "object",
+        "properties": {
+            "enabled": {"type": "boolean", "default": false},
+            "name": {
+                "type": "string",
+                "x-autopilot": {
+                    "required": true,
+                    "visible_when": {"field": "enabled", "equals": false}
+                }
+            }
+        }
+    });
+
+    let form = FormSchema::from_value(&schema).unwrap();
+    let name = form.field("name").unwrap();
+    let empty = FormValues::new();
+
+    assert!(!name.is_visible(&empty));
+    assert!(form.is_visible(name, &empty));
+    let error = form.validate(&empty).unwrap_err();
+    assert!(matches!(error, FormError::MissingField(field) if field == "name"));
+
+    let mut hidden = FormValues::new();
+    hidden.insert("enabled", json!(true));
+    assert!(!form.is_visible(name, &hidden));
+    form.validate(&hidden).unwrap();
+    assert!(form.errors(&hidden).is_empty());
+}
+
+#[test]
 fn validation_skips_hidden_required_fields() {
     let schema = json!({
         "type": "object",

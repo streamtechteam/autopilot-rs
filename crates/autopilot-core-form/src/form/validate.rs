@@ -6,7 +6,7 @@ impl FormSchema {
     pub fn validate(&self, values: &FormValues) -> Result<(), FormError> {
         self.fields
             .iter()
-            .try_for_each(|field| field.validate(values))
+            .try_for_each(|field| self.validate_visible_field(field, values))
     }
 
     /// Validates a single field by key, for inline/live validation in a UI.
@@ -15,7 +15,7 @@ impl FormSchema {
             .field(key)
             .ok_or_else(|| FormError::InvalidSchema(format!("unknown form field '{key}'")))?;
 
-        field.validate(values)
+        self.validate_visible_field(field, values)
     }
 
     /// Returns every invalid field, in field order, for inline error display.
@@ -23,12 +23,26 @@ impl FormSchema {
         self.fields
             .iter()
             .filter_map(|field| {
-                field.validate(values).err().map(|error| FormFieldError {
-                    field: field.key.clone(),
-                    message: error.to_string(),
-                })
+                self.validate_visible_field(field, values)
+                    .err()
+                    .map(|error| FormFieldError {
+                        field: field.key.clone(),
+                        message: error.to_string(),
+                    })
             })
             .collect()
+    }
+
+    fn validate_visible_field(
+        &self,
+        field: &FormField,
+        values: &FormValues,
+    ) -> Result<(), FormError> {
+        if self.is_visible(field, values) {
+            field.validate_visible(values)
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -38,6 +52,10 @@ impl FormField {
             return Ok(());
         }
 
+        self.validate_visible(values)
+    }
+
+    pub(crate) fn validate_visible(&self, values: &FormValues) -> Result<(), FormError> {
         let value = values.get(&self.key);
 
         if self.required && value_is_empty(self, value) {

@@ -31,7 +31,7 @@ fn prompt_schema(schema: &FormSchema) -> Result<FormValues, AutoPilotError> {
     let mut values = FormValues::new();
 
     for field in &schema.fields {
-        if !field.is_visible(&values) {
+        if !schema.is_visible(field, &values) {
             continue;
         }
 

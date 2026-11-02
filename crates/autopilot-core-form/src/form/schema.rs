@@ -26,6 +26,25 @@ impl FormSchema {
             .iter()
             .filter(move |field| field.group.as_deref() == Some(key))
     }
+
+    /// Whether `field` should be shown for `values`.
+    ///
+    /// Unlike [`FormField::is_visible`], a missing value falls back to the
+    /// referenced field's schema default, matching how the runtime treats an
+    /// unset field.
+    pub fn is_visible(&self, field: &FormField, values: &FormValues) -> bool {
+        let Some(rule) = &field.visible_when else {
+            return true;
+        };
+
+        match values.get(&rule.field) {
+            Some(value) => value == &rule.equals,
+            None => self
+                .field(&rule.field)
+                .and_then(FormField::default_value)
+                .is_some_and(|default| default == rule.equals),
+        }
+    }
 }
 
 impl fmt::Display for FormSchema {
@@ -59,12 +78,30 @@ impl FormField {
     /// Whether this field should be shown for `values`.
     ///
     /// Fields without a visibility rule are always shown. A rule matches only
-    /// when the referenced field exists and equals the expected value.
+    /// when the referenced field is present and equals the expected value; use
+    /// [`FormSchema::is_visible`] to fall back to schema defaults instead.
     pub fn is_visible(&self, values: &FormValues) -> bool {
         self.visible_when
             .as_ref()
             .map(|rule| values.get(&rule.field) == Some(&rule.equals))
             .unwrap_or(true)
+    }
+
+    /// The field's schema default, when it declares one.
+    pub fn default_value(&self) -> Option<Value> {
+        match &self.kind {
+            FormFieldKind::Text { default, .. } => default.clone().map(Value::String),
+            FormFieldKind::Integer { default, .. } => default.map(Value::from),
+            FormFieldKind::Number { default, .. } => default.map(Value::from),
+            FormFieldKind::Boolean { default } => default.map(Value::Bool),
+            FormFieldKind::Select { default, .. } => default.clone().map(Value::String),
+            FormFieldKind::MultiSelect { default, .. }
+            | FormFieldKind::StringList { default, .. }
+            | FormFieldKind::DynamicSelect { default, .. } => Some(Value::Array(
+                default.iter().cloned().map(Value::String).collect(),
+            )),
+            FormFieldKind::Conditions { .. } => None,
+        }
     }
 }
 
