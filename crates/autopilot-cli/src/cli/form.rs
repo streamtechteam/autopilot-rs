@@ -359,28 +359,46 @@ fn prompt_dynamic_select(
     placeholder: Option<&str>,
 ) -> Result<Value, AutoPilotError> {
     if multiple {
-        let options = providers::values(provider).unwrap_or_default().options;
-        let labels = options
-            .iter()
-            .map(|option| option.label.as_str())
-            .collect::<Vec<_>>();
-        let defaults = options
-            .iter()
-            .map(|option| default.contains(&option.value))
-            .collect::<Vec<_>>();
-        let mut selected = if options.is_empty() {
-            Vec::new()
-        } else {
-            MultiSelect::with_theme(&ColorfulTheme::default())
-                .with_prompt(&field.label)
-                .items(&labels)
-                .defaults(&defaults)
-                .interact_opt()
-                .map_err(dialoguer_error)?
-                .unwrap_or_default()
+        let mut previous: Option<Vec<String>> = None;
+        let mut selected = loop {
+            let provider_values = providers::values(provider).unwrap_or_default();
+            let options = provider_values.options;
+            let refresh = provider_values.live.then_some(0usize);
+            let mut labels = Vec::new();
+            if refresh.is_some() {
+                labels.push("Refresh".to_string());
+            }
+            labels.extend(options.iter().map(|option| option.label.clone()));
+            let option_offset = usize::from(refresh.is_some());
+            let known = previous.as_deref().unwrap_or(default);
+            let defaults = options
+                .iter()
+                .map(|option| known.contains(&option.value))
+                .collect::<Vec<_>>();
+            let label_refs = labels.iter().map(String::as_str).collect::<Vec<_>>();
+            let chosen = if options.is_empty() {
+                Vec::new()
+            } else {
+                MultiSelect::with_theme(&ColorfulTheme::default())
+                    .with_prompt(&field.label)
+                    .items(&label_refs)
+                    .defaults(&defaults)
+                    .interact_opt()
+                    .map_err(dialoguer_error)?
+                    .unwrap_or_default()
+            };
+
+            let refreshed = refresh.is_some_and(|refresh| chosen.contains(&refresh));
+            let values = chosen
                 .into_iter()
-                .map(|index| options[index].value.clone())
-                .collect::<Vec<_>>()
+                .filter(|index| Some(*index) != refresh)
+                .map(|index| options[index - option_offset].value.clone())
+                .collect::<Vec<_>>();
+            previous = Some(values.clone());
+            if refreshed {
+                continue;
+            }
+            break values;
         };
 
         if allow_custom {
@@ -418,17 +436,17 @@ fn prompt_dynamic_select(
         if allow_custom {
             labels.push("<Enter custom value>".to_string());
         }
-        labels.extend(options.iter().map(|option| option.label.clone()));
         let refresh = provider_values.live.then_some(labels.len());
         if refresh.is_some() {
             labels.push("Refresh".to_string());
         }
+        let option_offset = labels.len();
+        labels.extend(options.iter().map(|option| option.label.clone()));
         let leave_unset = (!field.required).then_some(labels.len());
         if leave_unset.is_some() {
             labels.push("Leave unset".to_string());
         }
 
-        let option_offset = usize::from(allow_custom);
         let default_index = default
             .first()
             .and_then(|default| options.iter().position(|option| &option.value == default))
