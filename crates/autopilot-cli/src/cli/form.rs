@@ -366,7 +366,7 @@ fn prompt_dynamic_select(
             let refresh = provider_values.live.then_some(0usize);
             let mut labels = Vec::new();
             if refresh.is_some() {
-                labels.push("Refresh".to_string());
+                labels.push("<Refresh>".to_string());
             }
             labels.extend(options.iter().map(|option| option.label.clone()));
             let option_offset = usize::from(refresh.is_some());
@@ -438,7 +438,7 @@ fn prompt_dynamic_select(
         }
         let refresh = provider_values.live.then_some(labels.len());
         if refresh.is_some() {
-            labels.push("Refresh".to_string());
+            labels.push("<Refresh>".to_string());
         }
         let option_offset = labels.len();
         labels.extend(options.iter().map(|option| option.label.clone()));
