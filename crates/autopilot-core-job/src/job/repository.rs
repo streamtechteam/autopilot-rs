@@ -62,6 +62,7 @@ impl JobRepository for FsJobRepository {
     }
 
     async fn save_job(&self, job: JobScheme) -> Result<PathBuf, AutoPilotError> {
+        job.validate()?;
         let store = self.store.clone();
         run_blocking(move || store.save(&job)).await
     }

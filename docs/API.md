@@ -285,7 +285,7 @@ Notes:
 - The body uses the same schema as a job file. `conditions` and `tasks` are required arrays.
 - The server generates the job ID. The `id` field is required by the schema but is ignored by this endpoint.
 - The response `path` is the filesystem path where the job was written. It is absolute for the default configuration root, but may be relative if a relative `--config-path` was used.
-- `400` is returned if the job cannot be written. Malformed JSON is rejected by the request extractor with `400`/`422` depending on the validation failure.
+- `400` is returned if the job cannot be written. Malformed JSON is rejected by the request extractor with `400`/`422` depending on the validation failure. Invalid `check_interval` values and cron expressions are rejected with `400`.
 
 ## Updating a job
 

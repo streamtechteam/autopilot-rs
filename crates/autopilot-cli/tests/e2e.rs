@@ -510,6 +510,34 @@ fn api_crud_reload_and_status_work() {
 
     assert_eq!(daemon.get("/jobs/missing").0, 404);
     assert!(matches!(daemon.post("/jobs", Some(json!({}))).0, 400..=499));
+    assert_eq!(
+        daemon
+            .post(
+                "/jobs",
+                Some(json!({
+                    "id": "ignored",
+                    "conditions": [],
+                    "tasks": [],
+                    "check_interval": "0"
+                }))
+            )
+            .0,
+        400
+    );
+    assert_eq!(
+        daemon
+            .post(
+                "/jobs",
+                Some(json!({
+                    "id": "ignored",
+                    "conditions": [],
+                    "tasks": [],
+                    "when": {"type": "cron", "trigger": "* * * * *"}
+                }))
+            )
+            .0,
+        400
+    );
 
     let created = json!({
         "id": "ignored",

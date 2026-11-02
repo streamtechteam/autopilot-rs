@@ -165,7 +165,7 @@ A job requires an `id`, a `conditions` array, and a `tasks` array. A minimal job
 | `name`           | no       | Display name. Defaults to `job_<id>`.                                  |
 | `description`    | no       | Human-readable description.                                            |
 | `when`           | no       | Schedule. Omit to check conditions when jobs start.                    |
-| `check_interval` | no       | String of milliseconds between condition retries for unscheduled jobs. |
+| `check_interval` | no       | String of milliseconds (at least 100) between condition retries for unscheduled jobs. |
 | `conditions`     | yes      | Array of conditions. May be empty. All must pass.                      |
 | `tasks`          | yes      | Array of `{ "command": "..." }` objects. May be empty.                 |
 | `task_mode`      | no       | `concurrent` (default), `sequential`, or `sequential_stop_on_failure`. |

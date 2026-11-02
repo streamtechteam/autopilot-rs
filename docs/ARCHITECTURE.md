@@ -43,7 +43,7 @@ The API is started by `serve` in both modes. `--api` only suppresses the automat
 
 A job file is deserialized into `JobScheme`. `Job::from_scheme()` converts each `ConditionScheme` into a boxed `Condition` and each task scheme into a `Task`.
 
-The loader reads the jobs directory and skips files that fail to deserialize. Duplicate job IDs are rejected because status and file operations assume IDs are unique.
+The loader rejects files that fail to deserialize and reports the file path. Invalid schedules and `check_interval` values are rejected before a job is saved or loaded. Duplicate job IDs are rejected because status and file operations assume IDs are unique.
 
 `AutoPilot::start()` spawns one Tokio task per job. Each job runs in one of two modes:
 

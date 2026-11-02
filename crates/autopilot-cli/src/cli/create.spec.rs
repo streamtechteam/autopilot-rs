@@ -1,19 +1,22 @@
 use super::*;
 
 #[test]
-fn accepts_cron_expressions_with_at_least_five_fields() {
-    let five = validate_cron_expression("*/5 * * * *").unwrap();
+fn accepts_cron_expressions_the_scheduler_can_parse() {
     let six = validate_cron_expression("0 */5 * * * *").unwrap();
+    let with_year = validate_cron_expression("0 0 8 * * * 2030").unwrap();
 
-    assert!(matches!(five, When::Cron(value) if value == "*/5 * * * *"));
     assert!(matches!(six, When::Cron(value) if value == "0 */5 * * * *"));
+    assert!(matches!(with_year, When::Cron(value) if value == "0 0 8 * * * 2030"));
 }
 
 #[test]
-fn rejects_cron_expressions_with_too_few_fields() {
-    let error = validate_cron_expression("* * * *").unwrap_err();
+fn rejects_five_field_cron_expressions() {
+    let error = validate_cron_expression("*/5 * * * *").unwrap_err();
 
-    assert!(error.to_string().contains("at least 5 fields"));
+    assert!(
+        error.to_string().contains("Invalid cron expression"),
+        "unexpected error: {error}"
+    );
 }
 
 #[test]

@@ -7,6 +7,7 @@ use axum::{
 use autopilot_core::job::TaskMode;
 use autopilot_core::job::write::add;
 use autopilot_core::status::JobStatusEnum;
+use autopilot_core::time::When;
 
 use super::{JobUpdateRequest, jobs_create, jobs_delete, jobs_getbyid, jobs_list, jobs_update};
 use crate::handlers::test_support::{config_lock, payload, state_with_jobs};
@@ -124,6 +125,25 @@ async fn jobs_create_persists_task_mode() {
     assert_eq!(job.task_mode, TaskMode::SequentialStopOnFailure);
 
     std::fs::remove_file(path).unwrap();
+}
+
+#[tokio::test]
+async fn jobs_create_rejects_invalid_intervals_and_cron_expressions() {
+    let _guard = config_lock().await;
+
+    let mut bad_interval = payload("job_bad_interval", "Bad Interval");
+    bad_interval.check_interval = Some("0".to_string());
+    assert_eq!(
+        jobs_create(Json(bad_interval)).await.unwrap_err(),
+        StatusCode::BAD_REQUEST
+    );
+
+    let mut bad_cron = payload("job_bad_cron", "Bad Cron");
+    bad_cron.when = Some(When::Cron("* * * * *".to_string()));
+    assert_eq!(
+        jobs_create(Json(bad_cron)).await.unwrap_err(),
+        StatusCode::BAD_REQUEST
+    );
 }
 
 #[tokio::test]

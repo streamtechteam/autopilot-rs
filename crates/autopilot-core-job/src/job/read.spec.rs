@@ -61,6 +61,26 @@ fn list_reads_valid_files_and_reports_invalid_ones() {
 }
 
 #[test]
+fn list_rejects_invalid_check_intervals() {
+    let _guard = test_support::lock();
+    let invalid = write_job(
+        "job_get_bad_interval.jsonc",
+        "job_get_bad_interval",
+        r#"{"id":"job_get_bad_interval","check_interval":"0","conditions":[],"tasks":[]}"#,
+    );
+
+    let error = list(true)
+        .err()
+        .expect("invalid check_interval should fail");
+    assert!(
+        error.to_string().contains("check_interval"),
+        "unexpected error: {error}"
+    );
+
+    std::fs::remove_file(invalid).unwrap();
+}
+
+#[test]
 fn list_rejects_duplicate_job_ids() {
     let _guard = test_support::lock();
     let first = write_job(
