@@ -24,3 +24,13 @@ fn matches_detected_environment_case_insensitively() {
         &current.to_lowercase()
     )));
 }
+
+#[test]
+fn matches_colon_separated_desktop_names_and_paths() {
+    assert!(desktop_name_matches("ubuntu:GNOME", "GNOME"));
+    assert!(desktop_name_matches("ubuntu:GNOME", "ubuntu"));
+    assert!(desktop_name_matches("KDE;Plasma", "plasma"));
+    assert!(desktop_name_matches("/usr/share/xsessions/gnome", "GNOME"));
+    assert!(!desktop_name_matches("ubuntu:GNOME", "KDE"));
+    assert!(!desktop_name_matches("GNOME", ""));
+}

@@ -42,10 +42,11 @@ pub fn sync_condition(target_ssid: &str) -> bool {
     #[cfg(target_os = "linux")]
     {
         // Try nmcli (NetworkManager) first - most common on Linux
-        if let Ok(output) = cmd("nmcli", vec!["-t", "-f", "active,ssid", "dev", "wifi"]).read()
-            && let Ok(ssid) = get_connected_wifi_linux(&output)
-        {
-            return ssid == target_ssid;
+        if let Ok(output) = cmd("nmcli", vec!["-t", "-f", "active,ssid", "dev", "wifi"]).read() {
+            let connected = connected_wifi_linux(&output);
+            if !connected.is_empty() {
+                return connected.iter().any(|ssid| ssid == target_ssid);
+            }
         }
 
         // Fallback to iwgetid if nmcli fails
@@ -110,16 +111,50 @@ pub async fn async_condition(target_ssid: &str) -> bool {
     sync_condition(target_ssid)
 }
 
-/// Parse SSID from nmcli output (Linux with NetworkManager)
+/// Parse SSIDs of active networks from nmcli output (Linux with NetworkManager).
+///
+/// `nmcli -t` escapes `:` and `\` with a backslash, so field splitting must
+/// honor escapes. Multiple active interfaces are all returned.
 #[cfg(target_os = "linux")]
-fn get_connected_wifi_linux(output: &str) -> Result<String, String> {
-    for line in output.lines() {
-        let parts: Vec<&str> = line.split(':').collect();
-        if parts.len() >= 2 && parts[0].trim() == "yes" {
-            return Ok(parts[1].trim().to_string());
+fn connected_wifi_linux(output: &str) -> Vec<String> {
+    fn split_fields(line: &str) -> Vec<String> {
+        let mut fields = Vec::new();
+        let mut current = String::new();
+        let mut escaped = false;
+
+        for character in line.chars() {
+            if escaped {
+                current.push(character);
+                escaped = false;
+            } else if character == '\\' {
+                escaped = true;
+            } else if character == ':' {
+                fields.push(std::mem::take(&mut current));
+            } else {
+                current.push(character);
+            }
         }
+
+        if escaped {
+            current.push('\\');
+        }
+        fields.push(current);
+        fields
     }
-    Err("No connected WiFi found".to_string())
+
+    output
+        .lines()
+        .filter_map(|line| {
+            let fields = split_fields(line);
+            if fields.len() >= 2 && fields[0].trim() == "yes" {
+                let ssid = fields[1].trim();
+                if !ssid.is_empty() {
+                    return Some(ssid.to_string());
+                }
+            }
+            None
+        })
+        .collect()
 }
 
 /// Parse SSID from networksetup output (macOS)

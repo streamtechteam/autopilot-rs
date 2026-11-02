@@ -73,8 +73,7 @@ pub fn sync_condition(
                 let primary = displays.iter().find(|d| d.is_primary);
                 match primary {
                     Some(p) => {
-                        // Check exact name match or partial match
-                        if !p.name.contains(target_active) {
+                        if !screen_name_matches(&p.name, target_active) {
                             return false;
                         }
                     }
@@ -88,10 +87,10 @@ pub fn sync_condition(
                     return true;
                 }
 
-                let current_names: Vec<String> = displays.iter().map(|d| d.name.clone()).collect();
-
                 for target in targets {
-                    let found = current_names.iter().any(|name| name.contains(target));
+                    let found = displays
+                        .iter()
+                        .any(|display| screen_name_matches(&display.name, target));
                     if !found {
                         return false;
                     }
@@ -117,6 +116,12 @@ pub async fn async_condition(
     // Wrapping in spawn_blocking might be safer if it blocks, but usually it's instant.
     // For now, run directly.
     sync_condition(expected_count, &expected_active_name, &expected_names)
+}
+
+/// Screen names are matched exactly; a substring such as `DP` must not match
+/// `DP-1`.
+fn screen_name_matches(current: &str, target: &str) -> bool {
+    !target.is_empty() && current.trim() == target.trim()
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]

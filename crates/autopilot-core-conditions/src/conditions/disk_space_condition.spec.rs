@@ -23,6 +23,16 @@ fn unknown_mount_point_fails() {
 }
 
 #[test]
+fn mount_points_match_exactly_without_lexical_prefixes() {
+    assert!(mount_matches("/", "/"));
+    assert!(mount_matches("/home/", "/home"));
+    assert!(!mount_matches("/home2", "/home"));
+    assert!(!mount_matches("/home", "/home2"));
+    assert!(!mount_matches("/", "/home"));
+    assert!(!mount_matches("", "/"));
+}
+
+#[test]
 fn from_scheme_preserves_values_and_reports_name() {
     let condition = DiskSpaceCondition::from_scheme(DiskSpaceConditionScheme {
         path: "/tmp".to_string(),

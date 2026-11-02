@@ -28,6 +28,10 @@ impl LogicalOperator {
     }
 
     fn evaluate(&self, results: &[bool]) -> bool {
+        if results.is_empty() {
+            return false;
+        }
+
         match self {
             LogicalOperator::And => results.iter().all(|&x| x),
             LogicalOperator::Or => results.iter().any(|&x| x),

@@ -2,14 +2,22 @@ use super::*;
 
 #[cfg(target_os = "linux")]
 #[test]
-fn parses_connected_network_from_nmcli() {
+fn parses_connected_networks_from_nmcli() {
     let output = "no:Other Network\nyes:Home WiFi\n";
 
+    assert_eq!(connected_wifi_linux(output), vec!["Home WiFi".to_string()]);
+    assert!(connected_wifi_linux("no:Other Network").is_empty());
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn nmcli_parser_handles_escaped_colons_and_multiple_active_interfaces() {
+    let output = "yes:Home\\:WiFi\nyes:Office\\:2\nno:Other\n";
+
     assert_eq!(
-        get_connected_wifi_linux(output),
-        Ok("Home WiFi".to_string())
+        connected_wifi_linux(output),
+        vec!["Home:WiFi".to_string(), "Office:2".to_string()]
     );
-    assert!(get_connected_wifi_linux("no:Other Network").is_err());
 }
 
 #[test]

@@ -49,8 +49,9 @@ fn missing_process_is_not_running() {
 #[test]
 fn short_process_names_do_not_match_longer_names_in_reverse() {
     assert!(process_name_matches("bash", "bash"));
-    assert!(process_name_matches("chromium", "chrom"));
+    assert!(!process_name_matches("chromium", "chrom"));
     assert!(!process_name_matches("ssh", "sshd"));
+    assert!(!process_name_matches("code-oss", "code"));
 }
 
 #[cfg(target_os = "linux")]
