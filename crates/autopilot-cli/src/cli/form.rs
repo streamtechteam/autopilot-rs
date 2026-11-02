@@ -358,9 +358,8 @@ fn prompt_dynamic_select(
     default: &[String],
     placeholder: Option<&str>,
 ) -> Result<Value, AutoPilotError> {
-    let options = providers::values(provider).unwrap_or_default().options;
-
     if multiple {
+        let options = providers::values(provider).unwrap_or_default().options;
         let labels = options
             .iter()
             .map(|option| option.label.as_str())
@@ -401,58 +400,71 @@ fn prompt_dynamic_select(
         return Ok(json!(selected));
     }
 
-    if options.is_empty() {
-        if !allow_custom {
+    loop {
+        let provider_values = providers::values(provider).unwrap_or_default();
+        let options = provider_values.options;
+
+        if options.is_empty() {
+            if !allow_custom {
+                if field.required {
+                    return Err(invalid(format!("No values available for {}", field.label)));
+                }
+                return Ok(Value::Null);
+            }
+            return prompt_text(field, None, placeholder);
+        }
+
+        let mut labels = Vec::new();
+        if allow_custom {
+            labels.push("<Enter custom value>".to_string());
+        }
+        labels.extend(options.iter().map(|option| option.label.clone()));
+        let refresh = provider_values.live.then_some(labels.len());
+        if refresh.is_some() {
+            labels.push("Refresh".to_string());
+        }
+        let leave_unset = (!field.required).then_some(labels.len());
+        if leave_unset.is_some() {
+            labels.push("Leave unset".to_string());
+        }
+
+        let option_offset = usize::from(allow_custom);
+        let default_index = default
+            .first()
+            .and_then(|default| options.iter().position(|option| &option.value == default))
+            .map(|index| index + option_offset)
+            .unwrap_or(option_offset);
+        let label_refs = labels.iter().map(String::as_str).collect::<Vec<_>>();
+        let selected = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt(&field.label)
+            .items(&label_refs)
+            .default(default_index)
+            .interact_opt()
+            .map_err(dialoguer_error)?;
+
+        let Some(selected) = selected else {
             if field.required {
-                return Err(invalid(format!("No values available for {}", field.label)));
+                return Err(invalid(format!("No {} selected", field.label)));
             }
             return Ok(Value::Null);
+        };
+
+        if allow_custom && selected == 0 {
+            return prompt_text(field, None, placeholder);
         }
-        return prompt_text(field, None, placeholder);
-    }
 
-    let mut labels = Vec::new();
-    if allow_custom {
-        labels.push("<Enter custom value>".to_string());
-    }
-    labels.extend(options.iter().map(|option| option.label.clone()));
-    let leave_unset = (!field.required).then_some(labels.len());
-    if leave_unset.is_some() {
-        labels.push("Leave unset".to_string());
-    }
-
-    let option_offset = usize::from(allow_custom);
-    let default_index = default
-        .first()
-        .and_then(|default| options.iter().position(|option| &option.value == default))
-        .map(|index| index + option_offset)
-        .unwrap_or(option_offset);
-    let label_refs = labels.iter().map(String::as_str).collect::<Vec<_>>();
-    let selected = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt(&field.label)
-        .items(&label_refs)
-        .default(default_index)
-        .interact_opt()
-        .map_err(dialoguer_error)?;
-
-    let Some(selected) = selected else {
-        if field.required {
-            return Err(invalid(format!("No {} selected", field.label)));
+        if Some(selected) == refresh {
+            continue;
         }
-        return Ok(Value::Null);
-    };
 
-    if allow_custom && selected == 0 {
-        return prompt_text(field, None, placeholder);
+        if Some(selected) == leave_unset {
+            return Ok(Value::Null);
+        }
+
+        return Ok(Value::String(
+            options[selected - option_offset].value.clone(),
+        ));
     }
-
-    if Some(selected) == leave_unset {
-        return Ok(Value::Null);
-    }
-
-    Ok(Value::String(
-        options[selected - option_offset].value.clone(),
-    ))
 }
 
 fn prompt_conditions(field: &FormField, min_items: usize) -> Result<Value, AutoPilotError> {
