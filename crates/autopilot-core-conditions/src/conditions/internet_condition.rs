@@ -34,37 +34,25 @@ impl Condition for InternetCondition {
         {
             // Windows ping: -n is count, -w is timeout in ms
             let ms_timeout = (self.timeout * 1000).to_string();
-            duct_sh::sh_dangerous(
-                ["ping", "-n", "1", "-w", &ms_timeout, &self.host]
-                    .join(" ")
-                    .to_string(),
-            )
-            .run()
-            .is_ok()
+            duct::cmd("ping", ["-n", "1", "-w", &ms_timeout, &self.host])
+                .run()
+                .is_ok()
         }
 
         #[cfg(target_os = "macos")]
         {
             // macOS ping: -c is count, -t is timeout in seconds
-            duct_sh::sh_dangerous(
-                ["ping", "-c", "1", "-t", &timeout_str, &self.host]
-                    .join(" ")
-                    .to_string(),
-            )
-            .run()
-            .is_ok()
+            duct::cmd("ping", ["-c", "1", "-t", &timeout_str, &self.host])
+                .run()
+                .is_ok()
         }
 
         #[cfg(target_os = "linux")]
         {
             // Linux ping: -c is count, -W is timeout in seconds
-            duct_sh::sh_dangerous(
-                ["ping", "-c", "1", "-W", &timeout_str, &self.host]
-                    .join(" ")
-                    .to_string(),
-            )
-            .run()
-            .is_ok()
+            duct::cmd("ping", ["-c", "1", "-W", &timeout_str, &self.host])
+                .run()
+                .is_ok()
         }
 
         #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]

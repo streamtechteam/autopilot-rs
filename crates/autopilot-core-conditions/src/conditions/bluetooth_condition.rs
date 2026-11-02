@@ -5,6 +5,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::conditions::Condition;
 
+/// PowerShell query for a connected device.
+///
+/// The device name is supplied via `AUTOPILOT_BLUETOOTH_DEVICE`, never
+/// interpolated into this script.
+#[cfg(target_os = "windows")]
+const WINDOWS_BLUETOOTH_SCRIPT: &str = r#"Get-CimInstance -Class Win32_PnPDevice | Where-Object { $_.Name -and $_.Name.IndexOf($env:AUTOPILOT_BLUETOOTH_DEVICE, [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -and $_.Status -eq 'OK' }"#;
+
 /// Represents a Bluetooth device condition that checks if a specific device is connected
 #[derive(Clone)]
 pub struct BluetoothCondition {
@@ -99,12 +106,20 @@ pub fn sync_condition(device: &str, _match_by_mac: bool) -> bool {
 
     #[cfg(target_os = "windows")]
     {
-        // Windows: Use PowerShell Get-CimInstance
-        let ps_cmd = format!(
-            "Get-CimInstance -Class Win32_PnPDevice | Where-Object {{$_.Name -like '*{}*' -and $_.Status -eq 'OK'}}",
-            device
-        );
-        if let Ok(output) = duct_sh::sh_dangerous(&ps_cmd).read() {
+        // Windows: pass the device through the environment so PowerShell
+        // treats it as data instead of interpolating it into the script.
+        if let Ok(output) = duct::cmd(
+            "powershell",
+            [
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                WINDOWS_BLUETOOTH_SCRIPT,
+            ],
+        )
+        .env("AUTOPILOT_BLUETOOTH_DEVICE", device)
+        .read()
+        {
             return !output.is_empty();
         }
         false

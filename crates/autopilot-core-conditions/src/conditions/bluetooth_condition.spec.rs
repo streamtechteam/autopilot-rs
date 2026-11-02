@@ -27,3 +27,10 @@ fn parses_bluetoothctl_output() {
     assert!(check_bluetooth_linux(output, "Keyboard", false));
     assert!(!check_bluetooth_linux(output, "Mouse", false));
 }
+
+#[cfg(target_os = "windows")]
+#[test]
+fn windows_query_keeps_the_device_out_of_the_script() {
+    assert!(WINDOWS_BLUETOOTH_SCRIPT.contains("$env:AUTOPILOT_BLUETOOTH_DEVICE"));
+    assert!(!WINDOWS_BLUETOOTH_SCRIPT.contains("{}"));
+}
