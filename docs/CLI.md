@@ -118,6 +118,7 @@ The default configuration root is `~/.config/autopilot/` on Linux/macOS and `%AP
 
 ```text
 <config-root>/
+├── api-token
 ├── autopilot.jsonc
 ├── jobs/
 └── logs/

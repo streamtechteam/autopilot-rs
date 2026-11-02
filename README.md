@@ -227,6 +227,7 @@ The configuration root defaults to:
 ```text
 ~/.config/autopilot/
 ├── autopilot.jsonc
+├── api-token        # generated API bearer token
 ├── jobs/
 │   └── *.jsonc
 └── logs/

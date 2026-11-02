@@ -81,6 +81,7 @@ The API address comes from `autopilot_core::network::address()` and defaults to 
 
 ```text
 <config-root>/
+├── api-token
 ├── autopilot.jsonc
 ├── jobs/
 │   └── *.jsonc
