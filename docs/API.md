@@ -16,19 +16,38 @@ The address is controlled by environment variables and is shared by the server, 
 | --- | --- | --- |
 | `AUTOPILOT_HOST` | `127.0.0.1` | Host or IP address to bind. |
 | `AUTOPILOT_PORT` | `7883` | TCP port. |
+| `AUTOPILOT_API_TOKEN` | generated | Bearer token for API requests. Overrides `<config-root>/api-token`. |
+| `AUTOPILOT_ALLOW_REMOTE` | unset | Must be set to `1` to bind to a non-loopback host. |
 
 ```bash
 AUTOPILOT_HOST=127.0.0.1 AUTOPILOT_PORT=9000 autopilot-rs serve
 curl http://127.0.0.1:9000/health
 ```
 
+## Authentication
+
+Every route except `GET /health` requires:
+
+```http
+Authorization: Bearer <token>
+```
+
+At startup the daemon generates a random 256-bit token and writes it to `<config-root>/api-token` with owner-only permissions on Unix. `AUTOPILOT_API_TOKEN` overrides the file. The CLI `stop` command reads the same token automatically.
+
+```bash
+TOKEN=$(cat ~/.config/autopilot/api-token)
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:7883/status
+```
+
+Missing or incorrect tokens return `401 Unauthorized`. Requests with an `Origin` header that does not match the server authority return `403 Forbidden`, and a mismatched `Host` header returns `400 Bad Request`. The exception is a wildcard bind such as `0.0.0.0`, where any `Host` is accepted because the reachable address is not known ahead of time; the bearer token is still required.
+
 ## Security
 
-> **The API has no authentication, no authorization, and no TLS.** It speaks plain HTTP.
+> **The API has bearer-token authentication but no TLS and no per-user authorization.** It speaks plain HTTP.
 
-The default bind address is loopback, which limits access to processes on the same machine. Do **not** set `AUTOPILOT_HOST` to a non-loopback address unless you understand the consequences.
+The default bind address is loopback. Binding to a non-loopback address requires both `AUTOPILOT_HOST` and `AUTOPILOT_ALLOW_REMOTE=1`. The opt-in exists to make remote exposure deliberate; it does not make it safe.
 
-Anyone who can reach the port can:
+A caller with the token can:
 
 - list and read jobs;
 - create, update, and delete job files;
@@ -36,7 +55,7 @@ Anyone who can reach the port can:
 - reload or restart the daemon;
 - shut the daemon down.
 
-There is no CORS policy, rate limiting, or audit log for API requests.
+There is no per-user authorization, rate limiting, or request audit log. `/health` is intentionally unauthenticated and only reports liveness.
 
 ### Recommended remote-access pattern
 
@@ -51,7 +70,12 @@ ssh -L 7883:127.0.0.1:7883 user@autopilot-host
 curl http://127.0.0.1:7883/health
 ```
 
-If you must bind to a non-loopback interface, put the API behind a firewall and an authenticating TLS reverse proxy. Authentication is not built in. See issue #38 for the planned hardening work.
+If you must bind to a non-loopback interface, set `AUTOPILOT_ALLOW_REMOTE=1` and put the API behind a firewall and a TLS-terminating reverse proxy. Keep the token secret and do not use the wildcard bind unless the network is otherwise restricted.
+
+```bash
+# Only on a trusted network, behind a TLS reverse proxy:
+AUTOPILOT_HOST=0.0.0.0 AUTOPILOT_ALLOW_REMOTE=1 autopilot-rs serve
+```
 
 Setting `AUTOPILOT_HOST=0.0.0.0` binds all interfaces, but the same value is also used by `status` and `stop` when they construct client addresses. Prefer an explicit loopback address for local use and a tunnel for remote use.
 
@@ -103,7 +127,7 @@ This endpoint is used by `autopilot-rs status` and by the daemon's own instance 
 ### `GET /status`
 
 ```bash
-curl http://127.0.0.1:7883/status
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:7883/status
 ```
 
 ```json
@@ -122,7 +146,7 @@ curl http://127.0.0.1:7883/status
 Loads jobs from disk, initializes status entries, and starts job execution.
 
 ```bash
-curl -X POST http://127.0.0.1:7883/start
+curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7883/start
 ```
 
 ```json
@@ -139,7 +163,7 @@ Returns `409 Conflict` if jobs are already started. Returns `500` if loading job
 Stops the running jobs.
 
 ```bash
-curl -X POST http://127.0.0.1:7883/stop
+curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7883/stop
 ```
 
 ```json
@@ -156,7 +180,7 @@ Returns `409 Conflict` if jobs are not running. Returns `500` if stopping fails.
 Stops the current jobs, reloads job files from disk, reinitializes status, and restarts jobs if they were running before the reload.
 
 ```bash
-curl -X POST http://127.0.0.1:7883/reload
+curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7883/reload
 ```
 
 ```json
@@ -173,7 +197,7 @@ curl -X POST http://127.0.0.1:7883/reload
 Stops jobs, reloads job files, initializes status, and starts jobs.
 
 ```bash
-curl -X POST http://127.0.0.1:7883/restart
+curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7883/restart
 ```
 
 ```json
@@ -190,7 +214,7 @@ curl -X POST http://127.0.0.1:7883/restart
 Stops jobs and terminates the daemon. The response is sent before the process exits, then the process exits after a short delay.
 
 ```bash
-curl -X POST http://127.0.0.1:7883/shutdown
+curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7883/shutdown
 ```
 
 ```json
@@ -231,7 +255,7 @@ Job files are read from `<config-root>/jobs/`. The list is the set of valid file
 ### `GET /jobs`
 
 ```bash
-curl http://127.0.0.1:7883/jobs
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:7883/jobs
 ```
 
 ```json
@@ -249,7 +273,7 @@ curl http://127.0.0.1:7883/jobs
 ### `GET /jobs/{id}`
 
 ```bash
-curl http://127.0.0.1:7883/jobs/hello
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:7883/jobs/hello
 ```
 
 Returns `404` if no job file with that ID exists.
@@ -259,7 +283,7 @@ Returns `404` if no job file with that ID exists.
 ### `POST /jobs`
 
 ```bash
-curl -X POST http://127.0.0.1:7883/jobs \
+curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7883/jobs \
   -H 'Content-Type: application/json' \
   -d '{
     "id": "ignored-by-create",
@@ -285,14 +309,14 @@ Notes:
 - The body uses the same schema as a job file. `conditions` and `tasks` are required arrays.
 - The server generates the job ID. The `id` field is required by the schema but is ignored by this endpoint.
 - The response `path` is the filesystem path where the job was written. It is absolute for the default configuration root, but may be relative if a relative `--config-path` was used.
-- `400` is returned if the job cannot be written. Malformed JSON is rejected by the request extractor with `400`/`422` depending on the validation failure.
+- `400` is returned if the job cannot be written. Malformed JSON is rejected by the request extractor with `400`/`422` depending on the validation failure. Invalid `check_interval` values and cron expressions are rejected with `400`.
 
 ## Updating a job
 
 ### `PUT /jobs/{id}`
 
 ```bash
-curl -X PUT http://127.0.0.1:7883/jobs/hello \
+curl -H "Authorization: Bearer $TOKEN" -X PUT http://127.0.0.1:7883/jobs/hello \
   -H 'Content-Type: application/json' \
   -d '{
     "id": "ignored-by-update",
@@ -320,7 +344,7 @@ Returns `404` if the job does not exist. Returns `400` if the update is invalid.
 ### `DELETE /jobs/{id}`
 
 ```bash
-curl -X DELETE http://127.0.0.1:7883/jobs/hello
+curl -H "Authorization: Bearer $TOKEN" -X DELETE http://127.0.0.1:7883/jobs/hello
 ```
 
 ```json
@@ -339,13 +363,13 @@ The API's job CRUD operations write files on disk. They do **not** add, remove, 
 After creating, updating, or deleting jobs, apply the change with:
 
 ```bash
-curl -X POST http://127.0.0.1:7883/reload
+curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7883/reload
 ```
 
 or:
 
 ```bash
-curl -X POST http://127.0.0.1:7883/restart
+curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7883/restart
 ```
 
 - `reload` preserves whether jobs were running.
@@ -360,7 +384,9 @@ Deleting or updating a job that is currently running does not stop the already-r
 | Status | Meaning |
 | --- | --- |
 | `200` | Request handled. Check `success` for reload/restart operations. |
-| `400` | Invalid request or job write failure. |
+| `400` | Invalid request, invalid Host header, or job write failure. |
+| `401` | Missing or invalid bearer token. |
+| `403` | Cross-origin request rejected. |
 | `404` | Job ID not found. |
 | `409` | Lifecycle conflict, such as starting an already-started runtime or stopping a stopped one. |
 | `422` | Request body failed schema validation (Axum JSON extractor). |
@@ -378,7 +404,7 @@ AUTOPILOT_PORT=9000 autopilot-rs serve
 curl http://127.0.0.1:9000/health
 
 # Create a job
-curl -X POST http://127.0.0.1:9000/jobs \
+curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:9000/jobs \
   -H 'Content-Type: application/json' \
   -d '{
     "id": "ignored",
@@ -388,9 +414,9 @@ curl -X POST http://127.0.0.1:9000/jobs \
   }'
 
 # Apply the new file to the running daemon
-curl -X POST http://127.0.0.1:9000/reload
+curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:9000/reload
 
 # Inspect status
-curl http://127.0.0.1:9000/status
-curl http://127.0.0.1:9000/jobs
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:9000/status
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:9000/jobs
 ```

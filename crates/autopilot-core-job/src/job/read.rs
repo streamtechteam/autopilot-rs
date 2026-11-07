@@ -20,6 +20,7 @@ pub fn list(quiet: bool) -> Result<Vec<Job>, AutoPilotError> {
     let mut jobs_ids: Vec<String> = Vec::new();
 
     for (_, job_scheme) in records {
+        job_scheme.validate()?;
         let job_object = Job::from_scheme(job_scheme);
         let id = job_object.id.clone();
         if !quiet {

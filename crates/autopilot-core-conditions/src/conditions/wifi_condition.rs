@@ -42,10 +42,11 @@ pub fn sync_condition(target_ssid: &str) -> bool {
     #[cfg(target_os = "linux")]
     {
         // Try nmcli (NetworkManager) first - most common on Linux
-        if let Ok(output) = cmd("nmcli", vec!["-t", "-f", "active,ssid", "dev", "wifi"]).read()
-            && let Ok(ssid) = get_connected_wifi_linux(&output)
-        {
-            return ssid == target_ssid;
+        if let Ok(output) = cmd("nmcli", vec!["-t", "-f", "active,ssid", "dev", "wifi"]).read() {
+            let connected = connected_wifi_linux(&output);
+            if !connected.is_empty() {
+                return connected.iter().any(|ssid| ssid == target_ssid);
+            }
         }
 
         // Fallback to iwgetid if nmcli fails
@@ -85,19 +86,13 @@ pub fn sync_condition(target_ssid: &str) -> bool {
 
     #[cfg(target_os = "windows")]
     {
-        // Windows: use netsh
+        // Windows: use netsh. Only the interfaces view reports the current
+        // connection; `netsh wlan show profiles` lists saved networks and
+        // must not be used as a connected check.
         if let Ok(output) = cmd("netsh", vec!["wlan", "show", "interfaces"]).read()
             && let Some(ssid) = get_connected_wifi_windows(&output)
         {
             return ssid == target_ssid;
-        }
-
-        // Fallback for Windows: try parsing netsh show current profile
-        if let Ok(output) = cmd("netsh", vec!["wlan", "show", "profiles"]).read()
-            && output.contains(target_ssid)
-        {
-            // This is less reliable but might help in some environments
-            return true;
         }
         false
     }
@@ -116,16 +111,50 @@ pub async fn async_condition(target_ssid: &str) -> bool {
     sync_condition(target_ssid)
 }
 
-/// Parse SSID from nmcli output (Linux with NetworkManager)
+/// Parse SSIDs of active networks from nmcli output (Linux with NetworkManager).
+///
+/// `nmcli -t` escapes `:` and `\` with a backslash, so field splitting must
+/// honor escapes. Multiple active interfaces are all returned.
 #[cfg(target_os = "linux")]
-fn get_connected_wifi_linux(output: &str) -> Result<String, String> {
-    for line in output.lines() {
-        let parts: Vec<&str> = line.split(':').collect();
-        if parts.len() >= 2 && parts[0].trim() == "yes" {
-            return Ok(parts[1].trim().to_string());
+fn connected_wifi_linux(output: &str) -> Vec<String> {
+    fn split_fields(line: &str) -> Vec<String> {
+        let mut fields = Vec::new();
+        let mut current = String::new();
+        let mut escaped = false;
+
+        for character in line.chars() {
+            if escaped {
+                current.push(character);
+                escaped = false;
+            } else if character == '\\' {
+                escaped = true;
+            } else if character == ':' {
+                fields.push(std::mem::take(&mut current));
+            } else {
+                current.push(character);
+            }
         }
+
+        if escaped {
+            current.push('\\');
+        }
+        fields.push(current);
+        fields
     }
-    Err("No connected WiFi found".to_string())
+
+    output
+        .lines()
+        .filter_map(|line| {
+            let fields = split_fields(line);
+            if fields.len() >= 2 && fields[0].trim() == "yes" {
+                let ssid = fields[1].trim();
+                if !ssid.is_empty() {
+                    return Some(ssid.to_string());
+                }
+            }
+            None
+        })
+        .collect()
 }
 
 /// Parse SSID from networksetup output (macOS)
@@ -153,16 +182,19 @@ fn get_connected_wifi_macos_airport(output: &str) -> Option<String> {
 }
 
 /// Parse SSID from netsh output (Windows)
-#[cfg(target_os = "windows")]
+///
+/// Only the exact `SSID` field is accepted. `BSSID` is a different value and
+/// must not be mistaken for the network name.
+#[cfg(any(target_os = "windows", test))]
 fn get_connected_wifi_windows(output: &str) -> Option<String> {
     for line in output.lines() {
-        if line.contains("SSID") && line.contains(":") {
-            let parts: Vec<&str> = line.splitn(2, ':').collect();
-            if parts.len() == 2 {
-                let ssid = parts[1].trim().to_string();
-                if !ssid.is_empty() {
-                    return Some(ssid);
-                }
+        let Some((key, value)) = line.split_once(':') else {
+            continue;
+        };
+        if key.trim().eq_ignore_ascii_case("SSID") {
+            let ssid = value.trim();
+            if !ssid.is_empty() {
+                return Some(ssid.to_string());
             }
         }
     }

@@ -58,6 +58,9 @@ impl From<FsError> for AutoPilotError {
             FsError::Io(error) => AutoPilotError::Io(error),
             FsError::Json(error) => AutoPilotError::Json(error.to_string()),
             FsError::InvalidId(id) => AutoPilotError::InvalidJob(format!("Invalid job id '{id}'")),
+            FsError::InvalidFile { path, message } => {
+                AutoPilotError::InvalidJob(format!("Invalid job file '{path}': {message}"))
+            }
             FsError::NotInitialized => AutoPilotError::DirectoryInit(
                 "Filesystem paths have not been initialized".to_string(),
             ),

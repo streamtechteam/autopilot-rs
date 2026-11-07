@@ -38,7 +38,9 @@ Initializes the configuration, loads jobs, starts logging, and starts the HTTP A
 
 The API always starts in either mode. `--api` only controls whether jobs auto-start.
 
-`serve` runs until it receives `Ctrl+C`, `SIGTERM`, or (on Unix) `SIGHUP`. `SIGHUP` reloads the job configuration.\n\n> **Current signal behavior:** the Unix signal handler processes one `SIGHUP`, then continues waiting for termination. Use `POST /reload` for repeated reloads. `Ctrl+C` and `SIGTERM` exit the process directly; use `autopilot-rs stop` when you want the API shutdown path.
+`serve` runs until it receives `Ctrl+C`, `SIGTERM`, or (on Unix) `SIGHUP`. `SIGHUP` reloads the job configuration each time it is received.
+
+`Ctrl+C` (SIGINT) and `SIGTERM` stop running jobs and then exit, with a 10-second shutdown timeout. Use `autopilot-rs stop` when you want the API shutdown path instead.
 
 ### `status`
 
@@ -116,6 +118,7 @@ The default configuration root is `~/.config/autopilot/` on Linux/macOS and `%AP
 
 ```text
 <config-root>/
+├── api-token
 ├── autopilot.jsonc
 ├── jobs/
 └── logs/
@@ -127,13 +130,15 @@ The API address and the address used by `status`/`stop` come from:
 | --- | --- | --- |
 | `AUTOPILOT_HOST` | `127.0.0.1` | API host. |
 | `AUTOPILOT_PORT` | `7883` | API port. |
+| `AUTOPILOT_API_TOKEN` | generated | Bearer token; overrides `<config-root>/api-token`. |
+| `AUTOPILOT_ALLOW_REMOTE` | unset | Must be `1` for a non-loopback bind. |
 
 ```bash
 AUTOPILOT_PORT=9000 autopilot-rs serve
 AUTOPILOT_PORT=9000 autopilot-rs status
 ```
 
-Do not expose the API to an untrusted network without an authentication layer. See [API security](API.md#security).
+`stop` reads the bearer token from `AUTOPILOT_API_TOKEN` or `<config-root>/api-token` automatically. Do not expose the API to an untrusted network without TLS termination. See [API security](API.md#security).
 
 ## Related documentation
 

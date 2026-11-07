@@ -42,7 +42,9 @@ Conditions are synchronous `check() -> bool` implementations. A condition that c
 
 - **Linux:** Uses `nmcli` (NetworkManager) or `iwgetid`
 - **macOS:** Uses `networksetup` and falls back to the `airport` utility
-- **Windows:** Uses `netsh wlan show interfaces`, with a profile-based fallback
+- **Windows:** Uses `netsh wlan show interfaces` only; saved profiles are not treated as connected
+
+The SSID must match the currently connected network. On Linux, escaped `:` characters in `nmcli` output are handled and all active interfaces are checked.
 
 **Use Cases:**
 
@@ -67,6 +69,8 @@ Conditions are synchronous `check() -> bool` implementations. A condition that c
   }
 }
 ```
+
+Only currently connected devices satisfy the condition. Device names and MAC addresses are compared exactly (case-insensitively); a saved but disconnected device does not match.
 
 **Examples:**
 
@@ -219,6 +223,10 @@ _Check command output:_
   }
 }
 ```
+
+**Platform Support:**
+
+- **Linux:** Scans `/sys/class/power_supply` for any AC adapter reporting `online = 1` and for battery entries regardless of their names (`ADP1`, `AC0`, `BAT1`, `CMB0`, and so on).
 
 **Examples:**
 
@@ -390,6 +398,8 @@ _Run only if no browser is open:_
 }
 ```
 
+Process names are compared exactly (case-insensitively). A configured `code` does not match `code-oss`, and `ssh` does not match `sshd`. On Linux, a 15-byte `/proc/<pid>/comm` truncation is still accepted when the configured name starts with the truncated name.
+
 **Use Cases:**
 
 - Take action when an app starts
@@ -427,7 +437,7 @@ _Run only if no browser is open:_
 }
 ```
 
-The current implementation compares `path` against the beginning of each detected disk mount point. Use a mount point such as `/` or `C:\`; an arbitrary subdirectory such as `/home/user` will not match unless the filesystem is actually mounted at that path.
+The condition compares `path` exactly against each detected disk mount point, ignoring a trailing separator. Use a mount point such as `/` or `C:\`; an arbitrary subdirectory such as `/home/user` will not match unless the filesystem is actually mounted at that path. `/home` does not match `/home2`, and `/` only matches the root filesystem.
 
 **Use Cases:**
 
@@ -448,14 +458,14 @@ The current implementation compares `path` against the beginning of each detecte
   "type": "file",
   "condition": {
     "path": "/path/to/file", // Required: File or directory path
-    "check_type": "exists", // Required: "exists", "modified_recently", or "size_changed"
+    "check_type": "exists", // Required: "exists", "modified_recently", or "min_size"
     "time_threshold": 300, // Optional: Seconds for "modified_recently" (default: 300)
-    "size_threshold": 1024 // Optional: Minimum size in bytes for "size_changed" (default: 0)
+    "size_threshold": 1024 // Optional: Minimum size in bytes for "min_size" (default: 0)
   }
 }
 ```
 
-> **Current behavior:** `size_changed` is a minimum-size check, not change detection. It passes when the file exists and its current size is greater than or equal to `size_threshold`. It does not compare against a previous size. With no threshold, any existing file passes. See issue #42 for the planned change-detection fix.
+> **Current behavior:** `min_size` is a minimum-size check, not change detection. It passes when the file exists and its current size is greater than or equal to `size_threshold`. It does not compare against a previous size. With no threshold, any existing file passes. `size_changed` is accepted as a deprecated alias for `min_size` but is no longer advertised in the schema.
 
 **Examples:**
 
@@ -484,14 +494,14 @@ _Check if file was recently modified:_
 }
 ```
 
-_Check that a file has reached at least 1 MiB (current `size_changed` behavior):_
+_Check that a file has reached at least 1 MiB:_
 
 ```jsonc
 {
   "type": "file",
   "condition": {
     "path": "/tmp/export.zip",
-    "check_type": "size_changed",
+    "check_type": "min_size",
     "size_threshold": 1048576
   }
 }
@@ -501,7 +511,7 @@ _Check that a file has reached at least 1 MiB (current `size_changed` behavior):
 
 - Wait for a file to appear
 - Trigger on recent log activity with `modified_recently`
-- Wait for a download or export to reach a minimum size with `size_changed`
+- Wait for a download or export to reach a minimum size with `min_size`
 
 ---
 
@@ -571,6 +581,8 @@ _Check by mount point:_
   }
 }
 ```
+
+Screen names are compared exactly; a target such as `DP` does not match `DP-1`.
 
 **Examples:**
 
@@ -715,6 +727,8 @@ _NOR logic (none must pass):_
 - `Or`: At least one condition must be true
 - `Nor`: None of the conditions must be true (NOT OR)
 
+An empty condition list is rejected by the form schema and evaluates to `false` at runtime for every operator.
+
 **Platform Support:** All platforms
 
 **Use Cases:**
@@ -754,9 +768,11 @@ _NOR logic (none must pass):_
 }
 ```
 
-The comparison is case-insensitive. AutoPilot checks `XDG_CURRENT_DESKTOP`,
-`DESKTOP_SESSION`, and common desktop-specific environment variables, then
-falls back to `WAYLAND_DISPLAY`.
+The comparison is case-insensitive. A colon- or semicolon-separated
+`XDG_CURRENT_DESKTOP` such as `ubuntu:GNOME` matches either `ubuntu` or
+`GNOME`, and a `DESKTOP_SESSION` path matches its final component. AutoPilot
+checks `XDG_CURRENT_DESKTOP`, `DESKTOP_SESSION`, and common desktop-specific
+environment variables, then falls back to `WAYLAND_DISPLAY`.
 
 **Platform Support:**
 

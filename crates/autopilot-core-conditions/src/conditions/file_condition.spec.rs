@@ -62,16 +62,24 @@ fn modified_recently_honours_the_threshold() {
 }
 
 #[test]
-fn size_changed_compares_against_the_threshold() {
+fn min_size_compares_against_the_threshold() {
     let path = temp_file("12345");
     let path = path.to_string_lossy().into_owned();
-    let small = FileCondition::new(path.clone(), "size_changed".into(), None, Some(5));
-    let large = FileCondition::new(path.clone(), "size_changed".into(), None, Some(6));
+    let small = FileCondition::new(path.clone(), "min_size".into(), None, Some(5));
+    let large = FileCondition::new(path.clone(), "min_size".into(), None, Some(6));
 
     assert!(small.check());
     assert!(!large.check());
 
     std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn size_changed_is_a_deprecated_min_size_alias() {
+    let condition = FileCondition::new("/tmp".into(), "SIZE_CHANGED".into(), None, None);
+
+    assert_eq!(condition.check_type, "min_size");
+    assert_eq!(condition.name(), "File");
 }
 
 #[test]

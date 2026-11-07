@@ -5,6 +5,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::conditions::Condition;
 
+/// PowerShell query for a connected device.
+///
+/// The device name is supplied via `AUTOPILOT_BLUETOOTH_DEVICE`, never
+/// interpolated into this script.
+#[cfg(target_os = "windows")]
+const WINDOWS_BLUETOOTH_SCRIPT: &str = r#"Get-CimInstance -Class Win32_PnPDevice | Where-Object { $_.Name -and $_.Name.IndexOf($env:AUTOPILOT_BLUETOOTH_DEVICE, [System.StringComparison]::OrdinalIgnoreCase) -ge 0 -and $_.Status -eq 'OK' }"#;
+
 /// Represents a Bluetooth device condition that checks if a specific device is connected
 #[derive(Clone)]
 pub struct BluetoothCondition {
@@ -73,38 +80,30 @@ pub fn sync_condition(device: &str, _match_by_mac: bool) -> bool {
 
     #[cfg(target_os = "macos")]
     {
-        // macOS: Use system_profiler
-        let connected =
-            if let Ok(output) = cmd("system_profiler", vec!["SPBluetoothDataType"]).read() {
-                output.contains(device)
-            } else {
-                false
-            };
-
-        if connected {
-            return true;
-        }
-
-        // Fallback to defaults read
-        if let Ok(output) = cmd(
-            "defaults",
-            vec!["read", "/Library/Preferences/com.apple.Bluetooth.plist"],
-        )
-        .read()
-        {
-            return output.contains(device);
+        // macOS: only report devices whose own `Connected` field is `Yes`.
+        // The defaults plist also lists paired-but-disconnected devices.
+        if let Ok(output) = cmd("system_profiler", vec!["SPBluetoothDataType"]).read() {
+            return check_bluetooth_macos(&output, device, _match_by_mac);
         }
         false
     }
 
     #[cfg(target_os = "windows")]
     {
-        // Windows: Use PowerShell Get-CimInstance
-        let ps_cmd = format!(
-            "Get-CimInstance -Class Win32_PnPDevice | Where-Object {{$_.Name -like '*{}*' -and $_.Status -eq 'OK'}}",
-            device
-        );
-        if let Ok(output) = duct_sh::sh_dangerous(&ps_cmd).read() {
+        // Windows: pass the device through the environment so PowerShell
+        // treats it as data instead of interpolating it into the script.
+        if let Ok(output) = duct::cmd(
+            "powershell",
+            [
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                WINDOWS_BLUETOOTH_SCRIPT,
+            ],
+        )
+        .env("AUTOPILOT_BLUETOOTH_DEVICE", device)
+        .read()
+        {
             return !output.is_empty();
         }
         false
@@ -128,20 +127,68 @@ pub async fn async_condition(device: &str, match_by_mac: bool) -> bool {
 #[cfg(target_os = "linux")]
 fn check_bluetooth_linux(output: &str, target_device: &str, match_by_mac: bool) -> bool {
     for line in output.lines() {
-        let line = line.trim();
+        let Some(rest) = line.trim().strip_prefix("Device ") else {
+            continue;
+        };
+        let Some((mac, name)) = rest.split_once(' ') else {
+            continue;
+        };
 
-        if match_by_mac {
-            // MAC address format: XX:XX:XX:XX:XX:XX
-            if line.contains(target_device) {
-                return true;
-            }
+        let matched = if match_by_mac {
+            mac.eq_ignore_ascii_case(target_device)
         } else {
-            // Device name matching - typically appears after MAC address
-            if line.contains(target_device) {
-                return true;
-            }
+            name.trim().eq_ignore_ascii_case(target_device)
+        };
+
+        if matched {
+            return true;
         }
     }
+    false
+}
+
+/// Parse macOS `system_profiler SPBluetoothDataType` output.
+#[cfg(any(target_os = "macos", test))]
+fn check_bluetooth_macos(output: &str, target_device: &str, match_by_mac: bool) -> bool {
+    let mut name: Option<String> = None;
+    let mut address: Option<String> = None;
+
+    for line in output.lines() {
+        let trimmed = line.trim();
+        let Some((key, value)) = trimmed.split_once(':') else {
+            continue;
+        };
+        let key = key.trim();
+        let value = value.trim();
+
+        if value.is_empty() {
+            // A device header, or a section header followed by the device header.
+            name = Some(key.to_string());
+            address = None;
+            continue;
+        }
+
+        if key.eq_ignore_ascii_case("Address") {
+            address = Some(value.to_string());
+        } else if key.eq_ignore_ascii_case("Connected") {
+            let matched = if match_by_mac {
+                address
+                    .as_deref()
+                    .is_some_and(|address| address.eq_ignore_ascii_case(target_device))
+            } else {
+                name.as_deref()
+                    .is_some_and(|name| name.eq_ignore_ascii_case(target_device))
+            };
+
+            if matched && value.eq_ignore_ascii_case("Yes") {
+                return true;
+            }
+
+            name = None;
+            address = None;
+        }
+    }
+
     false
 }
 

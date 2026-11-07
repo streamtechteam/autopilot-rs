@@ -35,6 +35,7 @@ pub fn add(
         tasks,
         task_mode,
     };
+    job.validate()?;
 
     let store = JsonFileStore::<JobScheme>::new(config::current()?.jobs_dir());
     Ok(store.save(&job)?)
@@ -80,6 +81,7 @@ pub fn update(
         job.task_mode = task_mode;
     }
 
+    job.validate()?;
     store.write_path(&path, &job)?;
     Ok(path)
 }

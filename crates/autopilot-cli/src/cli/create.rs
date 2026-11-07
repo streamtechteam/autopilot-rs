@@ -29,12 +29,7 @@ pub async fn create() {
 }
 
 fn validate_cron_expression(cron_exp: &str) -> Result<When, AutoPilotError> {
-    if cron_exp.split_whitespace().count() < 5 {
-        return Err(AutoPilotError::InvalidJob(
-            "Cron expression must have at least 5 fields (minute hour day-of-month month day-of-week)".to_string(),
-        ));
-    }
-
+    autopilot_core::time::validate_cron_expression(cron_exp)?;
     Ok(When::Cron(cron_exp.to_string()))
 }
 

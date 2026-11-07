@@ -44,32 +44,24 @@ impl Condition for PowerCondition {
     fn check(&self) -> bool {
         #[cfg(target_os = "linux")]
         {
+            use std::path::Path;
+
+            let root = Path::new("/sys/class/power_supply");
+
             if self.check_charging {
-                // Try multiple common paths for AC adapter status
-                let paths = [
-                    "/sys/class/power_supply/AC/online",
-                    "/sys/class/power_supply/ACAD/online",
-                ];
-                for path in paths {
-                    if let Ok(status) = std::fs::read_to_string(path) {
-                        return status.trim() == "1";
-                    }
-                }
-                false
-            } else if let Some(threshold) = self.threshold {
-                if let Ok(capacity) =
-                    std::fs::read_to_string("/sys/class/power_supply/BAT0/capacity")
-                    && let Ok(val) = capacity.trim().parse::<f32>()
-                {
-                    return match self.operator.as_deref() {
-                        Some("less") | Some("<") => val < threshold,
-                        _ => val > threshold,
-                    };
-                }
-                false
-            } else {
-                false
+                return any_ac_online(root);
             }
+
+            if let Some(threshold) = self.threshold
+                && let Some(val) = battery_capacity(root)
+            {
+                return match self.operator.as_deref() {
+                    Some("less") | Some("<") => val < threshold,
+                    _ => val > threshold,
+                };
+            }
+
+            false
         }
 
         #[cfg(target_os = "macos")]
@@ -160,6 +152,44 @@ impl Condition for PowerCondition {
     fn name(&self) -> &str {
         "Power"
     }
+}
+
+#[cfg(any(target_os = "linux", test))]
+fn any_ac_online(root: &std::path::Path) -> bool {
+    let Ok(entries) = std::fs::read_dir(root) else {
+        return false;
+    };
+
+    entries.flatten().any(|entry| {
+        std::fs::read_to_string(entry.path().join("online"))
+            .is_ok_and(|status| status.trim() == "1")
+    })
+}
+
+#[cfg(any(target_os = "linux", test))]
+fn battery_capacity(root: &std::path::Path) -> Option<f32> {
+    let mut entries: Vec<_> = std::fs::read_dir(root)
+        .ok()?
+        .flatten()
+        .map(|entry| entry.path())
+        .collect();
+    entries.sort();
+
+    for path in entries {
+        let Ok(kind) = std::fs::read_to_string(path.join("type")) else {
+            continue;
+        };
+        if kind.trim() != "Battery" {
+            continue;
+        }
+        if let Ok(capacity) = std::fs::read_to_string(path.join("capacity"))
+            && let Ok(value) = capacity.trim().parse::<f32>()
+        {
+            return Some(value);
+        }
+    }
+
+    None
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]

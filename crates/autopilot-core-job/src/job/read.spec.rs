@@ -26,7 +26,7 @@ fn parses_plain_json_and_jsonc() {
 }
 
 #[test]
-fn list_reads_valid_files_and_skips_invalid_ones() {
+fn list_reads_valid_files_and_reports_invalid_ones() {
     let _guard = test_support::lock();
     let valid = write_job(
         "job_get_valid.jsonc",
@@ -40,16 +40,44 @@ fn list_reads_valid_files_and_skips_invalid_ones() {
     );
     let invalid = write_job("job_get_invalid.jsonc", "ignored", "not json");
 
+    let error = list(true)
+        .err()
+        .expect("invalid job files should be reported");
+    assert!(
+        error.to_string().contains("job_get_invalid.jsonc"),
+        "unexpected error: {error}"
+    );
+
+    std::fs::remove_file(&invalid).unwrap();
     let jobs = list(true).unwrap();
     let ids: Vec<&str> = jobs.iter().map(|job| job.id.as_str()).collect();
 
     assert!(ids.contains(&"job_get_valid"));
     assert!(ids.contains(&"job_get_commented"));
-    assert!(!ids.contains(&"ignored"));
 
-    for path in [valid, commented, invalid] {
+    for path in [valid, commented] {
         std::fs::remove_file(path).unwrap();
     }
+}
+
+#[test]
+fn list_rejects_invalid_check_intervals() {
+    let _guard = test_support::lock();
+    let invalid = write_job(
+        "job_get_bad_interval.jsonc",
+        "job_get_bad_interval",
+        r#"{"id":"job_get_bad_interval","check_interval":"0","conditions":[],"tasks":[]}"#,
+    );
+
+    let error = list(true)
+        .err()
+        .expect("invalid check_interval should fail");
+    assert!(
+        error.to_string().contains("check_interval"),
+        "unexpected error: {error}"
+    );
+
+    std::fs::remove_file(invalid).unwrap();
 }
 
 #[test]

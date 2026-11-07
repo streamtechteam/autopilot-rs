@@ -125,6 +125,16 @@ pub struct YearlyScheme {
     pub day: u8,
 }
 
+pub fn validate_cron_expression(expression: &str) -> Result<(), AutoPilotError> {
+    tokio_cron_scheduler::Job::new_async(expression, |_, _| Box::pin(async {}))
+        .map(|_| ())
+        .map_err(|error| {
+            AutoPilotError::InvalidJob(format!(
+                "Invalid cron expression '{expression}': {error}. Expected six fields (second minute hour day-of-month month day-of-week)."
+            ))
+        })
+}
+
 pub fn to_cron_expression(when: When) -> Result<String, AutoPilotError> {
     match when {
         When::Daily(time_scheme) => {

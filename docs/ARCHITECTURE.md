@@ -43,7 +43,7 @@ The API is started by `serve` in both modes. `--api` only suppresses the automat
 
 A job file is deserialized into `JobScheme`. `Job::from_scheme()` converts each `ConditionScheme` into a boxed `Condition` and each task scheme into a `Task`.
 
-The loader reads the jobs directory and skips files that fail to deserialize. Duplicate job IDs are rejected because status and file operations assume IDs are unique.
+The loader rejects files that fail to deserialize and reports the file path. Invalid schedules and `check_interval` values are rejected before a job is saved or loaded. Duplicate job IDs are rejected because status and file operations assume IDs are unique.
 
 `AutoPilot::start()` spawns one Tokio task per job. Each job runs in one of two modes:
 
@@ -81,6 +81,7 @@ The API address comes from `autopilot_core::network::address()` and defaults to 
 
 ```text
 <config-root>/
+├── api-token
 ├── autopilot.jsonc
 ├── jobs/
 │   └── *.jsonc
@@ -116,9 +117,9 @@ cargo clippy -p autopilot-api --all-targets --locked
 
 ## Known constraints
 
-- The API is unauthenticated and plain HTTP; see [API security](API.md#security).
+- The API uses bearer-token authentication and Origin/Host checks over plain HTTP; see [API security](API.md#security).
 - Job CRUD writes files and requires reload/restart for live changes.
 - Invalid job files are skipped by the loader; duplicate IDs are fatal for the load.
-- `file` condition `size_changed` currently implements a minimum-size check.
+- `file` condition `min_size` implements a minimum-size check; `size_changed` is a deprecated alias.
 - There is no plugin system for custom conditions yet.
 - The GUI is built as part of the workspace and requires platform GUI dependencies.

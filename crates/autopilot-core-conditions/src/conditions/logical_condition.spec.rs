@@ -16,7 +16,7 @@ fn passes() -> Box<dyn Condition> {
 fn and_requires_all_conditions() {
     assert!(LogicalCondition::new(LogicalOperator::And, vec![passes(), passes()]).check());
     assert!(!LogicalCondition::new(LogicalOperator::And, vec![passes(), fail()]).check());
-    assert!(LogicalCondition::new(LogicalOperator::And, vec![]).check());
+    assert!(!LogicalCondition::new(LogicalOperator::And, vec![]).check());
 }
 
 #[test]
@@ -30,7 +30,7 @@ fn or_requires_one_condition() {
 fn nor_requires_no_condition() {
     assert!(LogicalCondition::new(LogicalOperator::Nor, vec![fail(), fail()]).check());
     assert!(!LogicalCondition::new(LogicalOperator::Nor, vec![passes(), fail()]).check());
-    assert!(LogicalCondition::new(LogicalOperator::Nor, vec![]).check());
+    assert!(!LogicalCondition::new(LogicalOperator::Nor, vec![]).check());
 }
 
 #[test]

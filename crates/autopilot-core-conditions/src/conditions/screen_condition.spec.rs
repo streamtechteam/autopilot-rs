@@ -37,3 +37,10 @@ fn impossible_screen_requirements_fail() {
         None
     )));
 }
+
+#[test]
+fn screen_names_require_exact_matches() {
+    assert!(screen_name_matches("DP-1", "DP-1"));
+    assert!(!screen_name_matches("DP-1", "DP"));
+    assert!(!screen_name_matches("DP-1", ""));
+}

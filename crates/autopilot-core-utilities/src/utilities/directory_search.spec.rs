@@ -1,14 +1,18 @@
 use super::*;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn temp_dir() -> std::path::PathBuf {
+    static NEXT_ID: AtomicU64 = AtomicU64::new(0);
+
     let dir = std::env::temp_dir().join(format!(
-        "autopilot-search-spec-{}-{}",
+        "autopilot-search-spec-{}-{}-{}",
         std::process::id(),
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
-            .as_nanos()
+            .as_nanos(),
+        NEXT_ID.fetch_add(1, Ordering::Relaxed)
     ));
     std::fs::create_dir_all(dir.join("nested")).unwrap();
     dir

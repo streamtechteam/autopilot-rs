@@ -26,7 +26,7 @@ When code and documentation disagree, treat the implementation as the source of 
 - The workspace also builds `autopilot-gui`, so always identify the package or binary when using `cargo run`.
 - Default config root: `~/.config/autopilot/` on Unix, `%APPDATA%\autopilot\` on Windows.
 - Jobs live in `<config-root>/jobs/`; logs live in `<config-root>/logs/`.
-- API default: `http://127.0.0.1:7883`, controlled by `AUTOPILOT_HOST` and `AUTOPILOT_PORT`.
+- API default: `http://127.0.0.1:7883`, controlled by `AUTOPILOT_HOST`, `AUTOPILOT_PORT`, `AUTOPILOT_API_TOKEN`, and `AUTOPILOT_ALLOW_REMOTE`.
 - HTTP API and CLI are separate entry points into the same `AutoPilot` runtime.
 
 ## Commands
@@ -95,20 +95,21 @@ Do not use plain `cargo run -- ...`; it cannot choose between the CLI and GUI bi
 - When documenting a condition, include its JSON shape and note platform-specific behavior only when the backend actually implements it.
 - Keep `README.md` as the landing page; put detailed references in `docs/`.
 - The docs currently call out these constraints; keep them accurate if you touch related behavior:
-  - API is unauthenticated, plain HTTP, and loopback by default.
+  - API is plain HTTP, loopback by default, and requires a bearer token for every route except `/health`.
   - API job CRUD writes files but requires reload/restart to affect the live runtime.
   - Reload/restart failures currently return HTTP `200` with `"success": false`.
-  - `file` condition `size_changed` is a minimum-size check, not change detection.
+  - `file` condition `min_size` is a minimum-size check, not change detection; `size_changed` is a deprecated alias.
   - A failed task is logged, and the job status is set to `Failed`.
   - `task_mode` defaults to `concurrent`; `sequential` and `sequential_stop_on_failure` are also supported.
-  - The Unix signal handler processes one `SIGHUP`; `SIGINT`/`SIGTERM` exit directly.
+  - Unix `SIGHUP` reloads jobs on every signal; `SIGINT`/`SIGTERM` stop jobs and exit (bounded by a 10-second shutdown timeout).
 
 ## API and security rules
 
-- The API has no authentication, authorization, or TLS.
+- The API has bearer-token authentication and Origin/Host validation, but no authorization model, user accounts, or TLS.
 - Keep it bound to loopback in tests and examples.
 - Do not add examples that use `AUTOPILOT_HOST=0.0.0.0` or otherwise expose the daemon.
-- `AUTOPILOT_HOST` and `AUTOPILOT_PORT` affect the server, CLI health checks, and the CLI shutdown client.
+- Non-loopback binds require `AUTOPILOT_ALLOW_REMOTE=1`; keep the token secret and terminate TLS in a trusted reverse proxy.
+- `AUTOPILOT_HOST`, `AUTOPILOT_PORT`, and `AUTOPILOT_API_TOKEN` affect the server, CLI health checks, and the CLI shutdown client.
 - `autopilot-rs serve` always starts the API; `--api` only suppresses automatic job start.
 - Do not put secrets, tokens, or machine-specific paths in committed examples.
 

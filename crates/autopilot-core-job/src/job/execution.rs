@@ -47,10 +47,11 @@ impl Job {
                     }
                     break;
                 } else if let Some(interval) = &self.check_interval {
-                    let interval_ms = interval.parse::<u64>().unwrap_or_else(|_| {
-                        error!("check_interval value is not valid, using 1000ms as default");
-                        1000
-                    });
+                    let interval_ms =
+                        super::scheme::parse_check_interval(interval).unwrap_or_else(|error| {
+                            error!("{error}; using 1000ms as default");
+                            1000
+                        });
                     tokio::time::sleep(Duration::from_millis(interval_ms)).await;
                 } else {
                     state_manager
@@ -63,12 +64,19 @@ impl Job {
                 }
             }
         } else {
-            state_manager
-                .set(self.id.clone(), None, JobStatusEnum::Scheduled)
-                .await;
             let result = add_job(self, scheduler, run_job, state_manager.clone()).await;
-            if let Err(error) = result {
-                error!("{} : {}", self.name, error);
+            match result {
+                Ok(()) => {
+                    state_manager
+                        .set(self.id.clone(), None, JobStatusEnum::Scheduled)
+                        .await;
+                }
+                Err(error) => {
+                    error!("{} : {}", self.name, error);
+                    state_manager
+                        .set(self.id.clone(), None, JobStatusEnum::Failed)
+                        .await;
+                }
             }
         }
     }

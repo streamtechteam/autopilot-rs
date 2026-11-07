@@ -30,21 +30,22 @@ impl ProcessCondition {
     }
 }
 
+/// Process names are compared exactly (case-insensitively at the call site).
+///
 /// Linux truncates `/proc/<pid>/comm` to 15 bytes, so a configured longer
 /// name can still match when the observed name is the truncated prefix. Short
-/// process names are only matched in the forward direction to avoid treating
-/// e.g. `sshd` as a match for `ssh`.
+/// process names are not substrings, so `ssh` does not match `sshd` and `code`
+/// does not match `code-oss`.
 #[cfg(target_os = "linux")]
 fn process_name_matches(proc_name: &str, name: &str) -> bool {
     const LINUX_COMM_MAX_LEN: usize = 15;
 
-    proc_name.contains(name)
-        || (proc_name.len() == LINUX_COMM_MAX_LEN && name.starts_with(proc_name))
+    proc_name == name || (proc_name.len() == LINUX_COMM_MAX_LEN && name.starts_with(proc_name))
 }
 
 #[cfg(not(target_os = "linux"))]
 fn process_name_matches(proc_name: &str, name: &str) -> bool {
-    proc_name.contains(name)
+    proc_name == name
 }
 
 #[cfg(target_os = "linux")]

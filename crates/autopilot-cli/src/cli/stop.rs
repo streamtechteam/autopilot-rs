@@ -16,8 +16,13 @@ pub fn stop(quiet: bool) -> Result<(), std::io::Error> {
     let _ = stream.set_read_timeout(Some(std::time::Duration::from_secs(2)));
     let _ = stream.set_write_timeout(Some(std::time::Duration::from_secs(2)));
 
+    let authorization = autopilot_core_fs::auth::read_api_token()
+        .ok()
+        .flatten()
+        .map(|token| format!("Authorization: Bearer {token}\r\n"))
+        .unwrap_or_default();
     let request = format!(
-        "POST /shutdown HTTP/1.1\r\nHost: {address}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+        "POST /shutdown HTTP/1.1\r\nHost: {address}\r\n{authorization}Content-Length: 0\r\nConnection: close\r\n\r\n"
     );
 
     if stream.write_all(request.as_bytes()).is_err() {

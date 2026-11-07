@@ -1,6 +1,13 @@
 use super::*;
 
 #[test]
+fn rejects_cron_expressions_the_scheduler_cannot_parse() {
+    assert!(validate_cron_expression("*/5 * * * * *").is_ok());
+    assert!(validate_cron_expression("* * * * *").is_err());
+    assert!(validate_cron_expression("not a cron").is_err());
+}
+
+#[test]
 fn parses_local_date_and_time() {
     let scheme = DateTimeScheme {
         date: "2030/01/02".to_string(),

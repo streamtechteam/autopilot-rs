@@ -347,15 +347,24 @@ jobs:
     permissions:
       contents: write
 
+    env:
+      TAG_NAME: ${{ inputs.tag_name }}
+      RELEASE_NAME: ${{ inputs.release_name }}
+      RELEASE_NOTES: ${{ inputs.release_notes }}
+      PRERELEASE: ${{ inputs.prerelease }}
+      DRAFT: ${{ inputs.draft }}
+
     steps:
       - name: Validate tag name
         run: |
-          TAG="${{ inputs.tag_name }}"
-          if [ -z "$TAG" ]; then
+          if [ -z "$TAG_NAME" ]; then
             echo "Error: tag_name is required when creating a release"
             exit 1
           fi
-          echo "TAG_NAME=$TAG" >> $GITHUB_ENV
+          if ! [[ "$TAG_NAME" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Error: invalid tag name '$TAG_NAME' (expected vMAJOR.MINOR.PATCH)"
+            exit 1
+          fi
 
       - uses: actions/checkout@v4
         with:
@@ -370,43 +379,45 @@ jobs:
       - name: Generate version info
         id: version
         run: |
-          TAG="${{ inputs.tag_name }}"
           # Remove 'v' prefix if present for version number
-          VERSION="${TAG#v}"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          VERSION="${TAG_NAME#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
 
       - name: Prepare release notes
         id: notes
         run: |
-          if [ -n "${{ inputs.release_notes }}" ]; then
-            # Use custom release notes
-            echo "body<<EOF" >> $GITHUB_OUTPUT
-            echo "${{ inputs.release_notes }}" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          else
-            # Generate release notes from recent commits
-            echo "body<<EOF" >> $GITHUB_OUTPUT
-            echo "## Release ${{ steps.version.outputs.version }}" >> $GITHUB_OUTPUT
-            echo "" >> $GITHUB_OUTPUT
-            echo "**Release Date:** ${{ steps.version.outputs.date }}" >> $GITHUB_OUTPUT
-            echo "" >> $GITHUB_OUTPUT
-            echo "### What's Changed" >> $GITHUB_OUTPUT
-            echo "" >> $GITHUB_OUTPUT
-            git log --pretty=format:"- %s (%h)" HEAD~10..HEAD 2>/dev/null || echo "- See commit history for changes"
-            echo "" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          fi
+          DELIMITER="EOF_$(date +%s%N)_${RANDOM}${RANDOM}"
+          VERSION="${TAG_NAME#v}"
+          RELEASE_DATE="$(date +'%Y-%m-%d')"
+
+          {
+            echo "body<<$DELIMITER"
+            if [ -n "$RELEASE_NOTES" ]; then
+              # Treat custom notes as literal text; never evaluate them.
+              printf '%s\n' "$RELEASE_NOTES"
+            else
+              echo "## Release $VERSION"
+              echo ""
+              echo "**Release Date:** $RELEASE_DATE"
+              echo ""
+              echo "### What's Changed"
+              echo ""
+              git log --pretty=format:"- %s (%h)" HEAD~10..HEAD 2>/dev/null || true
+              echo ""
+            fi
+            echo "$DELIMITER"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Display release info
         run: |
           echo "========================================="
           echo "Creating Release with the following info:"
           echo "========================================="
-          echo "Tag: ${{ inputs.tag_name }}"
-          echo "Name: ${{ inputs.release_name || format('Release {0}', inputs.tag_name) }}"
-          echo "Pre-release: ${{ inputs.prerelease }}"
-          echo "Draft: ${{ inputs.draft }}"
+          echo "Tag: $TAG_NAME"
+          echo "Name: ${RELEASE_NAME:-Release $TAG_NAME}"
+          echo "Pre-release: $PRERELEASE"
+          echo "Draft: $DRAFT"
           echo "========================================="
           echo ""
           echo "Assets to be uploaded:"
@@ -428,12 +439,14 @@ jobs:
 
       - name: Release Summary
         run: |
-          echo "## ✅ Release Created Successfully!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Tag:** ${{ inputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Name:** ${{ inputs.release_name || format('Release {0}', inputs.tag_name) }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Pre-release:** ${{ inputs.prerelease }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Draft:** ${{ inputs.draft }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Uploaded Assets" >> $GITHUB_STEP_SUMMARY
-          ls -la release/ >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## ✅ Release Created Successfully!"
+            echo ""
+            echo "**Tag:** $TAG_NAME"
+            echo "**Name:** ${RELEASE_NAME:-Release $TAG_NAME}"
+            echo "**Pre-release:** $PRERELEASE"
+            echo "**Draft:** $DRAFT"
+            echo ""
+            echo "### Uploaded Assets"
+            ls -la release/
+          } >> "$GITHUB_STEP_SUMMARY"

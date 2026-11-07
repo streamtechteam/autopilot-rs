@@ -40,6 +40,7 @@ struct Daemon {
     child: Child,
     port: u16,
     dir: PathBuf,
+    token: String,
 }
 
 impl Daemon {
@@ -60,6 +61,9 @@ impl Daemon {
             .arg(&dir)
             .args(["serve", "--api"])
             .env("AUTOPILOT_PORT", port.to_string())
+            .env_remove("AUTOPILOT_API_TOKEN")
+            .env_remove("AUTOPILOT_HOST")
+            .env_remove("AUTOPILOT_ALLOW_REMOTE")
             .env("AUTOPILOT_E2E_VAR", "expected")
             .stdin(Stdio::null())
             .stdout(Stdio::null())
@@ -67,8 +71,19 @@ impl Daemon {
             .spawn()
             .expect("spawn autopilot");
 
-        let daemon = Self { child, port, dir };
+        let mut daemon = Self {
+            child,
+            port,
+            dir,
+            token: String::new(),
+        };
+        // /health is unauthenticated, so wait for the server first and then
+        // read the token the daemon writes before binding.
         daemon.wait_healthy();
+        daemon.token = fs::read_to_string(daemon.dir.join("api-token"))
+            .expect("read generated API token")
+            .trim()
+            .to_string();
         daemon
     }
 
@@ -93,7 +108,9 @@ impl Daemon {
             .map(|value| serde_json::to_string(value).unwrap())
             .unwrap_or_default();
         let request = format!(
-            "{method} {path} HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{payload}",
+            "{method} {path} HTTP/1.1\r\nHost: 127.0.0.1:{}\r\nAuthorization: Bearer {}\r\nConnection: close\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{payload}",
+            self.port,
+            self.token,
             payload.len()
         );
 
@@ -475,25 +492,11 @@ fn task_modes_and_custom_schedules_work() {
                 "tasks": []
             }),
         ),
-        (
-            "invalid_weekly.jsonc",
-            json!({
-                "id": "job_invalid_weekly",
-                "name": "invalid weekly",
-                "when": {
-                    "type": "weekly",
-                    "trigger": {"time": "23:59", "weekdays": 5}
-                },
-                "conditions": [],
-                "tasks": []
-            }),
-        ),
     ];
 
     let mut daemon = Daemon::start(&jobs);
     let startup = daemon.jobs();
     assert_eq!(startup.len(), 3);
-    assert!(!startup.iter().any(|job| job["id"] == "job_invalid_weekly"));
 
     assert_eq!(daemon.post("/start", None).0, 200);
     daemon.wait_for_jobs(&[
@@ -524,6 +527,34 @@ fn api_crud_reload_and_status_work() {
 
     assert_eq!(daemon.get("/jobs/missing").0, 404);
     assert!(matches!(daemon.post("/jobs", Some(json!({}))).0, 400..=499));
+    assert_eq!(
+        daemon
+            .post(
+                "/jobs",
+                Some(json!({
+                    "id": "ignored",
+                    "conditions": [],
+                    "tasks": [],
+                    "check_interval": "0"
+                }))
+            )
+            .0,
+        400
+    );
+    assert_eq!(
+        daemon
+            .post(
+                "/jobs",
+                Some(json!({
+                    "id": "ignored",
+                    "conditions": [],
+                    "tasks": [],
+                    "when": {"type": "cron", "trigger": "* * * * *"}
+                }))
+            )
+            .0,
+        400
+    );
 
     let created = json!({
         "id": "ignored",
@@ -573,16 +604,83 @@ fn api_crud_reload_and_status_work() {
 }
 
 #[test]
-fn invalid_jobs_are_skipped() {
-    let daemon = Daemon::start(&[
-        ("good.jsonc", job("job_good", vec![], vec![])),
-        ("bad.jsonc", Value::Null),
-    ]);
-    let jobs = daemon.jobs();
+fn invalid_jobs_prevent_startup_with_the_file_path() {
+    let dir = unique_dir();
+    fs::create_dir_all(dir.join("jobs")).unwrap();
+    fs::write(
+        dir.join("jobs/good.jsonc"),
+        serde_json::to_vec(&job("job_good", vec![], vec![])).unwrap(),
+    )
+    .unwrap();
+    fs::write(dir.join("jobs/bad.jsonc"), "not json").unwrap();
 
-    assert_eq!(jobs.len(), 1);
-    assert_eq!(jobs[0]["id"], "job_good");
-    assert_eq!(jobs[0]["status"], "Unknown");
+    let output = Command::new(env!("CARGO_BIN_EXE_autopilot-rs"))
+        .arg("--config-path")
+        .arg(&dir)
+        .args(["serve", "--api"])
+        .env("AUTOPILOT_PORT", free_port().to_string())
+        .env_remove("AUTOPILOT_API_TOKEN")
+        .env_remove("AUTOPILOT_HOST")
+        .env_remove("AUTOPILOT_ALLOW_REMOTE")
+        .stdin(Stdio::null())
+        .output()
+        .expect("run autopilot");
+
+    assert!(!output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let output_text = format!("{stdout}{stderr}");
+    assert!(
+        output_text.contains("bad.jsonc"),
+        "startup error did not mention the file: {output_text}"
+    );
+
+    fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
+fn signals_reload_and_shut_down_cleanly() {
+    fn signal(child: &Child, name: &str) {
+        let status = Command::new("kill")
+            .arg(name)
+            .arg(child.id().to_string())
+            .status()
+            .expect("run kill");
+        assert!(status.success(), "kill {name} failed");
+    }
+
+    let mut daemon = Daemon::start(&[("signal.jsonc", job("job_signal", vec![], vec![]))]);
+
+    // Repeated SIGHUP reloads must not terminate the daemon.
+    for _ in 0..2 {
+        signal(&daemon.child, "-HUP");
+        sleep(Duration::from_millis(200));
+    }
+    assert_eq!(daemon.get("/health").0, 200);
+    assert_eq!(daemon.jobs().len(), 1);
+
+    signal(&daemon.child, "-TERM");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let status = loop {
+        if let Some(status) = daemon.child.try_wait().unwrap() {
+            break status;
+        }
+        assert!(Instant::now() < deadline, "daemon did not exit on SIGTERM");
+        sleep(Duration::from_millis(25));
+    };
+    assert!(status.success(), "SIGTERM exit status: {status}");
+
+    let mut daemon = Daemon::start(&[("signal_int.jsonc", job("job_signal_int", vec![], vec![]))]);
+    signal(&daemon.child, "-INT");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let status = loop {
+        if let Some(status) = daemon.child.try_wait().unwrap() {
+            break status;
+        }
+        assert!(Instant::now() < deadline, "daemon did not exit on SIGINT");
+        sleep(Duration::from_millis(25));
+    };
+    assert!(status.success(), "SIGINT exit status: {status}");
 }
 
 #[test]
@@ -600,6 +698,8 @@ fn cli_status_and_stop_work() {
     assert!(String::from_utf8_lossy(&status.stdout).contains("is running"));
 
     let stop = Command::new(binary)
+        .arg("--config-path")
+        .arg(&daemon.dir)
         .arg("stop")
         .env("AUTOPILOT_PORT", &port)
         .output()

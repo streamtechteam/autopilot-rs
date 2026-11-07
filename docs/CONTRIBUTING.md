@@ -125,7 +125,7 @@ refactor(api): split handlers into modules
 
 ## Security-sensitive changes
 
-The API is currently unauthenticated. Do not add documentation or examples that encourage exposing it to untrusted networks without an authenticating proxy or tunnel. If you are changing network binding, authentication, command execution, or input validation, describe the security impact in the PR.
+The API requires a bearer token but has no TLS or per-user authorization. Do not add documentation or examples that encourage exposing it to untrusted networks without a TLS-terminating proxy or tunnel. If you are changing network binding, authentication, command execution, or input validation, describe the security impact in the PR.
 
 ## License
 

@@ -36,36 +36,30 @@ impl DiskSpaceCondition {
 impl Condition for DiskSpaceCondition {
     fn check(&self) -> bool {
         let disks = Disks::new_with_refreshed_list();
-        for disk in &disks {
+        let Some(disk) = disks.iter().find(|disk| {
             let disk_path = disk.mount_point().to_string_lossy();
+            mount_matches(&disk_path, &self.path)
+        }) else {
+            return false;
+        };
 
-            // Check if this disk matches our target path
-            if disk_path
-                .to_lowercase()
-                .starts_with(&self.path.to_lowercase())
-            {
-                let available_gb = disk.available_space() as f64 / (1024.0 * 1024.0 * 1024.0);
+        let available_gb = disk.available_space() as f64 / (1024.0 * 1024.0 * 1024.0);
 
-                // Check minimum free space
-                if available_gb < self.min_free_gb {
-                    return false;
-                }
+        // Check minimum free space
+        if available_gb < self.min_free_gb {
+            return false;
+        }
 
-                // Check maximum used space if specified
-                if let Some(max_used) = self.max_used_gb {
-                    let total_gb = disk.total_space() as f64 / (1024.0 * 1024.0 * 1024.0);
-                    let used_gb = total_gb - available_gb;
-                    if used_gb > max_used {
-                        return false;
-                    }
-                }
-
-                return true;
+        // Check maximum used space if specified
+        if let Some(max_used) = self.max_used_gb {
+            let total_gb = disk.total_space() as f64 / (1024.0 * 1024.0 * 1024.0);
+            let used_gb = total_gb - available_gb;
+            if used_gb > max_used {
+                return false;
             }
         }
 
-        // If we get here, the specified path wasn't found
-        false
+        true
     }
 
     fn clone_box(&self) -> Box<dyn Condition> {
@@ -75,6 +69,19 @@ impl Condition for DiskSpaceCondition {
     fn name(&self) -> &str {
         "Disk Space"
     }
+}
+
+/// Compare mount points exactly, ignoring a trailing separator.
+///
+/// Substring matching is intentionally avoided: `/home` must not match
+/// `/home2`, and `/` must only match the root filesystem.
+fn mount_matches(mount_point: &str, path: &str) -> bool {
+    fn normalize(value: &str) -> &str {
+        let trimmed = value.trim_end_matches(['/', '\\']);
+        if trimmed.is_empty() { value } else { trimmed }
+    }
+
+    !mount_point.is_empty() && !path.is_empty() && normalize(mount_point) == normalize(path)
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, JsonSchema)]

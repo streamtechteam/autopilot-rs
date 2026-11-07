@@ -1,4 +1,5 @@
 use std::env;
+use std::path::Path;
 
 use log::error;
 use schemars::JsonSchema;
@@ -35,12 +36,41 @@ impl Condition for DesktopEnvCondition {
 
 pub fn sync_condition(target: &str) -> bool {
     match get_current_de() {
-        Some(current_de) => current_de.to_lowercase() == target.to_lowercase(),
+        Some(current_de) => desktop_name_matches(&current_de, target),
         None => {
             error!("Failed to detect Desktop Environment");
             false
         }
     }
+}
+
+/// Match a reported desktop environment against a configured target.
+///
+/// `XDG_CURRENT_DESKTOP` can be a colon- or semicolon-separated list such as
+/// `ubuntu:GNOME`, and `DESKTOP_SESSION` can be a path such as
+/// `/usr/share/xsessions/gnome`. Both forms are handled.
+fn desktop_name_matches(current: &str, target: &str) -> bool {
+    let target = target.trim();
+    let current = current.trim();
+    if target.is_empty() || current.is_empty() {
+        return false;
+    }
+
+    if current.eq_ignore_ascii_case(target) {
+        return true;
+    }
+
+    if current
+        .split([':', ';'])
+        .any(|part| part.trim().eq_ignore_ascii_case(target))
+    {
+        return true;
+    }
+
+    Path::new(current)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.eq_ignore_ascii_case(target))
 }
 
 pub async fn async_condition(target: &str) -> bool {

@@ -111,7 +111,7 @@ fn file_form_shows_only_the_matching_threshold() {
     assert!(schema.field("time_threshold").unwrap().is_visible(&values));
     assert!(!schema.field("size_threshold").unwrap().is_visible(&values));
 
-    values.insert("check_type", json!("size_changed"));
+    values.insert("check_type", json!("min_size"));
     assert!(!schema.field("time_threshold").unwrap().is_visible(&values));
     assert!(schema.field("size_threshold").unwrap().is_visible(&values));
 }

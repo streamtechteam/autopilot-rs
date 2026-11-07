@@ -19,7 +19,9 @@ autopilot-rs --config-path /tmp/autopilot-dev serve
 
 Files may use `.json` or `.jsonc`; comments and trailing commas are accepted by the JSONC parser.
 
-The loader currently **skips job files that fail to parse** and **rejects duplicate job IDs**. A duplicate ID prevents the job set from loading, so keep IDs unique.
+The loader **rejects job files that fail to parse** and reports the file path, and it **rejects duplicate job IDs**. Either error prevents the job set from loading, so fix the reported file and keep IDs unique.
+
+Job writes go to a temporary file in the same directory and are renamed into place, so an interrupted write leaves the previous file intact.
 
 ## Minimal job
 
@@ -42,7 +44,7 @@ The loader currently **skips job files that fail to parse** and **rejects duplic
 | `name` | string | no | Display name. Defaults to `job_<id>`. |
 | `description` | string | no | Free-form description. Defaults to a single space. |
 | `when` | schedule object | no | When to run. Omit to check conditions when jobs start. |
-| `check_interval` | string | no | Milliseconds between retries for an unscheduled job whose conditions are not yet satisfied. Invalid values fall back to 1000 ms. |
+| `check_interval` | string | no | Whole number of milliseconds, at least 100, between retries for an unscheduled job whose conditions are not yet satisfied. Invalid values are rejected when the job is created or loaded. |
 | `conditions` | array | yes | Conditions that must all pass. May be empty. |
 | `tasks` | array | yes | Tasks to run. May be empty. |
 | `task_mode` | string | no | How tasks run: `concurrent` (default), `sequential`, or `sequential_stop_on_failure`. |
@@ -71,9 +73,9 @@ A schedule uses a `type` and a `trigger`:
 | `yearly` | `{ "time": "HH:MM", "month": 1, "day": 1 }` | Run on a month/day every year. `month` and `day` are optional and default to January 1. |
 | `cron` | `"0 0 8 * * *"` | Run on a cron schedule. |
 
-The `weekday`, `day`, and `month` fields are validated when the scheduler is built. Out-of-range values are rejected. A monthly or yearly day that does not exist in a given month is skipped by the cron scheduler.
+The `weekday`, `day`, and `month` fields are validated when the job is created or loaded. Out-of-range values are rejected. A monthly or yearly day that does not exist in a given month is skipped by the cron scheduler.
 
-Cron expressions are passed to `tokio-cron-scheduler`; use a seconds-first expression with six fields unless your expression intentionally includes a year field.
+Cron expressions are parsed by `tokio-cron-scheduler` when the job is created or loaded. Use a seconds-first expression with six fields unless your expression intentionally includes a year field; a five-field expression is rejected.
 
 If `when` is omitted, the job is an **immediate job**: the runtime checks its conditions once when jobs start — at daemon startup, or on `POST /start` after `serve --api`. If they fail and `check_interval` is set, it retries every interval until they pass. Without `check_interval`, a failed immediate job becomes `Unsatisfied` and stops.
 

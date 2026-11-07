@@ -64,7 +64,7 @@ impl<T> JsonFileStore<T> {
                     FsError::Init(format!("Failed to read storage directory entry: {error}"))
                 })?
                 .path();
-            if path.is_file() {
+            if path.is_file() && !is_temporary_path(&path) {
                 paths.push(path);
             }
         }
@@ -77,8 +77,9 @@ impl<T> JsonFileStore<T> {
     where
         T: DeserializeOwned,
     {
-        let content = fs::read_to_string(path)?;
-        parse_record(&content)
+        let path = path.as_ref();
+        let content = fs::read_to_string(path).map_err(|error| invalid_file(path, error))?;
+        parse_record(&content).map_err(|error| invalid_file(path, error))
     }
 
     pub fn write_path(&self, path: impl AsRef<Path>, record: &T) -> Result<()>
@@ -88,8 +89,7 @@ impl<T> JsonFileStore<T> {
         let path = path.as_ref();
         self.ensure_member_path(path)?;
         let content = serde_json::to_string_pretty(record)?;
-        fs::write(path, content)?;
-        Ok(())
+        write_atomic(path, &content)
     }
 
     pub fn remove_path(&self, path: impl AsRef<Path>) -> Result<()> {
@@ -127,9 +127,8 @@ where
         let mut records = Vec::new();
 
         for path in self.file_paths()? {
-            if let Ok(record) = self.read_path(&path) {
-                records.push((path, record));
-            }
+            let record = self.read_path(&path)?;
+            records.push((path, record));
         }
 
         records.sort_by(|(left_path, left), (right_path, right)| {
@@ -169,7 +168,7 @@ where
         };
 
         let content = serde_json::to_string_pretty(record)?;
-        fs::write(&path, content)?;
+        write_atomic(&path, &content)?;
         Ok(path)
     }
 
@@ -211,6 +210,54 @@ fn parse_record<T: DeserializeOwned>(content: &str) -> Result<T> {
     serde_json::from_str(content)
         .or_else(|_| serde_json::from_str(&parse(content)))
         .map_err(FsError::Json)
+}
+
+fn invalid_file(path: &Path, error: impl std::fmt::Display) -> FsError {
+    FsError::InvalidFile {
+        path: path.display().to_string(),
+        message: error.to_string(),
+    }
+}
+
+fn is_temporary_path(path: &Path) -> bool {
+    path.extension().and_then(|extension| extension.to_str()) == Some("tmp")
+}
+
+/// Write to a temporary file in the same directory, then rename it over the
+/// destination so readers see either the old or the new contents.
+fn write_atomic(path: &Path, content: &str) -> Result<()> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| FsError::InvalidId(path.display().to_string()))?;
+    let file_name = path
+        .file_name()
+        .ok_or_else(|| FsError::InvalidId(path.display().to_string()))?
+        .to_string_lossy();
+    let unique = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or_default();
+    let temp_path = parent.join(format!(".{file_name}.{}-{unique}.tmp", std::process::id()));
+
+    let result = (|| {
+        use std::io::Write;
+
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temp_path)?;
+        file.write_all(content.as_bytes())?;
+        file.sync_all()?;
+        drop(file);
+        fs::rename(&temp_path, path)?;
+        Ok(())
+    })();
+
+    if result.is_err() {
+        let _ = fs::remove_file(&temp_path);
+    }
+
+    result
 }
 
 fn validate_id(id: &str) -> Result<()> {

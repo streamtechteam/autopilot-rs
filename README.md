@@ -126,7 +126,7 @@ This sends a shutdown request to the running daemon and exits the process.
 
 ## HTTP API quick start
 
-> **Security warning:** the API has no authentication or TLS. It binds to loopback by default. Do not expose it to an untrusted network. See [docs/API.md](docs/API.md) for the full security guidance.
+> **Security warning:** the API requires a bearer token but has no TLS or per-user authorization. It binds to loopback by default; non-loopback binds require an explicit opt-in. Do not expose it to an untrusted network. See [docs/API.md](docs/API.md) for the full security guidance.
 
 ```bash
 # Start the API without auto-starting jobs
@@ -165,7 +165,7 @@ A job requires an `id`, a `conditions` array, and a `tasks` array. A minimal job
 | `name`           | no       | Display name. Defaults to `job_<id>`.                                  |
 | `description`    | no       | Human-readable description.                                            |
 | `when`           | no       | Schedule. Omit to check conditions when jobs start.                    |
-| `check_interval` | no       | String of milliseconds between condition retries for unscheduled jobs. |
+| `check_interval` | no       | String of milliseconds (at least 100) between condition retries for unscheduled jobs. |
 | `conditions`     | yes      | Array of conditions. May be empty. All must pass.                      |
 | `tasks`          | yes      | Array of `{ "command": "..." }` objects. May be empty.                 |
 | `task_mode`      | no       | `concurrent` (default), `sequential`, or `sequential_stop_on_failure`. |
@@ -227,6 +227,7 @@ The configuration root defaults to:
 ```text
 ~/.config/autopilot/
 ├── autopilot.jsonc
+├── api-token        # generated API bearer token
 ├── jobs/
 │   └── *.jsonc
 └── logs/
@@ -245,13 +246,15 @@ The API listens on loopback by default. These environment variables control the 
 | Variable         | Default     | Description                  |
 | ---------------- | ----------- | ---------------------------- |
 | `AUTOPILOT_HOST` | `127.0.0.1` | Host or IP the API binds to. |
-| `AUTOPILOT_PORT` | `7883`      | Port the API listens on.     |
+| `AUTOPILOT_PORT` | `7883` | Port the API listens on. |
+| `AUTOPILOT_API_TOKEN` | generated | Bearer token for API requests. Overrides `<config-root>/api-token`. |
+| `AUTOPILOT_ALLOW_REMOTE` | unset | Must be `1` to bind to a non-loopback host. |
 
 ```bash
 AUTOPILOT_PORT=9000 autopilot-rs serve
 ```
 
-Only change `AUTOPILOT_HOST` when you intentionally want remote access. See [API security](docs/API.md#security).
+The daemon writes a random token to `<config-root>/api-token` with owner-only permissions, and the CLI reads it automatically. Only change `AUTOPILOT_HOST` when you intentionally want remote access, and set `AUTOPILOT_ALLOW_REMOTE=1` plus a TLS reverse proxy in that case. See [API security](docs/API.md#security).
 
 ## Examples
 
@@ -332,7 +335,7 @@ More examples live in [`examples/`](examples/) and job templates in [`templates/
 
 ### A job does not appear in `list`
 
-`list` reads job files from disk. Check that the file is in `<config-root>/jobs/`, that it is valid JSON/JSONC, and that its job ID is unique. Invalid files are skipped by the loader; duplicate IDs prevent jobs from loading.
+`list` reads job files from disk. Check that the file is in `<config-root>/jobs/`, that it is valid JSON/JSONC, and that its job ID is unique. A file that fails to parse is reported with its path and prevents jobs from loading; duplicate IDs do the same.
 
 ### A condition is not behaving as expected
 
