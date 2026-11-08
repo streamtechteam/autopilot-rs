@@ -93,17 +93,17 @@ Setting `AUTOPILOT_HOST=0.0.0.0` binds all interfaces, but the same value is als
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/health` | Health check used by the CLI. |
-| `GET` | `/status` | Live running flag and job count. |
+| `GET` | `/status` | Live running flag, runtime job count, and pending-reload flag. |
 | `POST` | `/start` | Load jobs from disk, initialize status, and start jobs. |
 | `POST` | `/stop` | Stop jobs. |
 | `POST` | `/reload` | Reload jobs from disk and preserve the previous running state. |
 | `POST` | `/restart` | Reload jobs from disk and start them. |
 | `POST` | `/shutdown` | Stop jobs and shut down the daemon. |
 | `GET` | `/jobs` | List jobs from disk with live status. |
-| `POST` | `/jobs` | Create a job file. |
+| `POST` | `/jobs` | Create a job file. Reload required to apply it. |
 | `GET` | `/jobs/{id}` | Get one job by ID. |
-| `PUT` | `/jobs/{id}` | Update a job file. |
-| `DELETE` | `/jobs/{id}` | Delete a job file. |
+| `PUT` | `/jobs/{id}` | Update a job file. Reload required to apply it. |
+| `DELETE` | `/jobs/{id}` | Delete a job file. Reload required to apply it. |
 
 The API is not versioned and has no pagination; `GET /jobs` returns all configured jobs.
 
@@ -133,11 +133,14 @@ curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:7883/status
 ```json
 {
   "running": true,
-  "job_count": 3
+  "job_count": 3,
+  "reload_required": false
 }
 ```
 
-`job_count` is the number of jobs currently loaded in the runtime, not the number of files on disk. `running` reflects whether the job runtime has been started.
+`job_count` is the number of jobs currently loaded in the runtime, not the number of files on disk. `running` reflects whether the job runtime has been started. `reload_required` is `true` after a successful API job create, update, or delete until `POST /start`, `POST /reload`, or `POST /restart` applies the files to the runtime.
+
+While `reload_required` is `true`, `job_count` and job status can describe the old runtime rather than the current files. Direct file edits are not detected, so the flag does not change for them.
 
 ## Lifecycle
 
@@ -156,7 +159,7 @@ curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7883/start
 }
 ```
 
-Returns `409 Conflict` if jobs are already started. Returns `500` if loading jobs or initializing status fails.
+Returns `409 Conflict` if jobs are already started. Returns `500` if loading jobs or initializing status fails. On success, this clears `reload_required`.
 
 ### `POST /stop`
 
@@ -190,7 +193,7 @@ curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7883/reload
 }
 ```
 
-**Current behavior:** a reload failure still returns HTTP `200` with `"success": false` and a message. Clients must inspect the `success` field rather than relying only on the status code.
+A reload failure returns HTTP `500` with `"success": false` and a message describing the error. A successful reload clears `reload_required`.
 
 ### `POST /restart`
 
@@ -207,7 +210,7 @@ curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7883/restart
 }
 ```
 
-**Current behavior:** a restart failure also returns HTTP `200` with `"success": false`. Inspect `success`.
+A restart failure returns HTTP `500` with `"success": false` and a message describing the error. A successful restart clears `reload_required`.
 
 ### `POST /shutdown`
 
@@ -248,7 +251,7 @@ Most job endpoints return a `JobResponse` or an array of them:
 | `loaded` | Live-runtime hint. For `GET /jobs` it is true when the status manager has an entry for the job; for `GET /jobs/{id}` it reflects the runtime job's loaded flag. |
 | `status` | Debug representation of the live status, or `"None"` when no live status exists. Examples: `Unknown`, `Running`, `Completed`, `Failed`, `Unsatisfied`, `Scheduled`. |
 
-Job files are read from `<config-root>/jobs/`. The list is the set of valid files currently on disk. Invalid files are skipped by the loader; duplicate IDs prevent the job set from loading.
+Job files are read from `<config-root>/jobs/`. Invalid files are reported with their path and prevent the job set from loading; duplicate IDs also prevent loading.
 
 ## Listing jobs
 
@@ -300,7 +303,8 @@ curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7883/jobs \
 {
   "success": true,
   "message": "Job created",
-  "path": "/home/user/.config/autopilot/jobs/job_1234567890_0.jsonc"
+  "path": "/home/user/.config/autopilot/jobs/job_1234567890_0.jsonc",
+  "reload_required": true
 }
 ```
 
@@ -309,7 +313,9 @@ Notes:
 - The body uses the same schema as a job file. `conditions` and `tasks` are required arrays.
 - The server generates the job ID. The `id` field is required by the schema but is ignored by this endpoint.
 - The response `path` is the filesystem path where the job was written. It is absolute for the default configuration root, but may be relative if a relative `--config-path` was used.
-- `400` is returned if the job cannot be written. Malformed JSON is rejected by the request extractor with `400`/`422` depending on the validation failure. Invalid `check_interval` values and cron expressions are rejected with `400`.
+- The endpoint only writes the file. It does not change the live runtime. Call `POST /reload` or `POST /restart` to apply the new job; `reload_required` becomes `true` until then.
+- `400` is returned for an invalid job definition. Malformed JSON is rejected by the request extractor with `400`/`422` depending on the validation failure. Invalid `check_interval` values and cron expressions are rejected with `400`.
+- `500` is returned for filesystem failures.
 
 ## Updating a job
 
@@ -331,13 +337,16 @@ curl -H "Authorization: Bearer $TOKEN" -X PUT http://127.0.0.1:7883/jobs/hello \
 {
   "success": true,
   "message": "Job updated",
-  "path": "/home/user/.config/autopilot/jobs/hello.jsonc"
+  "path": "/home/user/.config/autopilot/jobs/hello.jsonc",
+  "reload_required": true
 }
 ```
 
 The path ID selects the job; the body `id` is ignored. The body must include `conditions` and `tasks`. `name` and `description` are optional and keep their existing values when omitted. `when` and `check_interval` are replaced from the body, so omitting them clears a schedule/retry interval. `task_mode` is optional; when omitted on update, the existing task mode is preserved.
 
-Returns `404` if the job does not exist. Returns `400` if the update is invalid.
+Updating a job only writes the file. It does not change the live runtime. Call `POST /reload` or `POST /restart` to apply the change; `reload_required` becomes `true` until then.
+
+Returns `404` if the job does not exist. Returns `400` if the update is invalid. Returns `500` for filesystem failures.
 
 ## Deleting a job
 
@@ -350,23 +359,29 @@ curl -H "Authorization: Bearer $TOKEN" -X DELETE http://127.0.0.1:7883/jobs/hell
 ```json
 {
   "success": true,
-  "message": "Job deleted"
+  "message": "Job deleted",
+  "reload_required": true
 }
 ```
 
-Returns `404` if the ID does not match a job file. Returns `400` for an invalid ID.
+Deleting a job only removes the file. It does not change the live runtime. Call `POST /reload` or `POST /restart` to apply the deletion; `reload_required` becomes `true` until then.
+
+Returns `404` if the ID does not match a job file. Returns `400` for an invalid ID. Returns `500` for filesystem failures.
 
 ## Lifecycle and reload behavior
 
-The API's job CRUD operations write files on disk. They do **not** add, remove, or update jobs that are already loaded in the running runtime.
+The API's job CRUD operations write job files on disk. They do not modify the live runtime:
 
-After creating, updating, or deleting jobs, apply the change with:
+- Creating, updating, or deleting a job sets `reload_required` to `true`.
+- `POST /reload`, `POST /restart`, and `POST /start` load the files from disk and clear `reload_required` on success.
+- `POST /stop` only stops execution; it does not apply pending file changes.
+- A failed reload or restart leaves `reload_required` set.
+
+This keeps a CRUD request from interrupting unrelated running tasks. It also means the daemon can serve stale runtime state until the reload is applied. Apply API or direct file changes explicitly:
 
 ```bash
 curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7883/reload
 ```
-
-or:
 
 ```bash
 curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7883/restart
@@ -377,14 +392,14 @@ curl -H "Authorization: Bearer $TOKEN" -X POST http://127.0.0.1:7883/restart
 - `start` loads jobs from disk before starting them.
 - `stop` stops job execution but leaves the API running.
 
-Deleting or updating a job that is currently running does not stop the already-running task. Reload or restart to apply the change.
+A reload restarts the scheduler, so it interrupts tasks that are still running. Plan updates accordingly. Direct file edits are not tracked by `reload_required`; call `POST /reload` or `POST /restart` after editing files outside the API.
 
 ## Error responses
 
 | Status | Meaning |
 | --- | --- |
-| `200` | Request handled. Check `success` for reload/restart operations. |
-| `400` | Invalid request, invalid Host header, or job write failure. |
+| `200` | Request handled successfully. |
+| `400` | Invalid request, invalid Host header, or invalid job definition. |
 | `401` | Missing or invalid bearer token. |
 | `403` | Cross-origin request rejected. |
 | `404` | Job ID not found. |

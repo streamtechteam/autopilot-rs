@@ -63,6 +63,14 @@ impl JobScheme {
             }
         }
 
+        for (index, task) in self.tasks.iter().enumerate() {
+            if task.timeout == Some(0) {
+                return Err(AutoPilotError::InvalidJob(format!(
+                    "tasks[{index}].timeout must be at least 1 second"
+                )));
+            }
+        }
+
         Ok(())
     }
 }

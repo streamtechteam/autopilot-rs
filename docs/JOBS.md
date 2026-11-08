@@ -115,25 +115,27 @@ See the [conditions guide](CONDITIONS.md) for every condition type and field.
 
 ## Tasks
 
-Each task is a shell command:
+Each task is a shell command with an optional timeout:
 
 ```jsonc
 {
   "tasks": [
     { "command": "echo first" },
-    { "command": "echo second" }
+    { "command": "backup.sh", "timeout": 900 }
   ]
 }
 ```
 
 - Unix: commands run with `sh -c`.
 - Windows: commands run with `cmd /C`.
+- `timeout` is optional and measured in seconds. When it expires, the child process is killed and the task fails with a timeout error.
 - `task_mode` controls execution:
   - `concurrent` (default): all tasks start together.
   - `sequential`: tasks run one at a time; a failure is logged and the next task still runs.
   - `sequential_stop_on_failure`: tasks run one at a time and the remaining tasks are skipped after the first failure.
 - A failing task is logged, and the job status becomes `Failed` after tasks finish if any task failed.
 - The task error is still logged.
+- A scheduled job skips a tick if its previous run is still in progress.
 
 Use absolute paths and quote arguments carefully. Commands are passed to a shell, so do not interpolate untrusted input.
 
@@ -155,13 +157,19 @@ The API and status manager use these values:
 
 ## Editing and applying changes
 
-You can edit job files directly, or use the API/CLI. Changes on disk are not applied to the running daemon automatically:
+You can edit job files directly, or use the API/CLI. Neither path changes the live runtime immediately: API CRUD writes or removes files and sets `reload_required`, while direct file edits are not detected. Apply changes with:
 
 ```bash
 curl -X POST http://127.0.0.1:7883/reload
 ```
 
-`reload` preserves whether jobs were running; `restart` stops, reloads, and starts again. See [API lifecycle](API.md#lifecycle-and-reload-behavior).
+or:
+
+```bash
+curl -X POST http://127.0.0.1:7883/restart
+```
+
+`GET /status` reports `reload_required: true` after API CRUD until a successful `reload`, `restart`, or `start`. `reload` preserves whether jobs were running; `restart` stops, reloads, and starts again. See [API lifecycle](API.md#lifecycle-and-reload-behavior).
 
 ## JSON schema
 

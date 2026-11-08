@@ -10,7 +10,7 @@ use autopilot_core::status::JobStatusEnum;
 use autopilot_core::time::When;
 
 use super::{JobUpdateRequest, jobs_create, jobs_delete, jobs_getbyid, jobs_list, jobs_update};
-use crate::handlers::test_support::{config_lock, payload, state_with_jobs};
+use crate::handlers::test_support::{config_lock, job, payload, state_with_jobs};
 
 fn update_payload(name: &str) -> JobUpdateRequest {
     JobUpdateRequest {
@@ -99,15 +99,24 @@ async fn jobs_list_merges_live_statuses() {
 #[tokio::test]
 async fn jobs_create_writes_a_job_file() {
     let _guard = config_lock().await;
-    let response = jobs_create(Json(payload("job_create_spec", "Create Spec")))
-        .await
-        .unwrap()
-        .0;
+    let state = state_with_jobs(vec![]).await;
+    let response = jobs_create(
+        State(state.clone()),
+        Json(payload("job_create_spec", "Create Spec")),
+    )
+    .await
+    .unwrap()
+    .0;
     let path = response["path"].as_str().unwrap();
 
     assert_eq!(response["success"], true);
     assert_eq!(response["message"], "Job created");
+    assert_eq!(response["reload_required"], true);
     assert!(std::path::Path::new(path).exists());
+    let created = autopilot_core::job::read::get(std::path::PathBuf::from(path)).unwrap();
+    let ap = state.auto_pilot.read().await;
+    assert!(!ap.jobs.iter().any(|job| job.id == created.id));
+    assert!(ap.reload_required);
 
     std::fs::remove_file(path).unwrap();
 }
@@ -115,10 +124,11 @@ async fn jobs_create_writes_a_job_file() {
 #[tokio::test]
 async fn jobs_create_persists_task_mode() {
     let _guard = config_lock().await;
+    let state = state_with_jobs(vec![]).await;
     let mut body = payload("job_task_mode_spec", "Task Mode Spec");
     body.task_mode = TaskMode::SequentialStopOnFailure;
 
-    let response = jobs_create(Json(body)).await.unwrap().0;
+    let response = jobs_create(State(state), Json(body)).await.unwrap().0;
     let path = response["path"].as_str().unwrap();
     let job = autopilot_core::job::read::get(std::path::PathBuf::from(path)).unwrap();
 
@@ -130,18 +140,21 @@ async fn jobs_create_persists_task_mode() {
 #[tokio::test]
 async fn jobs_create_rejects_invalid_intervals_and_cron_expressions() {
     let _guard = config_lock().await;
+    let state = state_with_jobs(vec![]).await;
 
     let mut bad_interval = payload("job_bad_interval", "Bad Interval");
     bad_interval.check_interval = Some("0".to_string());
     assert_eq!(
-        jobs_create(Json(bad_interval)).await.unwrap_err(),
+        jobs_create(State(state.clone()), Json(bad_interval))
+            .await
+            .unwrap_err(),
         StatusCode::BAD_REQUEST
     );
 
     let mut bad_cron = payload("job_bad_cron", "Bad Cron");
     bad_cron.when = Some(When::Cron("* * * * *".to_string()));
     assert_eq!(
-        jobs_create(Json(bad_cron)).await.unwrap_err(),
+        jobs_create(State(state), Json(bad_cron)).await.unwrap_err(),
         StatusCode::BAD_REQUEST
     );
 }
@@ -159,19 +172,30 @@ async fn jobs_delete_removes_a_job_file() {
         TaskMode::Concurrent,
     )
     .unwrap();
-    let job = autopilot_core::job::read::get(path.clone()).unwrap();
+    let stored = autopilot_core::job::read::get(path.clone()).unwrap();
+    let state = state_with_jobs(vec![job(&stored.id, &stored.name)]).await;
 
-    let response = jobs_delete(Path(job.id)).await.unwrap().0;
+    let response = jobs_delete(State(state.clone()), Path(stored.id.clone()))
+        .await
+        .unwrap()
+        .0;
     assert_eq!(response["success"], true);
+    assert_eq!(response["reload_required"], true);
     assert!(!path.exists());
+
+    let ap = state.auto_pilot.read().await;
+    assert_eq!(ap.jobs.len(), 1);
+    assert_eq!(ap.jobs[0].id, stored.id);
+    assert!(ap.reload_required);
 }
 
 #[tokio::test]
 async fn jobs_delete_reports_unknown_ids() {
     let _guard = config_lock().await;
+    let state = state_with_jobs(vec![]).await;
 
     assert_eq!(
-        jobs_delete(Path("job_does_not_exist".to_string()))
+        jobs_delete(State(state), Path("job_does_not_exist".to_string()))
             .await
             .unwrap_err(),
         StatusCode::NOT_FOUND
@@ -192,10 +216,10 @@ async fn jobs_update_replaces_an_existing_job() {
     )
     .unwrap();
     let id = autopilot_core::job::read::get(path.clone()).unwrap().id;
-    let state = state_with_jobs(vec![]).await;
+    let state = state_with_jobs(vec![job(&id, "Update Spec")]).await;
 
     let response = jobs_update(
-        State(state),
+        State(state.clone()),
         Path(id.clone()),
         Json(update_payload("Updated Spec")),
     )
@@ -205,8 +229,14 @@ async fn jobs_update_replaces_an_existing_job() {
     let updated_path = response["path"].as_str().unwrap();
 
     assert_eq!(response["success"], true);
+    assert_eq!(response["reload_required"], true);
     assert_eq!(std::path::Path::new(updated_path), path.as_path());
     assert!(path.exists());
+
+    let ap = state.auto_pilot.read().await;
+    assert_eq!(ap.jobs[0].name, "Update Spec");
+    assert!(ap.reload_required);
+    drop(ap);
 
     let updated = autopilot_core::job::read::get(path.clone()).unwrap();
     assert_eq!(updated.id, id);

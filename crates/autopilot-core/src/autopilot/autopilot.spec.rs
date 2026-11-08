@@ -21,6 +21,7 @@ async fn new_creates_an_empty_autopilot_instance() {
     let mut autopilot = AutoPilot::new().await.unwrap();
 
     assert!(!autopilot.started);
+    assert!(!autopilot.reload_required);
     assert!(autopilot.jobs.is_empty());
     assert!(autopilot.job_handles.is_empty());
     assert!(autopilot.status_manager.get_all().await.is_empty());
@@ -151,9 +152,11 @@ async fn reload_restarts_running_jobs() {
         }"#,
     )
     .unwrap();
+    autopilot.mark_reload_required();
     autopilot.reload().await.unwrap();
 
     assert!(autopilot.started);
+    assert!(!autopilot.reload_required);
     assert_eq!(autopilot.jobs.len(), 1);
     assert!(autopilot.jobs[0].loaded);
     assert!(!autopilot.job_handles.is_empty());

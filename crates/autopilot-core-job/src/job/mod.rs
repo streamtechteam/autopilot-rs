@@ -57,27 +57,18 @@ impl Job {
     }
 
     pub fn from_scheme(scheme: JobScheme) -> Self {
-        let conditions: Vec<Box<dyn Condition>> = scheme
-            .conditions
-            .into_iter()
-            .map(|condition_scheme| condition_scheme.to_condition())
-            .collect();
-
-        let tasks: Vec<Task> = scheme
-            .tasks
-            .into_iter()
-            .map(|task_scheme| Task::new(task_scheme.command))
-            .collect();
-
-        let when = scheme.when;
         Job {
             id: scheme.id.clone(),
             name: scheme.name.unwrap_or(format!("job_{}", scheme.id)),
             description: scheme.description.unwrap_or(" ".to_string()),
-            when,
+            when: scheme.when,
             check_interval: scheme.check_interval,
-            conditions,
-            tasks,
+            conditions: scheme
+                .conditions
+                .into_iter()
+                .map(|condition_scheme| condition_scheme.to_condition())
+                .collect(),
+            tasks: scheme.tasks,
             task_mode: scheme.task_mode,
             loaded: false,
         }

@@ -24,6 +24,12 @@ use autopilot_core::{
 use super::types::JobResponse;
 use crate::state::AppState;
 
+/// Mark the runtime stale after a successful job file write. The caller must
+/// use `/reload`, `/restart`, or `/start` to apply the change to the runtime.
+async fn mark_reload_required(state: &AppState) {
+    state.auto_pilot.write().await.mark_reload_required();
+}
+
 pub async fn jobs_list(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<JobResponse>>, StatusCode> {
@@ -65,6 +71,7 @@ pub async fn jobs_list(
 
 /// POST /jobs - Create a new job
 pub async fn jobs_create(
+    State(state): State<AppState>,
     Json(payload): Json<JobScheme>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     let JobScheme {
@@ -94,16 +101,22 @@ pub async fn jobs_create(
 
     match result {
         Ok(path) => {
+            mark_reload_required(&state).await;
             info!("Created job via API: {:?}", path);
             Ok(Json(serde_json::json!({
                 "success": true,
                 "message": "Job created",
-                "path": path.to_string_lossy()
+                "path": path.to_string_lossy(),
+                "reload_required": true
             })))
         }
-        Err(e) => {
-            info!("Failed to create job: {}", e);
+        Err(AutoPilotError::InvalidJob(message)) => {
+            info!("Invalid create request: {message}");
             Err(StatusCode::BAD_REQUEST)
+        }
+        Err(error) => {
+            warn!("Failed to create job: {error}");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
 }
@@ -148,17 +161,23 @@ pub async fn jobs_getbyid(
 }
 
 /// DELETE /jobs/{id} - Delete job by ID
-pub async fn jobs_delete(Path(id): Path<String>) -> Result<Json<serde_json::Value>, StatusCode> {
+pub async fn jobs_delete(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
     let result = tokio::task::spawn_blocking(move || remove(Some(id), None))
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     match result {
         Ok(()) => {
+            mark_reload_required(&state).await;
             info!("Deleted job via API");
-            Ok(Json(
-                serde_json::json!({ "success": true, "message": "Job deleted" }),
-            ))
+            Ok(Json(serde_json::json!({
+                "success": true,
+                "message": "Job deleted",
+                "reload_required": true
+            })))
         }
         Err(AutoPilotError::Job(message)) => {
             info!("Failed to delete job: {message}");
@@ -193,7 +212,7 @@ pub struct JobUpdateRequest {
 
 /// PUT /jobs/{id} - Update job by ID
 pub async fn jobs_update(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<JobUpdateRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
@@ -225,11 +244,13 @@ pub async fn jobs_update(
 
     match result {
         Ok(path) => {
+            mark_reload_required(&state).await;
             info!("Updated job via API: {:?}", path);
             Ok(Json(serde_json::json!({
                 "success": true,
                 "message": "Job updated",
-                "path": path.to_string_lossy()
+                "path": path.to_string_lossy(),
+                "reload_required": true
             })))
         }
         Err(AutoPilotError::Job(message)) => {

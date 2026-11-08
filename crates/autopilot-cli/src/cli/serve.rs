@@ -34,15 +34,24 @@ pub async fn serve(verbose: bool, api: bool) {
         error!("Failed to initialize autopilot: {}", err);
         std::process::exit(1);
     }
+    let state = AppState::new(auto_pilot.clone());
+    let api_handle = match start_api(state).await {
+        Ok(handle) => handle,
+        Err(err) => {
+            error!("Failed to start api: {err}");
+            std::process::exit(1);
+        }
+    };
+    tokio::spawn(async move {
+        match api_handle.await {
+            Ok(Ok(())) => error!("API server stopped unexpectedly"),
+            Ok(Err(err)) => error!("API server stopped: {err}"),
+            Err(err) => error!("API server task failed: {err}"),
+        }
+        std::process::exit(1);
+    });
     if !api {
         auto_pilot.write().await.start_all();
-    }
-    let state = AppState::new(auto_pilot.clone());
-    match start_api(state).await {
-        Ok(_) => {}
-        Err(err) => {
-            error!("Failed to start api : {}", err)
-        }
     }
     // Keep the daemon running until Ctrl+C is pressed
     // Handle SIGTERM signal

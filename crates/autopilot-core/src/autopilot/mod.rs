@@ -12,6 +12,9 @@ use autopilot_core_time::init::init_time_check;
 
 pub struct AutoPilot {
     pub started: bool,
+    /// Set when an API write changes job files but the live runtime has not
+    /// been reloaded yet. Direct file edits cannot be detected.
+    pub reload_required: bool,
     pub scheduler: JobScheduler,
     pub jobs: Vec<Job>,
     job_handles: Vec<JoinHandle<()>>,
@@ -24,6 +27,7 @@ impl AutoPilot {
 
         Ok(Self {
             started: false,
+            reload_required: false,
             scheduler,
             jobs: Vec::new(),
             job_handles: Vec::new(),
@@ -35,6 +39,16 @@ impl AutoPilot {
         self.started
     }
 
+    /// Mark the runtime as stale after a successful job file write.
+    pub fn mark_reload_required(&mut self) {
+        self.reload_required = true;
+    }
+
+    /// Clear the stale marker after the runtime has loaded the current files.
+    pub fn clear_reload_required(&mut self) {
+        self.reload_required = false;
+    }
+
     pub async fn init(&mut self, verbose: bool) -> Result<(), AutoPilotError> {
         init_logging(verbose);
         if check_if_running() {
@@ -44,6 +58,7 @@ impl AutoPilot {
         }
         self.load_jobs().await?;
         self.init_status().await?;
+        self.clear_reload_required();
         Ok(())
     }
     pub async fn init_status(&mut self) -> Result<(), AutoPilotError> {
@@ -69,6 +84,7 @@ impl AutoPilot {
         if was_started {
             self.start_all();
         }
+        self.clear_reload_required();
 
         info!("{}", "Autopilot reloaded successfully!".green());
         Ok(())
@@ -76,6 +92,7 @@ impl AutoPilot {
     pub async fn restart(&mut self) -> Result<(), AutoPilotError> {
         self.rebuild_jobs().await?;
         self.start_all();
+        self.clear_reload_required();
         Ok(())
     }
     async fn rebuild_jobs(&mut self) -> Result<(), AutoPilotError> {

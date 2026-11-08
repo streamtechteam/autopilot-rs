@@ -9,9 +9,10 @@ use autopilot_core::autopilot::AutoPilot;
 pub struct StatusResponse {
     pub running: bool,
     pub job_count: usize,
+    pub reload_required: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct ReloadResponse {
     pub success: bool,
     pub message: String,

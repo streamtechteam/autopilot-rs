@@ -5,6 +5,7 @@ fn responses_serialise_to_expected_json() {
     let status = serde_json::to_value(StatusResponse {
         running: true,
         job_count: 3,
+        reload_required: true,
     })
     .unwrap();
     let reload = serde_json::to_value(ReloadResponse {
@@ -15,6 +16,7 @@ fn responses_serialise_to_expected_json() {
 
     assert_eq!(status["running"], true);
     assert_eq!(status["job_count"], 3);
+    assert_eq!(status["reload_required"], true);
     assert_eq!(reload["success"], false);
     assert_eq!(reload["message"], "Reload failed");
 }

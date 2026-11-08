@@ -17,6 +17,17 @@ fn job(id: &str, when: Option<When>) -> Job {
 
 async fn run_noop(_job: Job, _state: StateManager) {}
 
+#[test]
+fn run_guard_prevents_overlapping_executions() {
+    let in_flight = Arc::new(AtomicBool::new(false));
+
+    let first = acquire_run(&in_flight).expect("first run should acquire the guard");
+    assert!(acquire_run(&in_flight).is_none());
+
+    drop(first);
+    assert!(acquire_run(&in_flight).is_some());
+}
+
 #[tokio::test]
 async fn rejects_jobs_without_a_time() {
     let mut scheduler = autopilot_core_time::init::init_time_check().await.unwrap();

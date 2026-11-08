@@ -66,7 +66,7 @@ autopilot-rs list
 
 Opens an interactive job browser. It reads job files directly from disk; it does **not** check whether the daemon is running and does not require the daemon.
 
-The browser supports viewing job details and deleting a job file. Deleting from this menu removes the file from disk.
+The browser supports viewing job details and deleting a job file. Deleting from this menu removes the file from disk. Like direct file edits, it does not change the live runtime; call `POST /reload` or `POST /restart` to apply the change.
 
 ### `create`
 
@@ -74,7 +74,7 @@ The browser supports viewing job details and deleting a job file. Deleting from 
 autopilot-rs create
 ```
 
-Opens the interactive job creation form. The new job is written to the configured `jobs/` directory. The form uses Monday for weekly jobs, the first day for monthly jobs, and January 1 for yearly jobs; edit the generated JSON to choose a different `weekday`, `day`, or `month`. New jobs use the default `concurrent` task mode; edit the file to choose a different `task_mode`.
+Opens the interactive job creation form. The new job is written to the configured `jobs/` directory. The form uses Monday for weekly jobs, the first day for monthly jobs, and January 1 for yearly jobs; edit the generated JSON to choose a different `weekday`, `day`, or `month`. New jobs use the default `concurrent` task mode; edit the file to choose a different `task_mode`. Apply the new file to a running daemon with `POST /reload` or `POST /restart`.
 
 ### `remove`
 

@@ -973,10 +973,10 @@ Conditions are boolean checks, and most built-in conditions return `false` when 
 
 Other failure modes to be aware of:
 
-- **Invalid job file:** the loader skips files that fail to deserialize. There is no per-file error surfaced in the CLI today; validate the file manually and check the loaded job list.
+- **Invalid job file:** the loader reports the file path and fails the load. Fix or remove the malformed file before starting the daemon.
 - **Duplicate job IDs:** job loading fails and jobs do not start. Resolve duplicate IDs across files.
 - **Condition panic:** a panic in a condition check is not a supported failure path. Unscheduled jobs may terminate their job task; scheduled jobs treat a panicked check as `false`.
-- **Task failure:** a failed task is logged, and the job status is set to `Failed`. The remaining tasks still run in `concurrent` and `sequential` modes; `sequential_stop_on_failure` skips them.
+- **Task failure:** a failed task is logged, and the job status is set to `Failed`. The remaining tasks still run in `concurrent` and `sequential` modes; `sequential_stop_on_failure` skips them. A task that exceeds its optional `timeout` is killed and reported as a timeout failure.
 
 Use verbose logging and the [API status](API.md#health-and-status) endpoints when diagnosing a job that does not run.
 
