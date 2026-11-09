@@ -1,8 +1,5 @@
-use std::sync::Mutex;
-
 use super::*;
-
-static ENV_LOCK: Mutex<()> = Mutex::new(());
+use crate::test_support::ENV_LOCK;
 
 #[test]
 fn port_uses_default_and_environment_override() {

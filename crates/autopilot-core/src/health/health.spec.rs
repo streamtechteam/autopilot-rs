@@ -1,9 +1,7 @@
 use super::*;
+use crate::test_support::ENV_LOCK;
 use std::io::{Read, Write};
 use std::net::TcpListener;
-use std::sync::Mutex;
-
-static ENV_LOCK: Mutex<()> = Mutex::new(());
 
 #[test]
 fn health_response_round_trips() {

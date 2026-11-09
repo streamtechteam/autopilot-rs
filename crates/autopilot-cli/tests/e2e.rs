@@ -524,6 +524,7 @@ fn api_crud_reload_and_status_work() {
     assert_eq!(status, 200);
     assert_eq!(body["running"], false);
     assert_eq!(body["job_count"], 1);
+    assert_eq!(body["reload_required"], false);
 
     assert_eq!(daemon.get("/jobs/missing").0, 404);
     assert!(matches!(daemon.post("/jobs", Some(json!({}))).0, 400..=499));
@@ -565,9 +566,13 @@ fn api_crud_reload_and_status_work() {
     });
     let (status, body) = daemon.post("/jobs", Some(created));
     assert_eq!(status, 200, "create failed: {body:#?}");
+    assert_eq!(body["reload_required"], true);
     let path = PathBuf::from(body["path"].as_str().expect("created path"));
     assert!(path.exists());
     assert_eq!(path.extension().unwrap(), "jsonc");
+    let (_, status_body) = daemon.get("/status");
+    assert_eq!(status_body["reload_required"], true);
+    assert_eq!(status_body["job_count"], 1);
 
     let created_body: Value = serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
     let created_id = created_body["id"].as_str().unwrap().to_string();
@@ -591,10 +596,14 @@ fn api_crud_reload_and_status_work() {
     assert_eq!(daemon.put("/jobs/job_missing", update.clone()).0, 404);
     assert_eq!(daemon.put("/jobs/job_existing", update).0, 200);
     assert!(daemon.dir.join("jobs/existing.jsonc").exists());
+    let (_, status_body) = daemon.get("/status");
+    assert_eq!(status_body["reload_required"], true);
 
     let (status, reload) = daemon.post("/reload", None);
     assert_eq!(status, 200);
     assert_eq!(reload["success"], true);
+    let (_, status_body) = daemon.get("/status");
+    assert_eq!(status_body["reload_required"], false);
     let jobs = daemon.jobs();
     assert_eq!(jobs.len(), 1);
     assert_eq!(jobs[0]["id"], "job_existing");

@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use tokio::process::Command;
 
 use autopilot_core_error::AutoPilotError;
@@ -13,14 +15,30 @@ pub fn sync_run(command: String) -> Result<(), AutoPilotError> {
     Ok(())
 }
 
-pub async fn async_run(command: String) -> Result<(), AutoPilotError> {
-    let status = shell_command(&command)
-        .kill_on_drop(true)
-        .status()
-        .await
-        .map_err(|e| {
-            AutoPilotError::JobExecution(format!("Failed to run task '{}': {}", command, e))
-        })?;
+pub async fn async_run(command: String, timeout: Option<u64>) -> Result<(), AutoPilotError> {
+    let status = match timeout {
+        Some(seconds) => {
+            let run = shell_command(&command).kill_on_drop(true).status();
+            match tokio::time::timeout(Duration::from_secs(seconds), run).await {
+                Ok(result) => result.map_err(|e| {
+                    AutoPilotError::JobExecution(format!("Failed to run task '{}': {}", command, e))
+                })?,
+                Err(_) => {
+                    return Err(AutoPilotError::JobExecution(format!(
+                        "Failed to run task '{}': timed out after {} seconds",
+                        command, seconds
+                    )));
+                }
+            }
+        }
+        None => shell_command(&command)
+            .kill_on_drop(true)
+            .status()
+            .await
+            .map_err(|e| {
+                AutoPilotError::JobExecution(format!("Failed to run task '{}': {}", command, e))
+            })?,
+    };
 
     if !status.success() {
         return Err(AutoPilotError::JobExecution(format!(

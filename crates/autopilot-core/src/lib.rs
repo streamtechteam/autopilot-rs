@@ -13,6 +13,14 @@ pub use autopilot_core_status as status;
 pub use autopilot_core_task as task;
 pub use autopilot_core_utilities as utilities;
 
+#[cfg(test)]
+pub(crate) mod test_support {
+    use std::sync::Mutex;
+
+    /// Serialises tests that read or mutate process environment variables.
+    pub(crate) static ENV_LOCK: Mutex<()> = Mutex::new(());
+}
+
 pub mod time {
     pub use autopilot_core_time::*;
 

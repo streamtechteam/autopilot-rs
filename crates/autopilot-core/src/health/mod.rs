@@ -1,6 +1,6 @@
 use std::{
     io::{Read, Write},
-    net::{TcpStream, ToSocketAddrs},
+    net::{SocketAddr, TcpStream, ToSocketAddrs},
     time::Duration,
 };
 
@@ -18,12 +18,16 @@ pub struct HealthResponse {
 /// Checks whether the AutoPilot daemon is running by hitting its health endpoint.
 pub fn check_if_running() -> bool {
     let address = address();
-    let Ok(mut addresses) = address.to_socket_addrs() else {
+    let Ok(addresses) = address.to_socket_addrs() else {
         return false;
     };
-    let Some(socket) = addresses.next() else {
-        return false;
-    };
+
+    addresses
+        .into_iter()
+        .any(|socket| check_socket(socket, &address))
+}
+
+fn check_socket(socket: SocketAddr, host_header: &str) -> bool {
     let Ok(mut stream) = TcpStream::connect_timeout(&socket, CONNECT_TIMEOUT) else {
         return false;
     };
@@ -33,7 +37,8 @@ pub fn check_if_running() -> bool {
         return false;
     }
 
-    let request = format!("GET /health HTTP/1.1\r\nHost: {address}\r\nConnection: close\r\n\r\n");
+    let request =
+        format!("GET /health HTTP/1.1\r\nHost: {host_header}\r\nConnection: close\r\n\r\n");
 
     if stream.write_all(request.as_bytes()).is_err() {
         return false;

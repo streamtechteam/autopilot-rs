@@ -40,6 +40,16 @@ fn validate_rejects_bad_intervals_and_cron_expressions() {
 }
 
 #[test]
+fn validate_rejects_zero_task_timeouts() {
+    let mut job = scheme(None, None);
+    job.tasks = vec![autopilot_core_task::TaskScheme::new("true".to_string()).with_timeout(0)];
+    assert!(job.validate().is_err());
+
+    job.tasks[0].timeout = Some(1);
+    assert!(job.validate().is_ok());
+}
+
+#[test]
 fn validate_rejects_structured_schedules_with_invalid_values() {
     let invalid_weekly = When::Weekly(autopilot_core_time::WeeklyScheme {
         time: "25:00".to_string(),

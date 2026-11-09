@@ -96,11 +96,13 @@ Do not use plain `cargo run -- ...`; it cannot choose between the CLI and GUI bi
 - Keep `README.md` as the landing page; put detailed references in `docs/`.
 - The docs currently call out these constraints; keep them accurate if you touch related behavior:
   - API is plain HTTP, loopback by default, and requires a bearer token for every route except `/health`.
-  - API job CRUD writes files but requires reload/restart to affect the live runtime.
-  - Reload/restart failures currently return HTTP `200` with `"success": false`.
+  - API job CRUD writes or removes files and sets `reload_required`; the live runtime is unchanged until `POST /start`, `POST /reload`, or `POST /restart`. Direct file edits still require reload/restart.
+  - Reload/restart failures return HTTP `500` with `"success": false`.
   - `file` condition `min_size` is a minimum-size check, not change detection; `size_changed` is a deprecated alias.
   - A failed task is logged, and the job status is set to `Failed`.
+  - Tasks accept an optional `timeout` in seconds; an expired task is killed and reported as a timeout failure.
   - `task_mode` defaults to `concurrent`; `sequential` and `sequential_stop_on_failure` are also supported.
+  - Scheduled jobs skip a tick while their previous run is still in flight.
   - Unix `SIGHUP` reloads jobs on every signal; `SIGINT`/`SIGTERM` stop jobs and exit (bounded by a 10-second shutdown timeout).
 
 ## API and security rules

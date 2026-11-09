@@ -49,12 +49,14 @@
 - Environment variables: `AUTOPILOT_HOST` (default `127.0.0.1`), `AUTOPILOT_PORT` (default `7883`), `AUTOPILOT_API_TOKEN`, and `AUTOPILOT_ALLOW_REMOTE`.
 - `autopilot-rs serve` always starts the API; `--api` only suppresses automatic job start.
 - The API requires a bearer token for every route except `/health`, uses plain HTTP, and stays on loopback unless `AUTOPILOT_ALLOW_REMOTE=1` is set.
-- API job CRUD writes files; `POST /reload` or `POST /restart` applies changes to the live runtime.
-- Reload/restart failures currently return HTTP `200` with `"success": false`.
-- Invalid job files are skipped by the loader; duplicate job IDs prevent the job set from loading.
+- API job CRUD writes or removes files and sets `reload_required`; the live runtime is unchanged until `POST /start`, `POST /reload`, or `POST /restart`. Direct file edits still require reload/restart.
+- Reload/restart failures return HTTP `500` with `"success": false`.
+- Invalid job files are reported with their path and prevent the job set from loading; duplicate job IDs also prevent loading.
 - `file` condition `min_size` checks a minimum size threshold; `size_changed` is a deprecated alias. Neither detects a change from a previous size.
 - A failed task is logged, and the job status is set to `Failed`.
+- Tasks accept an optional `timeout` in seconds; an expired task is killed and reported as a timeout failure.
 - `task_mode` defaults to `concurrent`; `sequential` and `sequential_stop_on_failure` are also supported.
+- Scheduled jobs skip a tick while their previous run is still in flight.
 - The Unix `SIGHUP` handler reloads jobs on every signal; `SIGINT`/`SIGTERM` stop jobs and exit, bounded by a 10-second shutdown timeout.
 
 ## Development commands

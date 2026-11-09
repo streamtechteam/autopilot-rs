@@ -16,6 +16,20 @@ fn constructs_and_serialises_tasks() {
     );
 }
 
+#[test]
+fn timeout_is_optional_and_round_trips() {
+    let plain = serde_json::to_value(Task::new("true".to_string())).unwrap();
+    assert!(plain.get("timeout").is_none());
+
+    let timed = Task::new("true".to_string()).with_timeout(30);
+    let json = serde_json::to_value(&timed).unwrap();
+    assert_eq!(json["timeout"], 30);
+    assert_eq!(
+        serde_json::from_value::<Task>(json).unwrap().timeout,
+        Some(30)
+    );
+}
+
 #[tokio::test]
 async fn run_returns_a_join_handle_for_success() {
     let task = Task::new("true".to_string());

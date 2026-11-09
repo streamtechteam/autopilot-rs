@@ -289,7 +289,7 @@ async fn create_interactive() -> Result<PathBuf, AutoPilotError> {
                 .map_err(|err| AutoPilotError::InvalidJob(err.to_string()))?
                 .ok_or_else(|| AutoPilotError::Command("Command not provided".to_string()))?
         };
-        tasks.push(TaskScheme { command });
+        tasks.push(TaskScheme::new(command));
     }
 
     let task_mode = prompt_task_mode()?;

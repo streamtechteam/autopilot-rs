@@ -71,7 +71,7 @@ The API lives in `crates/autopilot-api`:
 - `handlers/` contains health, lifecycle, job, and response-type modules.
 - `state.rs` defines `AppState`, which wraps `Arc<RwLock<AutoPilot>>` plus response types.
 
-Handlers mutate the runtime under the write lock and read status under the read lock. Job CRUD handlers call the storage layer and return JSON status messages. They intentionally do not mutate the live runtime; a reload or restart applies file changes.
+Handlers mutate the runtime under the write lock and read status under the read lock. Job CRUD handlers call the storage layer, mark `reload_required`, and return JSON status messages. They intentionally do not mutate the live runtime; a reload or restart applies file changes.
 
 The API address comes from `autopilot_core::network::address()` and defaults to `127.0.0.1:7883`. The health check itself lives in `autopilot_core::health::check_if_running`.
 
@@ -118,8 +118,8 @@ cargo clippy -p autopilot-api --all-targets --locked
 ## Known constraints
 
 - The API uses bearer-token authentication and Origin/Host checks over plain HTTP; see [API security](API.md#security).
-- Job CRUD writes files and requires reload/restart for live changes.
-- Invalid job files are skipped by the loader; duplicate IDs are fatal for the load.
+- Job CRUD writes or removes files and sets `reload_required`; the live runtime is unchanged until reload/restart/start. Direct file edits also require reload/restart.
+- Invalid job files are reported with their path and are fatal for the load; duplicate IDs are also fatal.
 - `file` condition `min_size` implements a minimum-size check; `size_changed` is a deprecated alias.
 - There is no plugin system for custom conditions yet.
 - The GUI is built as part of the workspace and requires platform GUI dependencies.

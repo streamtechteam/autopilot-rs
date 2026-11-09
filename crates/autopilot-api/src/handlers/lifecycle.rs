@@ -10,6 +10,7 @@ pub async fn jobs_status(State(state): State<AppState>) -> Json<StatusResponse> 
     Json(StatusResponse {
         running: ap.is_started(),
         job_count: ap.jobs.len(),
+        reload_required: ap.reload_required,
     })
 }
 
@@ -30,6 +31,7 @@ pub async fn jobs_start(
         return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
     ap.start_all();
+    ap.clear_reload_required();
 
     info!("Jobs started via API");
     Ok(Json(
@@ -76,15 +78,18 @@ pub async fn shutdown(
 
 pub async fn jobs_reload(
     State(state): State<AppState>,
-) -> Result<Json<ReloadResponse>, StatusCode> {
+) -> Result<Json<ReloadResponse>, (StatusCode, Json<ReloadResponse>)> {
     let mut ap = state.auto_pilot.write().await;
 
     if let Err(e) = ap.reload().await {
         warn!("Reload failed: {}", e);
-        return Ok(Json(ReloadResponse {
-            message: format!("Reload failed: {}", e),
-            success: false,
-        }));
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ReloadResponse {
+                message: format!("Reload failed: {}", e),
+                success: false,
+            }),
+        ));
     }
 
     Ok(Json(ReloadResponse {
@@ -95,15 +100,18 @@ pub async fn jobs_reload(
 
 pub async fn jobs_restart(
     State(state): State<AppState>,
-) -> Result<Json<RestartResponse>, StatusCode> {
+) -> Result<Json<RestartResponse>, (StatusCode, Json<RestartResponse>)> {
     let mut ap = state.auto_pilot.write().await;
 
     if let Err(e) = ap.restart().await {
         warn!("Restart failed: {}", e);
-        return Ok(Json(RestartResponse {
-            message: format!("Restart failed: {}", e),
-            success: false,
-        }));
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(RestartResponse {
+                message: format!("Restart failed: {}", e),
+                success: false,
+            }),
+        ));
     }
 
     Ok(Json(RestartResponse {

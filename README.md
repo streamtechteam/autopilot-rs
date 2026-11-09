@@ -142,7 +142,7 @@ curl -X POST http://127.0.0.1:7883/start
 curl http://127.0.0.1:7883/jobs
 ```
 
-The API supports health/status checks, job listing and CRUD, lifecycle controls, and shutdown. Job CRUD writes files; use `POST /reload` or `POST /restart` to apply changes to the running daemon.
+The API supports health/status checks, job listing and CRUD, lifecycle controls, and shutdown. Job CRUD writes or removes job files only; call `POST /reload`, `POST /restart`, or `POST /start` to apply the change to the running daemon. `GET /status` reports `reload_required` while a change is pending.
 
 See the [API reference](docs/API.md).
 
@@ -167,7 +167,7 @@ A job requires an `id`, a `conditions` array, and a `tasks` array. A minimal job
 | `when`           | no       | Schedule. Omit to check conditions when jobs start.                    |
 | `check_interval` | no       | String of milliseconds (at least 100) between condition retries for unscheduled jobs. |
 | `conditions`     | yes      | Array of conditions. May be empty. All must pass.                      |
-| `tasks`          | yes      | Array of `{ "command": "..." }` objects. May be empty.                 |
+| `tasks`          | yes      | Array of `{ "command": "...", "timeout": <seconds> }` objects. `timeout` is optional. May be empty. |
 | `task_mode`      | no       | `concurrent` (default), `sequential`, or `sequential_stop_on_failure`. |
 
 For schedule types, condition composition, and runtime details, see [Job files and schedules](docs/JOBS.md).
@@ -344,15 +344,9 @@ More examples live in [`examples/`](examples/) and job templates in [`templates/
 - Check the exact field names and values in the [conditions guide](docs/CONDITIONS.md).
 - Remember that job-level conditions are ANDed. Use a `logical` condition for OR/NOR.
 
-### API changes do not affect running jobs
+### API changes fail to apply
 
-Job CRUD writes files. Apply them with:
-
-```bash
-curl -X POST http://127.0.0.1:7883/reload
-```
-
-or restart the daemon. See [API lifecycle](docs/API.md#lifecycle-and-reload-behavior).
+Job CRUD writes or removes the job file and sets `reload_required`; it does not change the live runtime. Call `POST /reload` (preserves the running state) or `POST /restart` (always starts jobs) to apply the change. If loading fails, the endpoint returns `500`; fix the reported job error and retry the reload. See [API lifecycle](docs/API.md#lifecycle-and-reload-behavior).
 
 ### Tasks fail
 

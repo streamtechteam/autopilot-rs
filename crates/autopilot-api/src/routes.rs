@@ -13,7 +13,9 @@ use tokio::task::JoinHandle;
 
 use crate::{handlers::*, state::AppState};
 
-pub async fn start_api(mut state: AppState) -> Result<JoinHandle<()>, AutoPilotError> {
+pub async fn start_api(
+    mut state: AppState,
+) -> Result<JoinHandle<Result<(), AutoPilotError>>, AutoPilotError> {
     let bind_host = host();
     if !is_loopback_host(&bind_host) && !remote_bind_allowed() {
         return Err(AutoPilotError::Api(format!(
@@ -49,9 +51,10 @@ pub async fn start_api(mut state: AppState) -> Result<JoinHandle<()>, AutoPilotE
         .map_err(|err| AutoPilotError::Api(err.to_string()))?;
 
     info!("{}{}", "Api server started on ".green(), address);
-    // Spawn API server
     let api_handle = tokio::spawn(async move {
-        axum::serve(listener, app).await.expect("API server failed");
+        axum::serve(listener, app)
+            .await
+            .map_err(|error| AutoPilotError::Api(format!("API server failed: {error}")))
     });
     Ok(api_handle)
 }

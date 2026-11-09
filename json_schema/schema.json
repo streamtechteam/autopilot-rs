@@ -874,6 +874,20 @@
       "properties": {
         "command": {
           "type": "string"
+        },
+        "timeout": {
+          "title": "Timeout",
+          "description": "Optional timeout in seconds.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 1,
+          "x-autopilot": {
+            "group": "task",
+            "unit": "seconds"
+          }
         }
       },
       "additionalProperties": false,
